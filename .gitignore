@@ -1,0 +1,26 @@
+# Build outputs
+backend/target/
+frontend/dist/
+
+# Dependencies
+frontend/node_modules/
+
+# Logs
+backend/logs/
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env.local
+.env.*.local
+
+# Diagnosis
+gcm-diagnose.log
