@@ -1,0 +1,1 @@
+<view class="container data-v-b7b302b2"><task-flow wx:if="{{g}}" class="r data-v-b7b302b2" u-r="taskFlowRef" bindselect="{{b}}" bindstart="{{c}}" bindcontinue="{{d}}" bindreorder="{{e}}" binddateChange="{{f}}" u-i="b7b302b2-0" bind:__l="__l" u-p="{{g}}"/></view>

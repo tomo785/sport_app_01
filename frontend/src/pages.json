@@ -1,0 +1,196 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "训练计划",
+        "navigationBarBackgroundColor": "#f8fafc",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": true,
+        "backgroundColor": "#f8fafc"
+      }
+    },
+    {
+      "path": "pages/user/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/user/register",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/user/profile",
+      "style": {
+        "navigationBarTitleText": "个人中心",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/user/profile-edit",
+      "style": {
+        "navigationBarTitleText": "编辑资料",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/user/settings",
+      "style": {
+        "navigationBarTitleText": "账号设置",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/workout/workout",
+      "style": {
+        "navigationBarTitleText": "开始运动",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/workout/detail",
+      "style": {
+        "navigationBarTitleText": "运动详情",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/running/running",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#0f172a"
+      }
+    },
+    {
+      "path": "pages/goal/goal",
+      "style": {
+        "navigationBarTitleText": "训练定制",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/goal/create",
+      "style": {
+        "navigationBarTitleText": "创建训练计划",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/goal/detail",
+      "style": {
+        "navigationBarTitleText": "计划详情",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/plan/editor",
+      "style": {
+        "navigationBarTitleText": "训练计划编辑器",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/task/task-detail",
+      "style": {
+        "navigationBarTitleText": "任务详情",
+        "navigationBarBackgroundColor": "#f8fafc",
+        "navigationBarTextStyle": "black",
+        "backgroundColor": "#f8fafc"
+      }
+    },
+    {
+      "path": "pages/task/exercise-detail",
+      "style": {
+        "navigationBarTitleText": "动作详情",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/task/task-flow",
+      "style": {
+        "navigationStyle": "custom",
+        "backgroundColor": "#f8fafc"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#3b82f6",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/icons/home.png",
+        "selectedIconPath": "static/icons/home-active.png",
+        "text": "计划"
+      },
+      {
+        "pagePath": "pages/task/task-flow",
+        "iconPath": "static/icons/flow.png",
+        "selectedIconPath": "static/icons/flow-active.png",
+        "text": "流程"
+      },
+      {
+        "pagePath": "pages/running/running",
+        "iconPath": "static/icons/workout.png",
+        "selectedIconPath": "static/icons/workout-active.png",
+        "text": "跑步"
+      },
+      {
+        "pagePath": "pages/goal/goal",
+        "iconPath": "static/icons/goal.png",
+        "selectedIconPath": "static/icons/goal-active.png",
+        "text": "定制"
+      },
+      {
+        "pagePath": "pages/user/profile",
+        "iconPath": "static/icons/user.png",
+        "selectedIconPath": "static/icons/user-active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "subPackages": [],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "运动App",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5",
+    "backgroundColorTop": "#f5f5f5",
+    "backgroundColorBottom": "#f5f5f5"
+  },
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^u-(.*)": "@/components/u-$1.vue",
+      "^task-(.*)": "@/components/task/task-$1.vue"
+    }
+  },
+  "condition": {
+    "current": 0,
+    "list": [
+      {
+        "name": "首页",
+        "path": "pages/index/index"
+      }
+    ]
+  }
+}

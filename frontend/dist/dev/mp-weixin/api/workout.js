@@ -1,0 +1,1 @@
+"use strict";const t=require("../utils/request.js");exports.finishWorkout=function(r){return t.put("/workout/finish",{recordId:r})},exports.getWorkoutList=function(r){return t.get("/workout/list",r)},exports.startWorkout=function(r){return t.post("/workout/start",r)},exports.uploadTrajectory=function(r){return t.post("/workout/trajectory",r)};

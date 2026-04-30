@@ -1,0 +1,84 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/user/login",
+    "pages/user/register",
+    "pages/user/profile",
+    "pages/user/profile-edit",
+    "pages/user/settings",
+    "pages/workout/workout",
+    "pages/workout/detail",
+    "pages/running/running",
+    "pages/goal/goal",
+    "pages/goal/create",
+    "pages/goal/detail",
+    "pages/plan/editor",
+    "pages/task/task-detail",
+    "pages/task/exercise-detail",
+    "pages/task/task-flow"
+  ],
+  "subPackages": [],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "运动App",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f5f5",
+    "backgroundColorTop": "#f5f5f5",
+    "backgroundColorBottom": "#f5f5f5"
+  },
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#3b82f6",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/icons/home.png",
+        "selectedIconPath": "static/icons/home-active.png",
+        "text": "计划"
+      },
+      {
+        "pagePath": "pages/task/task-flow",
+        "iconPath": "static/icons/flow.png",
+        "selectedIconPath": "static/icons/flow-active.png",
+        "text": "流程"
+      },
+      {
+        "pagePath": "pages/running/running",
+        "iconPath": "static/icons/workout.png",
+        "selectedIconPath": "static/icons/workout-active.png",
+        "text": "跑步"
+      },
+      {
+        "pagePath": "pages/goal/goal",
+        "iconPath": "static/icons/goal.png",
+        "selectedIconPath": "static/icons/goal-active.png",
+        "text": "定制"
+      },
+      {
+        "pagePath": "pages/user/profile",
+        "iconPath": "static/icons/user.png",
+        "selectedIconPath": "static/icons/user-active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于记录运动轨迹"
+    },
+    "scope.bluetooth": {
+      "desc": "用于连接智能穿戴设备"
+    }
+  },
+  "requiredBackgroundModes": [
+    "audio",
+    "location"
+  ],
+  "requiredPrivateInfos": [
+    "getLocation",
+    "onLocationChange"
+  ],
+  "usingComponents": {}
+}

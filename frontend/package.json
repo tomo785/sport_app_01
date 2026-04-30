@@ -1,0 +1,65 @@
+{
+  "name": "sport-app-frontend",
+  "version": "1.1.0",
+  "description": "运动健身App前端 - 支持AI对话和任务卡片",
+  "main": "main.js",
+  "scripts": {
+    "dev": "uni -p mp-weixin",
+    "dev:h5": "uni -p h5",
+    "dev:app": "uni -p app",
+    "dev:ios": "uni -p app-ios",
+    "dev:android": "uni -p app-android",
+    "build": "uni build -p mp-weixin",
+    "build:h5": "uni build -p h5",
+    "build:app": "uni build -p app",
+    "build:ios": "uni build -p app-ios",
+    "build:android": "uni build -p app-android",
+    "lint": "eslint src --ext .vue,.js",
+    "preview": "uni preview -p mp-weixin"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-app-plus": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-components": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-h5": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-alipay": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-baidu": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-jd": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-kuaishou": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-lark": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-qq": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-toutiao": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-mp-xhs": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-quickapp-webview": "3.0.0-alpha-5000720260327001",
+    "echarts": "^5.4.3",
+    "pinia": "^2.1.6",
+    "uview-plus": "^3.1.43",
+    "vue": "^3.3.4",
+    "vue-i18n": "^9.2.2"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.3.3",
+    "@dcloudio/uni-automator": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/uni-cli-shared": "3.0.0-alpha-5000720260327001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-5000720260327001",
+    "@types/node": "^20.5.0",
+    "sass": "^1.98.0",
+    "sharp": "^0.34.5",
+    "terser": "^5.19.0",
+    "typescript": "^5.1.6",
+    "vite": "^5.2.8"
+  },
+  "keywords": [
+    "运动健身",
+    "AI教练",
+    "训练计划",
+    "uni-app",
+    "vue3"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
