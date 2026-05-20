@@ -62,7 +62,8 @@ function executeChain(chain, index, resolve, today) {
   const fn = chain[index]
   fn()
     .then((res) => {
-      if (res && res.steps >= 0) {
+      // needDecrypt 表示仅拿到加密数据，前端无法解析真实步数，应视为失败继续降级
+      if (res && res.steps >= 0 && !res.needDecrypt) {
         // 缓存有效数据
         uni.setStorageSync(STEPS_CACHE_KEY, res)
         uni.setStorageSync(STEPS_CACHE_DATE_KEY, today)

@@ -1,8 +1,0 @@
-{
-  "navigationBarTitleText": "训练计划编辑器",
-  "navigationBarBackgroundColor": "#ffffff",
-  "navigationBarTextStyle": "black",
-  "usingComponents": {
-    "type-selector": "../../components/plan/TypeSelector"
-  }
-}

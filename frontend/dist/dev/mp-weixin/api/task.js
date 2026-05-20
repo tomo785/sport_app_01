@@ -1,1 +1,0 @@
-"use strict";const t=require("../utils/request.js");exports.completeExercise=function(e,s={}){return t.post(`/task/exercise/${e}/complete`,null,{params:s})},exports.getTodayTask=function(){return t.get("/task/today")},exports.startTodayTask=function(){return t.post("/task/start")};

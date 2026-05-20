@@ -1,1 +1,0 @@
-"use strict";const t=require("../utils/request.js");exports.getStatsSummary=function(){return t.get("/stats/summary")},exports.getTodayStats=function(){return t.get("/stats/today")},exports.reportTodaySteps=function(t){return post("/stats/steps/today",t)},exports.reportWeRunData=function(t){return post("/stats/werun/decrypt",t)};

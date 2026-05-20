@@ -87,12 +87,12 @@
       </view>
     </view>
 
-    <!-- ===== 今日计划卡片 ===== -->
+    <!-- ===== 今日目标卡片 ===== -->
     <view class="plan-card" @click="goToPlanDetail">
-      <!-- 有今日计划 -->
+      <!-- 有今日目标 -->
       <template v-if="todayPlan && todayPlan.hasPlan">
         <view class="plan-head">
-          <text class="plan-title">今日计划</text>
+          <text class="plan-title">今日目标</text>
           <text class="plan-action">去执行 ›</text>
         </view>
         <view class="plan-body">
@@ -105,14 +105,33 @@
         <view class="plan-meta" v-if="todayPlan.distanceKm > 0">
           <text>{{ todayPlan.type }} · {{ todayPlan.distanceKm }}公里</text>
         </view>
+        <!-- 训练活动详情 -->
+        <view class="plan-activities" v-if="todayPlan.activities && todayPlan.activities.length > 0">
+          <view class="plan-activity-item" v-for="(act, idx) in todayPlan.activities" :key="idx">
+            <view class="pa-left">
+              <text class="pa-icon">{{ act.icon }}</text>
+            </view>
+            <view class="pa-content">
+              <text class="pa-name">{{ act.name }}</text>
+              <text class="pa-desc" v-if="act.desc">{{ act.desc }}</text>
+            </view>
+            <view class="pa-right" v-if="act.metric">
+              <text class="pa-metric">{{ act.metric }}</text>
+            </view>
+          </view>
+        </view>
+        <!-- 训练描述 -->
+        <view class="plan-description" v-if="todayPlan.description && !todayPlan.activities?.length">
+          <text class="plan-desc-text">{{ todayPlan.description }}</text>
+        </view>
       </template>
-      <!-- 无今日计划 -->
+      <!-- 无今日目标 -->
       <template v-else>
         <view class="plan-head">
-          <text class="plan-title">今日计划</text>
+          <text class="plan-title">今日目标</text>
         </view>
         <view class="plan-empty">
-          <text class="plan-empty-text">暂无今日计划</text>
+          <text class="plan-empty-text">暂无今日目标</text>
           <text class="plan-empty-hint">去「定制」页面创建训练计划吧</text>
           <view class="plan-empty-btn" @click.stop="goToCreatePlan">去定制</view>
         </view>
@@ -229,7 +248,7 @@ const todayDistanceStr = computed(() => {
   return dist > 0 ? dist.toFixed(1) : '0.0'
 })
 
-// ---- 今日计划 ----
+// ---- 今日目标 ----
 const todayPlan = ref(null)
 
 const typeLabelMap = {
@@ -259,17 +278,100 @@ function getWeeksDiff(startMs, endMs) {
   return Math.max(1, Math.floor(diff / oneWeek) + 1)
 }
 
+function buildActivities(dayPlan) {
+  const activities = []
+  const type = dayPlan.type
+  const details = dayPlan.details || {}
+
+  if (type === 'run') {
+    const rp = details.runParams || {}
+    const subTypeMap = {
+      interval: '间歇跑', long: '长距离慢跑', tempo: '节奏跑',
+      easy: '轻松跑', recovery: '恢复跑'
+    }
+    const subLabel = subTypeMap[rp.subType] || '跑步'
+    let metric = ''
+    if (rp.distance) metric = `${rp.distance}km`
+    if (rp.sets) metric += metric ? ` · ${rp.sets}组` : `${rp.sets}组`
+    activities.push({
+      icon: '🏃',
+      name: subLabel,
+      desc: rp.pace ? `配速 ${rp.pace}` : '',
+      metric
+    })
+  } else if (type === 'strength') {
+    const bodyPart = details.bodyPart
+    if (bodyPart) {
+      activities.push({ icon: '💪', name: `${bodyPart}训练`, metric: details.duration ? `${details.duration}min` : '' })
+    }
+    const exercises = details.exercises || []
+    exercises.forEach(ex => {
+      if (ex.name) {
+        const sets = ex.sets != null ? String(ex.sets) : ''
+        const reps = ex.reps != null ? String(ex.reps) : ''
+        activities.push({
+          icon: '🏋️',
+          name: ex.name,
+          metric: (sets && reps) ? `${sets}×${reps}` : (sets || reps)
+        })
+      }
+    })
+    if (!bodyPart && exercises.length === 0) {
+      activities.push({ icon: '💪', name: '力量训练', metric: details.duration ? `${details.duration}min` : '' })
+    }
+  } else if (type === 'yoga') {
+    const styleMap = {
+      hatha: '哈他瑜伽', vinyasa: '流瑜伽', yin: '阴瑜伽',
+      power: '力量瑜伽', restorative: '修复瑜伽'
+    }
+    const styleLabel = styleMap[details.yogaStyle] || '瑜伽'
+    activities.push({ icon: '🧘', name: styleLabel, metric: details.duration ? `${details.duration}min` : '' })
+  } else if (type === 'rest') {
+    const restMap = { full: '完全休息', active: '主动恢复', stretch: '拉伸放松', massage: '按摩放松' }
+    const restLabel = restMap[details.restType] || '休息'
+    activities.push({ icon: '😴', name: restLabel, desc: '今日安排休息恢复' })
+  } else if (type === 'custom') {
+    activities.push({ icon: '⚡', name: dayPlan.title || '自定义训练', metric: details.duration ? `${details.duration}min` : '' })
+  }
+
+  return activities
+}
+
 function loadTodayPlan() {
   try {
-    // 1. 优先读取 myTrainingPlans（多周计划）
+    const now = new Date()
+    const todayDay = getDayOfWeek(now)
+
+    const weeklyRaw = uni.getStorageSync('weeklyPlan_current')
+    if (weeklyRaw) {
+      const weekly = JSON.parse(weeklyRaw)
+      const dayPlan = (weekly.days || []).find(d => d.dayOfWeek === todayDay)
+      if (dayPlan) {
+        const typeInfo = weeklyTypeMap[dayPlan.type] || weeklyTypeMap.custom
+        const duration = parseInt(dayPlan.details?.duration) || 0
+        const distance = parseFloat(dayPlan.details?.runParams?.distance) || 0
+        const activities = buildActivities(dayPlan)
+        todayPlan.value = {
+          name: dayPlan.title || '今日训练',
+          type: typeInfo.label,
+          typeColor: typeInfo.color,
+          typeBg: typeInfo.bg,
+          duration,
+          distanceKm: distance > 0 ? distance.toFixed(1) : 0,
+          description: dayPlan.details?.description || '',
+          activities,
+          hasPlan: true,
+          planType: dayPlan.type
+        }
+        return
+      }
+    }
+
     const savedPlans = uni.getStorageSync('myTrainingPlans')
     let plans = []
     if (savedPlans) {
       try { plans = JSON.parse(savedPlans) } catch (e) { plans = [] }
     }
-
-    const now = new Date()
-    const todayDay = getDayOfWeek(now)
 
     if (plans.length > 0) {
       const plan = plans[0]
@@ -289,6 +391,12 @@ function loadTodayPlan() {
       if (course) {
         const typeInfo = typeLabelMap[course.type] || typeLabelMap[5]
         const totalDistance = (course.exercises || []).reduce((sum, ex) => sum + (ex.distance || 0), 0)
+        const activities = (course.exercises || []).map(ex => ({
+          icon: '🏃',
+          name: ex.name || course.name,
+          desc: ex.description || '',
+          metric: ex.distance ? `${(ex.distance / 1000).toFixed(1)}km` : (ex.duration ? `${ex.duration}min` : '')
+        }))
         todayPlan.value = {
           name: course.name,
           type: typeInfo.label,
@@ -296,29 +404,10 @@ function loadTodayPlan() {
           typeBg: typeInfo.bg,
           duration: course.duration || 0,
           distanceKm: totalDistance > 0 ? (totalDistance / 1000).toFixed(1) : 0,
-          hasPlan: true
-        }
-        return
-      }
-    }
-
-    // 2. Fallback 到 weeklyPlan_current
-    const weeklyRaw = uni.getStorageSync('weeklyPlan_current')
-    if (weeklyRaw) {
-      const weekly = JSON.parse(weeklyRaw)
-      const dayPlan = (weekly.days || []).find(d => d.dayOfWeek === todayDay)
-      if (dayPlan && dayPlan.type !== 'rest') {
-        const typeInfo = weeklyTypeMap[dayPlan.type] || weeklyTypeMap.custom
-        const duration = dayPlan.details?.duration || 0
-        const distance = dayPlan.details?.runParams?.distance || 0
-        todayPlan.value = {
-          name: dayPlan.title || '今日训练',
-          type: typeInfo.label,
-          typeColor: typeInfo.color,
-          typeBg: typeInfo.bg,
-          duration,
-          distanceKm: distance > 0 ? Number(distance).toFixed(1) : 0,
-          hasPlan: true
+          description: course.description || '',
+          activities: activities.length > 0 ? activities : [],
+          hasPlan: true,
+          planType: course.type === 1 ? 'run' : (course.type === 2 ? 'strength' : 'custom')
         }
         return
       }
@@ -326,7 +415,7 @@ function loadTodayPlan() {
 
     todayPlan.value = null
   } catch (e) {
-    console.error('[今日计划] 加载失败:', e)
+    console.error('[今日目标] 加载失败:', e)
     todayPlan.value = null
   }
 }
@@ -356,7 +445,7 @@ function getLocation() {
 }
 
 async function loadTodayData() {
-  // 并行加载天气、步数、今日运动统计和今日计划
+  // 并行加载天气、步数、今日运动统计和今日目标
   await Promise.all([loadWeatherData(), loadStepsData(), loadTodayWorkout()])
   loadTodayPlan()
 }
@@ -406,9 +495,23 @@ async function loadStepsData() {
           calories.value = decryptRes.data.calories || 0
           distance.value = decryptRes.data.distance || 0
           duration.value = decryptRes.data.duration || 0
+          return
         }
       } catch (err) {
         console.warn('[步数] 微信运动解密失败:', err)
+      }
+      // 微信解密失败（如未绑定账号），降级到后端 API
+      try {
+        const backendRes = await getTodayStats()
+        if (backendRes.code === 200 && backendRes.data) {
+          stepsCount.value = backendRes.data.steps || backendRes.data.stepCount || 0
+          calories.value = backendRes.data.calories || 0
+          distance.value = backendRes.data.distance || 0
+          duration.value = backendRes.data.duration || 0
+          console.log('[步数] 微信解密失败后降级到后端 API:', stepsCount.value)
+        }
+      } catch (backendErr) {
+        console.warn('[步数] 后端 API 也失败了:', backendErr)
       }
       return
     }
@@ -448,7 +551,21 @@ function goToTodayTask() {
 }
 
 function goToPlanDetail() {
-  uni.navigateTo({ url: '/pages/task/task-detail' })
+  if (!todayPlan.value || !todayPlan.value.hasPlan) return
+
+  const pType = todayPlan.value.planType
+  if (pType === 'rest') {
+    uni.showToast({ title: '今天休息，好好恢复 💤', icon: 'none' })
+    return
+  }
+
+  if (pType === 'run') {
+    uni.navigateTo({ url: '/pages/running/running' })
+    return
+  }
+
+  // 力量 / 瑜伽 / 自定义 → 去 workout
+  uni.navigateTo({ url: '/pages/workout/workout' })
 }
 
 function goToCreatePlan() {
@@ -858,7 +975,7 @@ function goToCreatePlan() {
   height: 100%;
 }
 
-// ===== 今日计划卡片 =====
+// ===== 今日目标卡片 =====
 .plan-card {
   background: #fff;
   border-radius: 24rpx;
@@ -925,7 +1042,82 @@ function goToCreatePlan() {
   padding-left: 2rpx;
 }
 
-// 今日计划空状态
+.plan-activities {
+  margin-top: 16rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  padding: 12rpx 16rpx;
+}
+
+.plan-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 10rpx 0;
+}
+
+.plan-activity-item:not(:last-child) {
+  border-bottom: 1rpx solid #f1f5f9;
+}
+
+.pa-left {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 12rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pa-icon {
+  font-size: 24rpx;
+}
+
+.pa-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.pa-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #334155;
+}
+
+.pa-desc {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+.pa-right {
+  flex-shrink: 0;
+}
+
+.pa-metric {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.plan-description {
+  margin-top: 12rpx;
+  padding: 12rpx 16rpx;
+  background: #f8fafc;
+  border-radius: 12rpx;
+}
+
+.plan-desc-text {
+  font-size: 24rpx;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+// 今日目标空状态
 .plan-empty {
   display: flex;
   flex-direction: column;
