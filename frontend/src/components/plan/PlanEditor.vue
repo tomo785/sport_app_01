@@ -17,7 +17,7 @@
         >
           <text class="column-week">{{ day.label }}</text>
           <view class="day-plan-card" :class="'type-' + (day.plan?.type || 'empty')">
-            <text class="day-plan-icon">{{ getTypeIcon(day.plan?.type) }}</text>
+            <image class="day-plan-icon-img" :src="getTypeIcon(day.plan?.type)" mode="aspectFit" />
             <text class="day-plan-title">{{ day.plan?.title || '点击添加' }}</text>
           </view>
         </view>
@@ -186,8 +186,15 @@ function close() {
 }
 
 function getTypeIcon(type) {
-  const map = { run: '🏃', strength: '🏋️', yoga: '🧘', rest: '⛔', custom: '📋', empty: '+' }
-  return map[type] || '+'
+  const map = {
+    run: '/static/images/plan/run.png',
+    strength: '/static/images/plan/strength.png',
+    yoga: '/static/images/plan/yoga.png',
+    rest: '/static/images/plan/rest.png',
+    custom: '/static/images/plan/custom.png',
+    empty: '/static/images/plan/add.png'
+  }
+  return map[type] || '/static/images/plan/add.png'
 }
 </script>
 
@@ -281,8 +288,9 @@ function getTypeIcon(type) {
   &.type-custom { background: rgba(139, 92, 246, 0.1); }
 }
 
-.day-plan-icon {
-  font-size: 32rpx;
+.day-plan-icon-img {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 .day-plan-title {

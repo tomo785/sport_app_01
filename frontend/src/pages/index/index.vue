@@ -1,502 +1,962 @@
 <template>
-  <view class="container">
-    <!-- 右上角模式切换 -->
-    <view class="mode-bar">
-      <view 
-        class="mode-btn" 
-        :class="{ active: mode === 'fixed' }"
-        @click="setMode('fixed')"
-      >固定项目</view>
-      <view 
-        class="mode-btn" 
-        :class="{ active: mode === 'random' }"
-        @click="setMode('random')"
-      >随机项目</view>
+  <view class="home">
+    <!-- ===== 状态栏占位 ===== -->
+    <view class="status-bar" :style="{ height: statusBarHeight + 'px' }"></view>
+
+    <!-- ===== 问候语 ===== -->
+    <view class="greeting-row">
+      <view class="greeting-left">
+        <text class="greeting-hi">Hi, {{ greetingText }}</text>
+        <text class="greeting-sub">今天也要加油运动哦</text>
+      </view>
+      <view class="greeting-right">
+        <text class="greeting-emoji">{{ greetingEmoji }}</text>
+      </view>
     </view>
 
-    <!-- 任务计划小卡片 -->
-    <view class="task-card" @click="goToTaskFlow">
-      <view class="task-header">
-        <text class="task-title">今日运动打卡</text>
-        <text class="task-status">{{ statusText }}</text>
+    <!-- ===== 天气卡片 ===== -->
+    <view class="weather-card">
+      <view class="weather-left">
+        <text class="weather-temp">{{ weather.temp }}°</text>
+        <text class="weather-desc">{{ weather.text }} · 体感 {{ weather.feelsLike }}°</text>
       </view>
-      <view class="task-progress">
-        <view class="progress-ring">
-          <text class="progress-num">{{ completedCount }}</text>
-          <text class="progress-total">/{{ dailyTarget }}</text>
+      <view class="weather-right">
+        <view class="weather-loc-aqi-row">
+          <text class="weather-loc">📍 {{ weather.city || '获取中' }}</text>
+          <view class="weather-aqi" v-if="weather.aqi">
+            <view class="aqi-dot" :style="{ background: weather.aqiColor || '#22c55e' }"></view>
+            <text class="aqi-text">空气{{ weather.aqiLevel }}</text>
+            <text class="aqi-num">{{ weather.aqi }}</text>
+          </view>
         </view>
-        <text class="progress-label">{{ completedCount >= dailyTarget ? '今日目标已达成 🎉' : '完成小目标，点亮今日' }}</text>
-      </view>
-    </view>
-
-    <!-- 小目标卡片区域 -->
-    <view class="goals-area">
-      <view class="goals-header">
-        <text class="goals-title">今日小目标</text>
-        <text class="goals-sub" v-if="mode === 'fixed'">固定挑战，每日一致</text>
-        <text class="goals-sub" v-else>随机挑战，每次不同</text>
-      </view>
-
-      <view class="goals-grid" v-if="displayGoals.length > 0">
-        <view 
-          class="goal-card" 
-          v-for="(item, index) in displayGoals" 
-          :key="index"
-          @click="completeGoal(index)"
-        >
-          <text class="goal-icon">{{ item.icon }}</text>
-          <text class="goal-name">{{ item.name }}</text>
-          <text class="goal-amount">{{ item.amount }}</text>
-          <text class="goal-tip">点击完成</text>
+        <view class="weather-sport" v-if="weather.sportCategory">
+          <text class="sport-index-text">{{ weather.sportCategory }} · {{ weather.sportText }}</text>
         </view>
       </view>
+    </view>
 
-      <view class="empty-state" v-else>
-        <text class="empty-icon">🎉</text>
-        <text class="empty-text">今日小目标全部完成！</text>
-        <text class="empty-sub">太棒了，继续保持～</text>
+    <!-- ===== 今日活动卡片 ===== -->
+    <view class="activity-card">
+      <view class="ac-top">
+        <text class="ac-title">今日步数</text>
+        <text class="ac-date">{{ todayDate }}</text>
+      </view>
+      <view class="ac-main">
+        <!-- 圆形进度环 + 鞋子图标 -->
+        <view class="steps-ring-wrap">
+          <svg class="steps-svg" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#f1f5f9" stroke-width="8" />
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#22c55e" stroke-width="8"
+              stroke-linecap="round"
+              :stroke-dasharray="circumference"
+              :stroke-dashoffset="circumference - (stepsProgress / 100) * circumference"
+              transform="rotate(-90 60 60)" />
+          </svg>
+          <view class="steps-icon-box">
+            <text class="steps-icon">👟</text>
+          </view>
+        </view>
+        <view class="steps-info">
+          <text class="steps-num">{{ stepsCount }}</text>
+          <text class="steps-label">步</text>
+          <text class="steps-target">目标 {{ targetSteps }} 步</text>
+          <text class="steps-pct">{{ stepsProgress }}%</text>
+        </view>
+      </view>
+      <view class="ac-stats">
+        <view class="ac-stat">
+          <text class="acs-val">{{ calories }}<text class="acs-unit">千卡</text></text>
+        </view>
+        <view class="ac-stat">
+          <text class="acs-val">{{ distance }}<text class="acs-unit">公里</text></text>
+        </view>
+        <view class="ac-stat">
+          <text class="acs-val">{{ duration }}<text class="acs-unit">分钟</text></text>
+        </view>
       </view>
     </view>
 
-    <!-- 随机模式刷新按钮 -->
-    <view class="refresh-btn" v-if="mode === 'random' && completedCount < dailyTarget" @click="refreshRandomGoals">
-      <text class="refresh-icon">↻</text>
+    <!-- ===== 快捷操作栏 ===== -->
+    <view class="action-bar">
+      <view class="action-btn action-primary" @click="goRunning">
+        <text class="action-icon">▶</text>
+        <text class="action-text">开始运动</text>
+      </view>
+      <view class="action-btn action-secondary" @click="goPlan">
+        <text class="action-text">修改计划</text>
+      </view>
     </view>
+
+    <!-- ===== 今日计划卡片 ===== -->
+    <view class="plan-card" @click="goToPlanDetail">
+      <!-- 有今日计划 -->
+      <template v-if="todayPlan && todayPlan.hasPlan">
+        <view class="plan-head">
+          <text class="plan-title">今日计划</text>
+          <text class="plan-action">去执行 ›</text>
+        </view>
+        <view class="plan-body">
+          <view class="plan-tag" :style="{ background: todayPlan.typeBg, color: todayPlan.typeColor }">
+            {{ todayPlan.type }}
+          </view>
+          <text class="plan-name">{{ todayPlan.name }}</text>
+          <text class="plan-duration" v-if="todayPlan.duration > 0">{{ todayPlan.duration }}分钟</text>
+        </view>
+        <view class="plan-meta" v-if="todayPlan.distanceKm > 0">
+          <text>{{ todayPlan.type }} · {{ todayPlan.distanceKm }}公里</text>
+        </view>
+      </template>
+      <!-- 无今日计划 -->
+      <template v-else>
+        <view class="plan-head">
+          <text class="plan-title">今日计划</text>
+        </view>
+        <view class="plan-empty">
+          <text class="plan-empty-text">暂无今日计划</text>
+          <text class="plan-empty-hint">去「定制」页面创建训练计划吧</text>
+          <view class="plan-empty-btn" @click.stop="goToCreatePlan">去定制</view>
+        </view>
+      </template>
+    </view>
+
+    <!-- ===== 今日训练卡片 ===== -->
+    <view class="session-card" @click="goToTodayTask">
+      <view class="sc-head">
+        <view class="sc-title-row">
+          <view class="sc-dot"></view>
+          <text class="sc-title">今日训练</text>
+        </view>
+        <text class="sc-type">{{ todayStats.recordCount || 0 }} 次运动 ›</text>
+      </view>
+      <view class="sc-body">
+        <view class="sc-stats">
+          <view class="sc-stat">
+            <text class="scs-val">{{ todayDurationStr }}</text>
+            <text class="scs-label">时长</text>
+          </view>
+          <view class="sc-stat">
+            <text class="scs-val">{{ todayPaceStr }}</text>
+            <text class="scs-label">配速 /km</text>
+          </view>
+          <view class="sc-stat">
+            <text class="scs-val">{{ todayDistanceStr }}</text>
+            <text class="scs-label">公里</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="bottom-safe"></view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
+import { getNowWeather } from '@/api/weather'
+import { fetchTodaySteps } from '@/utils/steps'
+import { reportTodaySteps, reportWeRunData, getTodayStats } from '@/api/stats'
 
-// 每日目标数
-const dailyTarget = ref(5)
+const statusBarHeight = ref(20)
 
-// 已完成数量
-const completedCount = ref(0)
-
-// 模式：fixed 固定项目 | random 随机项目
-const mode = ref('fixed')
-
-// 卡片配置（从目标管理页同步）
-const goalCards = ref([])
-const fixedIds = ref([])
-const randomIds = ref([])
-
-// 固定项目：每日固定的一组目标（按日期固定）
-const fixedGoals = ref([])
-
-// 随机项目：当前随机展示的目标
-const randomGoals = ref([])
-
-const displayGoals = computed(() => {
-  return mode.value === 'fixed' ? fixedGoals.value : randomGoals.value
+// ---- 天气数据 ----
+const weather = ref({
+  temp: '--',
+  feelsLike: '--',
+  text: '加载中',
+  city: '',
+  aqi: null,
+  aqiLevel: '',
+  aqiColor: '',
+  sportCategory: '',
+  sportText: ''
 })
 
-const statusText = computed(() => {
-  if (completedCount.value >= dailyTarget.value) return '已完成'
-  return `还差 ${dailyTarget.value - completedCount.value} 个`
+// ---- 问候语 ----
+const now = new Date()
+const hour = now.getHours()
+
+const greetingText = computed(() => {
+  if (hour < 12) return '早上好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
 })
 
-const GOAL_CONFIG_KEY = 'goalCardConfig'
+const greetingEmoji = computed(() => {
+  if (hour < 12) return '☀️'
+  if (hour < 18) return '🌤️'
+  return '🌙'
+})
 
-// 生成本地存储 key（按日期）
-function getTodayKey() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const todayDate = computed(() => {
+  const m = now.getMonth() + 1
+  const d = now.getDate()
+  const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+  return `${m}月${d}日 ${days[now.getDay()]}`
+})
+
+// ---- 步数数据（真实数据） ----
+const stepsCount = ref(0)
+const targetSteps = ref(8000)
+const stepsProgress = computed(() => Math.min(100, Math.round((stepsCount.value / targetSteps.value) * 100)))
+const circumference = 2 * Math.PI * 52 // ≈ 326.7
+
+const calories = ref(0)
+const distance = ref(0)
+const duration = ref(0)
+
+// ---- 今日运动数据 ----
+const todayStats = ref({})
+const hasTodayWorkout = computed(() => todayStats.value.statDate && (todayStats.value.recordCount || 0) > 0)
+const todayDurationStr = computed(() => {
+  const d = todayStats.value.duration || 0
+  if (!d) return '00:00'
+  const m = Math.floor(d / 60)
+  const s = d % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
+const todayPaceStr = computed(() => {
+  const dist = (todayStats.value.distance || 0) / 1000
+  const dur = (todayStats.value.duration || 0)
+  if (dist <= 0 || dur <= 0) return "0'00\""
+  const pace = Math.round(dur / dist)
+  const min = Math.floor(pace / 60)
+  const sec = pace % 60
+  return `${min}'${String(sec).padStart(2, '0')}"`
+})
+const todayDistanceStr = computed(() => {
+  const dist = (todayStats.value.distance || 0) / 1000
+  return dist > 0 ? dist.toFixed(1) : '0.0'
+})
+
+// ---- 今日计划 ----
+const todayPlan = ref(null)
+
+const typeLabelMap = {
+  1: { label: '有氧', color: '#22c55e', bg: '#ecfdf5' },
+  2: { label: '力量', color: '#3b82f6', bg: '#eff6ff' },
+  3: { label: '拉伸', color: '#a855f7', bg: '#fdf4ff' },
+  4: { label: 'HIIT', color: '#f97316', bg: '#fff7ed' },
+  5: { label: '综合', color: '#64748b', bg: '#f8fafc' }
 }
 
-function loadGoalConfig() {
-  const saved = uni.getStorageSync(GOAL_CONFIG_KEY)
-  if (saved) {
-    try {
-      const data = JSON.parse(saved)
-      goalCards.value = data.goalCards || []
-      fixedIds.value = data.fixedIds || []
-      randomIds.value = data.randomIds || []
-    } catch (e) {
-      initDefaultConfig()
+const weeklyTypeMap = {
+  run: { label: '跑步', color: '#22c55e', bg: '#ecfdf5' },
+  strength: { label: '力量', color: '#3b82f6', bg: '#eff6ff' },
+  yoga: { label: '瑜伽', color: '#a855f7', bg: '#fdf4ff' },
+  rest: { label: '休息', color: '#94a3b8', bg: '#f1f5f9' },
+  custom: { label: '自定义', color: '#f97316', bg: '#fff7ed' }
+}
+
+function getDayOfWeek(date = new Date()) {
+  const d = date.getDay()
+  return d === 0 ? 7 : d
+}
+
+function getWeeksDiff(startMs, endMs) {
+  const oneWeek = 7 * 24 * 60 * 60 * 1000
+  const diff = endMs - startMs
+  return Math.max(1, Math.floor(diff / oneWeek) + 1)
+}
+
+function loadTodayPlan() {
+  try {
+    // 1. 优先读取 myTrainingPlans（多周计划）
+    const savedPlans = uni.getStorageSync('myTrainingPlans')
+    let plans = []
+    if (savedPlans) {
+      try { plans = JSON.parse(savedPlans) } catch (e) { plans = [] }
     }
-  } else {
-    initDefaultConfig()
-  }
-}
 
-function initDefaultConfig() {
-  const defaultCards = [
-    { id: 'g1', icon: '🦵', name: '深蹲', amount: '20次 × 2组' },
-    { id: 'g2', icon: '💪', name: '俯卧撑', amount: '15次 × 2组' },
-    { id: 'g3', icon: '🏋️', name: '哑铃弯举', amount: '12次 × 3组' },
-    { id: 'g4', icon: '🧘', name: '平板支撑', amount: '45秒 × 2组' },
-    { id: 'g5', icon: '⭐', name: '开合跳', amount: '30次 × 2组' },
-    { id: 'g6', icon: '🔥', name: '高抬腿', amount: '40次 × 2组' },
-    { id: 'g7', icon: '🏃', name: '原地跑', amount: '60秒 × 2组' },
-    { id: 'g8', icon: '🎯', name: '卷腹', amount: '20次 × 2组' },
-    { id: 'g9', icon: '⛰️', name: '登山者', amount: '20次 × 2组' },
-    { id: 'g10', icon: '🦵', name: '弓步蹲', amount: '12次 × 2组' },
-    { id: 'g11', icon: '💪', name: '臂屈伸', amount: '12次 × 2组' },
-    { id: 'g12', icon: '🧘', name: '侧平板', amount: '30秒 × 2组' },
-    { id: 'g13', icon: '🔥', name: '波比跳', amount: '10次 × 2组' },
-    { id: 'g14', icon: '🏋️', name: '肩推', amount: '12次 × 2组' },
-    { id: 'g15', icon: '⭐', name: '空中自行车', amount: '20次 × 2组' }
-  ]
-  goalCards.value = defaultCards
-  fixedIds.value = defaultCards.map(i => i.id)
-  randomIds.value = defaultCards.map(i => i.id)
-  uni.setStorageSync(GOAL_CONFIG_KEY, JSON.stringify({
-    goalCards: defaultCards,
-    fixedIds: fixedIds.value,
-    randomIds: randomIds.value
-  }))
-}
+    const now = new Date()
+    const todayDay = getDayOfWeek(now)
 
-function loadState() {
-  loadGoalConfig()
-  const today = getTodayKey()
-  const saved = uni.getStorageSync('dailyGoals_' + today)
-  if (saved) {
-    try {
-      const data = JSON.parse(saved)
-      completedCount.value = data.completedCount || 0
-      mode.value = data.mode || 'fixed'
-      fixedGoals.value = data.fixedGoals || []
-      randomGoals.value = data.randomGoals || []
-    } catch (e) {
-      initDefault()
+    if (plans.length > 0) {
+      const plan = plans[0]
+      let startMs
+      if (plan.startDate) {
+        startMs = new Date(plan.startDate).getTime()
+      } else if (plan.createdAt) {
+        startMs = new Date(plan.createdAt).getTime()
+      } else if (typeof plan.id === 'number' && plan.id > 1000000000000) {
+        startMs = plan.id
+      } else {
+        startMs = Date.now()
+      }
+      const currentWeek = Math.min(plan.totalWeeks || 1, getWeeksDiff(startMs, now.getTime()))
+      const course = (plan.courses || []).find(c => c.week === currentWeek && c.day === todayDay)
+
+      if (course) {
+        const typeInfo = typeLabelMap[course.type] || typeLabelMap[5]
+        const totalDistance = (course.exercises || []).reduce((sum, ex) => sum + (ex.distance || 0), 0)
+        todayPlan.value = {
+          name: course.name,
+          type: typeInfo.label,
+          typeColor: typeInfo.color,
+          typeBg: typeInfo.bg,
+          duration: course.duration || 0,
+          distanceKm: totalDistance > 0 ? (totalDistance / 1000).toFixed(1) : 0,
+          hasPlan: true
+        }
+        return
+      }
     }
-  } else {
-    initDefault()
+
+    // 2. Fallback 到 weeklyPlan_current
+    const weeklyRaw = uni.getStorageSync('weeklyPlan_current')
+    if (weeklyRaw) {
+      const weekly = JSON.parse(weeklyRaw)
+      const dayPlan = (weekly.days || []).find(d => d.dayOfWeek === todayDay)
+      if (dayPlan && dayPlan.type !== 'rest') {
+        const typeInfo = weeklyTypeMap[dayPlan.type] || weeklyTypeMap.custom
+        const duration = dayPlan.details?.duration || 0
+        const distance = dayPlan.details?.runParams?.distance || 0
+        todayPlan.value = {
+          name: dayPlan.title || '今日训练',
+          type: typeInfo.label,
+          typeColor: typeInfo.color,
+          typeBg: typeInfo.bg,
+          duration,
+          distanceKm: distance > 0 ? Number(distance).toFixed(1) : 0,
+          hasPlan: true
+        }
+        return
+      }
+    }
+
+    todayPlan.value = null
+  } catch (e) {
+    console.error('[今日计划] 加载失败:', e)
+    todayPlan.value = null
   }
 }
 
-function saveState() {
-  const today = getTodayKey()
-  const data = {
-    completedCount: completedCount.value,
-    mode: mode.value,
-    fixedGoals: fixedGoals.value,
-    randomGoals: randomGoals.value
-  }
-  uni.setStorageSync('dailyGoals_' + today, JSON.stringify(data))
-}
-
-// 按日期种子生成固定目标
-function generateFixedGoals() {
-  const pool = goalCards.value.filter(c => fixedIds.value.includes(c.id))
-  if (pool.length === 0) return []
-  const today = getTodayKey()
-  let seed = 0
-  for (let i = 0; i < today.length; i++) seed += today.charCodeAt(i)
-  const shuffled = shuffleWithSeed([...pool], seed)
-  return shuffled.slice(0, Math.min(dailyTarget.value, pool.length))
-}
-
-function generateRandomGoals() {
-  const pool = goalCards.value.filter(c => randomIds.value.includes(c.id))
-  if (pool.length === 0) return []
-  const shuffled = [...pool].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, Math.min(dailyTarget.value, pool.length))
-}
-
-function shuffleWithSeed(array, seed) {
-  let m = array.length
-  while (m) {
-    const i = Math.floor(randomFromSeed(seed) * m--)
-    seed = nextSeed(seed)
-    ;[array[m], array[i]] = [array[i], array[m]]
-  }
-  return array
-}
-
-function randomFromSeed(seed) {
-  const x = Math.sin(seed) * 10000
-  return x - Math.floor(x)
-}
-
-function nextSeed(seed) {
-  return seed + 1
-}
-
-function initDefault() {
-  completedCount.value = 0
-  mode.value = 'fixed'
-  fixedGoals.value = generateFixedGoals()
-  randomGoals.value = generateRandomGoals()
-  saveState()
-}
-
-function setMode(newMode) {
-  if (mode.value === newMode) return
-  mode.value = newMode
-  saveState()
-}
-
-function completeGoal(index) {
-  if (completedCount.value >= dailyTarget.value) {
-    uni.showToast({ title: '今日目标已达成', icon: 'none' })
-    return
-  }
-
-  const arr = mode.value === 'fixed' ? fixedGoals.value : randomGoals.value
-  arr.splice(index, 1)
-  completedCount.value += 1
-  saveState()
-
-  if (completedCount.value >= dailyTarget.value) {
-    uni.showToast({ title: '今日打卡完成！', icon: 'success' })
-  }
-}
-
-function refreshRandomGoals() {
-  if (completedCount.value >= dailyTarget.value) return
-  randomGoals.value = generateRandomGoals()
-  saveState()
-  uni.showToast({ title: '已刷新小目标', icon: 'none' })
-}
-
-function goToTaskFlow() {
-  uni.switchTab({ url: '/pages/task/task-flow' })
-}
-
+// ---- 初始化 ----
 onMounted(() => {
-  loadState()
+  const info = uni.getSystemInfoSync()
+  statusBarHeight.value = info.statusBarHeight || 20
+  loadTodayData()
 })
 
 onShow(() => {
-  loadState()
+  loadTodayData()
 })
 
-onPullDownRefresh(() => {
-  loadState()
-  uni.stopPullDownRefresh()
-})
+function getLocation() {
+  return new Promise((resolve) => {
+    uni.getLocation({
+      type: 'gcj02',
+      success: (res) => resolve({ lat: res.latitude, lng: res.longitude }),
+      fail: () => {
+        // 降级：默认杭州坐标
+        resolve({ lat: 30.2741, lng: 120.1551 })
+      }
+    })
+  })
+}
+
+async function loadTodayData() {
+  // 并行加载天气、步数、今日运动统计和今日计划
+  await Promise.all([loadWeatherData(), loadStepsData(), loadTodayWorkout()])
+  loadTodayPlan()
+}
+
+async function loadTodayWorkout() {
+  try {
+    const res = await getTodayStats()
+    if (res.code === 200) {
+      todayStats.value = res.data || {}
+    }
+  } catch (e) {
+    console.error('[今日运动] 加载失败:', e)
+  }
+}
+
+async function loadWeatherData() {
+  try {
+    const { lat, lng } = await getLocation()
+    console.log('[天气] 获取到定位:', lat, lng)
+    const res = await getNowWeather(lat, lng)
+    console.log('[天气] API返回:', JSON.stringify(res))
+    if (res.code === 200 && res.data) {
+      weather.value = res.data
+      console.log('[天气] 页面数据已更新:', JSON.stringify(weather.value))
+    } else {
+      console.warn('[天气] 返回code异常:', res.code, res.message)
+    }
+  } catch (e) {
+    console.error('[天气] 请求失败:', e.message || e)
+  }
+}
+
+async function loadStepsData() {
+  try {
+    const result = await fetchTodaySteps()
+    console.log('[步数] 获取结果:', result)
+
+    // 处理微信运动加密数据（需要后端解密）
+    if (result.source === 'werun_encrypted' && result.needDecrypt) {
+      try {
+        const decryptRes = await reportWeRunData({
+          encryptedData: result.encryptedData,
+          iv: result.iv
+        })
+        if (decryptRes.code === 200 && decryptRes.data) {
+          stepsCount.value = decryptRes.data.steps || 0
+          calories.value = decryptRes.data.calories || 0
+          distance.value = decryptRes.data.distance || 0
+          duration.value = decryptRes.data.duration || 0
+        }
+      } catch (err) {
+        console.warn('[步数] 微信运动解密失败:', err)
+      }
+      return
+    }
+
+    // 普通数据直接展示
+    stepsCount.value = result.steps || 0
+    if (result.calories !== undefined) calories.value = result.calories
+    if (result.distance !== undefined) distance.value = result.distance
+    if (result.duration !== undefined) duration.value = result.duration
+
+    // 如果是原生读取的数据，同步到后端备份
+    if (['health', 'pedometer'].includes(result.source) && result.steps > 0) {
+      reportTodaySteps({
+        steps: result.steps,
+        calories: calories.value,
+        distance: distance.value,
+        duration: duration.value,
+        source: result.source
+      }).catch(() => {})
+    }
+  } catch (e) {
+    console.error('[步数] 加载失败:', e.message || e)
+    // 保持默认值 0，不展示错误提示
+  }
+}
+
+function goRunning() {
+  uni.switchTab({ url: '/pages/running/running' })
+}
+
+function goPlan() {
+  uni.navigateTo({ url: '/pages/goal/goal' })
+}
+
+function goToTodayTask() {
+  uni.navigateTo({ url: '/pages/task/task-detail' })
+}
+
+function goToPlanDetail() {
+  uni.navigateTo({ url: '/pages/task/task-detail' })
+}
+
+function goToCreatePlan() {
+  uni.navigateTo({ url: '/pages/goal/goal' })
+}
 </script>
 
 <style lang="scss" scoped>
-.container {
+.home {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f0f4f8 0%, #f8fafc 100%);
-  padding: 30rpx;
-  box-sizing: border-box;
-  position: relative;
+  background: #f5f5f5;
+  padding: 0 28rpx;
 }
 
-/* 右上角模式切换 */
-.mode-bar {
-  position: absolute;
-  top: 20rpx;
-  right: 30rpx;
-  display: flex;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 32rpx;
-  padding: 4rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-  z-index: 10;
+.status-bar {
+  width: 100%;
 }
 
-.mode-btn {
-  padding: 10rpx 24rpx;
-  font-size: 24rpx;
-  color: #64748b;
-  border-radius: 28rpx;
-
-  &.active {
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    color: #fff;
-    font-weight: 600;
-  }
-}
-
-/* 任务计划小卡片 */
-.task-card {
-  margin-top: 80rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 24rpx;
-  padding: 36rpx;
-  color: #fff;
-  box-shadow: 0 8rpx 30rpx rgba(102, 126, 234, 0.3);
-
-  &:active {
-    transform: scale(0.99);
-  }
-}
-
-.task-header {
+// ===== 问候语 =====
+.greeting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24rpx;
+  padding: 20rpx 8rpx 24rpx;
 }
 
-.task-title {
-  font-size: 34rpx;
-  font-weight: 700;
-}
-
-.task-status {
-  font-size: 24rpx;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-}
-
-.task-progress {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-}
-
-.progress-ring {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+.greeting-left {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  gap: 6rpx;
 }
 
-.progress-num {
+.greeting-hi {
   font-size: 44rpx;
+  font-weight: 800;
+  color: #1c1c1e;
+  letter-spacing: -1rpx;
+}
+
+.greeting-sub {
+  font-size: 26rpx;
+  color: #94a3b8;
+}
+
+.greeting-emoji {
+  font-size: 60rpx;
+}
+
+// ===== 天气卡片 =====
+.weather-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.weather-left {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+}
+
+.weather-temp {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #1c1c1e;
+  line-height: 1;
+}
+
+.weather-desc {
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+
+.weather-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.weather-loc-aqi-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.weather-aqi {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: #f0fdf4;
+  border-radius: 20rpx;
+  padding: 8rpx 18rpx;
+}
+
+.aqi-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.aqi-text {
+  font-size: 22rpx;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.aqi-num {
+  font-size: 22rpx;
+  color: #16a34a;
   font-weight: 700;
 }
 
-.progress-total {
-  font-size: 24rpx;
-  opacity: 0.9;
+.weather-loc {
+  font-size: 22rpx;
+  color: #94a3b8;
 }
 
-.progress-label {
-  flex: 1;
-  font-size: 28rpx;
-  opacity: 0.95;
+.weather-sport {
+  max-width: 280rpx;
+  margin-top: 4rpx;
 }
 
-/* 小目标区域 */
-.goals-area {
-  margin-top: 40rpx;
+.sport-index-text {
+  font-size: 20rpx;
+  color: #94a3b8;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.goals-header {
+// ===== 今日活动卡片 =====
+.activity-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.ac-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: 24rpx;
 }
 
-.goals-title {
+.ac-title {
   font-size: 32rpx;
   font-weight: 700;
   color: #1c1c1e;
 }
 
-.goals-sub {
+.ac-date {
   font-size: 24rpx;
-  color: #64748b;
+  color: #94a3b8;
 }
 
-.goals-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
+.ac-main {
+  display: flex;
+  align-items: center;
+  gap: 40rpx;
+  padding: 10rpx 0 24rpx;
 }
 
-.goal-card {
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  text-align: center;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-
-  &:active {
-    transform: scale(0.96);
-    background: #f8fafc;
-  }
-
-  .goal-icon {
-    font-size: 48rpx;
-    display: block;
-    margin-bottom: 12rpx;
-  }
-
-  .goal-name {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #1c1c1e;
-    display: block;
-    margin-bottom: 6rpx;
-  }
-
-  .goal-amount {
-    font-size: 26rpx;
-    color: #667eea;
-    display: block;
-    margin-bottom: 10rpx;
-  }
-
-  .goal-tip {
-    font-size: 22rpx;
-    color: #94a3b8;
-    background: #f1f5f9;
-    padding: 4rpx 14rpx;
-    border-radius: 12rpx;
-    display: inline-block;
-  }
+// 圆形进度环
+.steps-ring-wrap {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  flex-shrink: 0;
 }
 
-.empty-state {
-  background: #fff;
-  border-radius: 20rpx;
-  padding: 60rpx;
-  text-align: center;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
-
-  .empty-icon {
-    font-size: 64rpx;
-    display: block;
-    margin-bottom: 16rpx;
-  }
-
-  .empty-text {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #1c1c1e;
-    display: block;
-    margin-bottom: 8rpx;
-  }
-
-  .empty-sub {
-    font-size: 24rpx;
-    color: #64748b;
-  }
+.steps-svg {
+  width: 160rpx;
+  height: 160rpx;
 }
 
-/* 刷新按钮 */
-.refresh-btn {
-  position: fixed;
-  right: 40rpx;
-  bottom: calc(40rpx + env(safe-area-inset-bottom));
-  width: 100rpx;
-  height: 100rpx;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+.steps-icon-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80rpx;
+  height: 80rpx;
   border-radius: 50%;
+  background: #f0fdf4;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(59, 130, 246, 0.35);
-  z-index: 100;
+}
 
-  &:active {
-    transform: scale(0.92);
-  }
+.steps-icon {
+  font-size: 40rpx;
+}
 
-  .refresh-icon {
-    font-size: 44rpx;
-    color: #fff;
-    font-weight: 700;
+// 步数信息
+.steps-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.steps-num {
+  font-size: 64rpx;
+  font-weight: 800;
+  color: #1c1c1e;
+  line-height: 1;
+  letter-spacing: -2rpx;
+}
+
+.steps-label {
+  font-size: 24rpx;
+  color: #94a3b8;
+  margin-top: 4rpx;
+}
+
+.steps-target {
+  font-size: 24rpx;
+  color: #94a3b8;
+  margin-top: 8rpx;
+}
+
+.steps-pct {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #22c55e;
+  margin-top: 6rpx;
+}
+
+// 底部三列数据
+.ac-stats {
+  display: flex;
+  border-top: 1rpx solid #f1f5f9;
+  padding-top: 20rpx;
+}
+
+.ac-stat {
+  flex: 1;
+  text-align: center;
+  position: relative;
+
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    height: 80%;
+    width: 1rpx;
+    background: #f1f5f9;
   }
+}
+
+.acs-val {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #334155;
+}
+
+.acs-unit {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #94a3b8;
+  margin-left: 4rpx;
+}
+
+// ===== 运动分类 =====
+// ===== 快捷操作栏 =====
+.action-bar {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 16px;
+  margin-bottom: 20rpx;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border-radius: 12px;
+  gap: 8rpx;
+}
+
+.action-primary {
+  flex: 7;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  box-shadow: 0 4rpx 16rpx rgba(34, 197, 94, 0.25);
+}
+
+.action-icon {
+  font-size: 24rpx;
+  color: #fff;
+}
+
+.action-primary .action-text {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 700;
+}
+
+.action-secondary {
+  flex: 3;
+  background: #f5f5f7;
+  border: 1rpx solid #e5e5e7;
+}
+
+.action-secondary .action-text {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+// ===== 今日训练卡片 =====
+.session-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.sc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.sc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.sc-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.sc-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.sc-type {
+  font-size: 24rpx;
+  color: #22c55e;
+  background: #f0fdf4;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+}
+
+.sc-body {
+  display: flex;
+  gap: 24rpx;
+}
+
+.sc-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.sc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.scs-val {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.scs-label {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+.sc-map {
+  width: 240rpx;
+  height: 140rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.route-svg {
+  width: 100%;
+  height: 100%;
+}
+
+// ===== 今日计划卡片 =====
+.plan-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.plan-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.plan-action {
+  font-size: 26rpx;
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.plan-body {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 10rpx;
+}
+
+.plan-tag {
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 6rpx 14rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
+}
+
+.plan-name {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #334155;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-duration {
+  font-size: 26rpx;
+  color: #94a3b8;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.plan-meta {
+  font-size: 24rpx;
+  color: #94a3b8;
+  padding-left: 2rpx;
+}
+
+// 今日计划空状态
+.plan-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 20rpx 20rpx;
+}
+
+.plan-empty-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.plan-empty-hint {
+  font-size: 24rpx;
+  color: #94a3b8;
+  margin-top: 8rpx;
+}
+
+.plan-empty-btn {
+  margin-top: 20rpx;
+  padding: 14rpx 40rpx;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  border-radius: 12rpx;
+}
+
+// ===== 底部安全区 =====
+.bottom-safe {
+  height: calc(100rpx + env(safe-area-inset-bottom));
 }
 </style>

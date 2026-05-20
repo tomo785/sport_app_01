@@ -5,8 +5,6 @@ import com.sport.api.vo.StatsDailyVO;
 import com.sport.api.vo.StatsSummaryVO;
 import com.sport.api.vo.StatsTrendVO;
 import com.sport.mapper.UserDailyStatsMapper;
-import com.sport.mapper.UserMonthlyStatsMapper;
-import com.sport.mapper.UserWeeklyStatsMapper;
 import com.sport.mapper.WorkoutRecordMapper;
 import com.sport.model.entity.UserDailyStats;
 import com.sport.model.entity.WorkoutRecord;
@@ -36,8 +34,6 @@ import java.util.stream.Collectors;
 public class StatsServiceImpl implements StatsService {
 
     private final UserDailyStatsMapper userDailyStatsMapper;
-    private final UserWeeklyStatsMapper userWeeklyStatsMapper;
-    private final UserMonthlyStatsMapper userMonthlyStatsMapper;
     private final WorkoutRecordMapper workoutRecordMapper;
 
     @Override
@@ -75,9 +71,9 @@ public class StatsServiceImpl implements StatsService {
 
         // 计算总数据
         int totalWorkouts = records.size();
-        int totalDistance = records.stream().mapToInt(WorkoutRecord::getDistance).sum();
-        int totalDuration = records.stream().mapToInt(WorkoutRecord::getDuration).sum();
-        int totalCalories = records.stream().mapToInt(WorkoutRecord::getCalories).sum();
+        int totalDistance = records.stream().mapToInt(r -> r.getDistance() != null ? r.getDistance() : 0).sum();
+        int totalDuration = records.stream().mapToInt(r -> r.getDuration() != null ? r.getDuration() : 0).sum();
+        int totalCalories = records.stream().mapToInt(r -> r.getCalories() != null ? r.getCalories() : 0).sum();
 
         vo.setTotalWorkouts(totalWorkouts);
         vo.setTotalDistance(totalDistance);
@@ -242,9 +238,9 @@ public class StatsServiceImpl implements StatsService {
 
             List<WorkoutRecord> records = workoutRecordMapper.selectList(wrapper);
 
-            int monthDistance = records.stream().mapToInt(WorkoutRecord::getDistance).sum();
-            int monthDuration = records.stream().mapToInt(WorkoutRecord::getDuration).sum();
-            int monthCalories = records.stream().mapToInt(WorkoutRecord::getCalories).sum();
+            int monthDistance = records.stream().mapToInt(r -> r.getDistance() != null ? r.getDistance() : 0).sum();
+            int monthDuration = records.stream().mapToInt(r -> r.getDuration() != null ? r.getDuration() : 0).sum();
+            int monthCalories = records.stream().mapToInt(r -> r.getCalories() != null ? r.getCalories() : 0).sum();
 
             distances.add(monthDistance);
             durations.add(monthDuration);
@@ -263,6 +259,40 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void saveStepsData(Long userId, Integer steps, Integer calories, Integer distance, Integer duration) {
+        LocalDate today = LocalDate.now();
+        UserDailyStats stats = userDailyStatsMapper.selectByUserIdAndDate(userId, today);
+
+        if (stats == null) {
+            stats = new UserDailyStats();
+            stats.setUserId(userId);
+            stats.setStatDate(today);
+            stats.setTotalSteps(steps != null ? steps : 0);
+            if (calories != null) stats.setTotalCalories(calories);
+            if (distance != null) stats.setTotalDistance(distance);
+            if (duration != null) stats.setTotalDuration(duration);
+            stats.setRecordCount(0);
+            stats.setCreateTime(java.time.LocalDateTime.now());
+            stats.setUpdateTime(java.time.LocalDateTime.now());
+            userDailyStatsMapper.insert(stats);
+        } else {
+            // 优先使用更大的步数（防止覆盖已存在的运动记录数据）
+            int newSteps = steps != null ? steps : 0;
+            if (newSteps > (stats.getTotalSteps() != null ? stats.getTotalSteps() : 0)) {
+                stats.setTotalSteps(newSteps);
+            }
+            if (calories != null) stats.setTotalCalories(calories);
+            if (distance != null) stats.setTotalDistance(distance);
+            if (duration != null) stats.setTotalDuration(duration);
+            stats.setUpdateTime(java.time.LocalDateTime.now());
+            userDailyStatsMapper.updateById(stats);
+        }
+
+        log.info("保存步数数据 - 用户ID: {}, 步数: {}", userId, steps);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateDailyStats(Long userId, LocalDate statDate) {
         // 查询当天的运动记录
         LambdaQueryWrapper<WorkoutRecord> wrapper = new LambdaQueryWrapper<>();
@@ -274,9 +304,10 @@ public class StatsServiceImpl implements StatsService {
         List<WorkoutRecord> records = workoutRecordMapper.selectList(wrapper);
 
         // 统计数据
-        int totalDistance = records.stream().mapToInt(WorkoutRecord::getDistance).sum();
-        int totalDuration = records.stream().mapToInt(WorkoutRecord::getDuration).sum();
-        int totalCalories = records.stream().mapToInt(WorkoutRecord::getCalories).sum();
+        int totalDistance = records.stream().mapToInt(r -> r.getDistance() != null ? r.getDistance() : 0).sum();
+        int totalDuration = records.stream().mapToInt(r -> r.getDuration() != null ? r.getDuration() : 0).sum();
+        int totalCalories = records.stream().mapToInt(r -> r.getCalories() != null ? r.getCalories() : 0).sum();
+        int totalSteps = records.stream().mapToInt(r -> r.getSteps() != null ? r.getSteps() : 0).sum();
         int recordCount = records.size();
 
         // 查询是否已有记录
@@ -289,6 +320,7 @@ public class StatsServiceImpl implements StatsService {
             stats.setTotalDistance(totalDistance);
             stats.setTotalDuration(totalDuration);
             stats.setTotalCalories(totalCalories);
+            stats.setTotalSteps(totalSteps);
             stats.setRecordCount(recordCount);
             stats.setCreateTime(java.time.LocalDateTime.now());
             stats.setUpdateTime(java.time.LocalDateTime.now());
@@ -297,6 +329,7 @@ public class StatsServiceImpl implements StatsService {
             stats.setTotalDistance(totalDistance);
             stats.setTotalDuration(totalDuration);
             stats.setTotalCalories(totalCalories);
+            stats.setTotalSteps(totalSteps);
             stats.setRecordCount(recordCount);
             stats.setUpdateTime(java.time.LocalDateTime.now());
             userDailyStatsMapper.updateById(stats);
@@ -332,6 +365,7 @@ public class StatsServiceImpl implements StatsService {
     private StatsDailyVO convertToDailyVO(UserDailyStats stats) {
         StatsDailyVO vo = new StatsDailyVO();
         BeanUtils.copyProperties(stats, vo);
+        vo.setSteps(stats.getTotalSteps());
 
         // 格式化数据
         vo.setDistanceStr(formatDistance(stats.getTotalDistance()));
@@ -350,6 +384,7 @@ public class StatsServiceImpl implements StatsService {
         vo.setTotalDistance(0);
         vo.setTotalDuration(0);
         vo.setTotalCalories(0);
+        vo.setSteps(0);
         vo.setRecordCount(0);
         vo.setGoalProgress(0);
         vo.setDistanceStr("0m");

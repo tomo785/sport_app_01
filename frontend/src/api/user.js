@@ -32,15 +32,6 @@ export function loginByPassword(username, password) {
 }
 
 /**
- * 管理员登录
- * @param {String} username 管理员账号
- * @param {String} password 管理员密码
- */
-export function adminLogin(username, password) {
-  return post('/admin/login', { username, password })
-}
-
-/**
  * 用户注册
  * @param {Object} data 注册数据 { username, password }
  */

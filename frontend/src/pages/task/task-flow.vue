@@ -1,363 +1,542 @@
 <template>
   <view class="container">
-    <TaskFlow 
-      ref="taskFlowRef"
-      :goal="currentGoal"
-      :tasks="taskList"
-      :dates="dateList"
-      :workoutDates="workoutDates"
-      @select="onTaskSelect"
-      @start="onTaskStart"
-      @continue="onTaskContinue"
-      @reorder="onTaskReorder"
-      @date-change="onDateChange"
-    />
+    <!-- 训练状态卡片 -->
+    <TrainingStatusCard />
 
-    <!-- 近期运动打卡 -->
-    <view class="workout-section" v-if="recentWorkouts.length > 0">
-      <view class="workout-header">
-        <text class="workout-title">近期打卡</text>
-        <text class="workout-more" @click="goToStats">查看更多 ›</text>
+    <!-- 打卡日历 -->
+    <view class="calendar-card">
+      <view class="calendar-header">
+        <view class="month-nav" @click="changeView(-1)">
+          <text class="nav-arrow">‹</text>
+        </view>
+        <text class="month-title">{{ currentYear }}年{{ currentMonth }}月</text>
+        <view class="month-nav" @click="changeView(1)">
+          <text class="nav-arrow">›</text>
+        </view>
       </view>
-      <view class="workout-list">
-        <view 
-          class="workout-item" 
-          v-for="(item, index) in recentWorkouts" 
+      <view class="week-row">
+        <text class="week-cell" v-for="w in weekDays" :key="w">{{ w }}</text>
+      </view>
+      <view class="day-grid">
+        <view
+          class="day-cell"
+          v-for="(day, index) in calendarDays"
           :key="index"
-          @click="goToWorkoutDetail(item.id)"
+          :class="{
+            'other-month': !day.isCurrentMonth,
+            'today': day.isToday,
+            'selected': isSelectedDay(day),
+            'has-record': day.hasRecord
+          }"
+          @click="selectDay(day)"
         >
-          <text class="workout-icon">{{ getWorkoutTypeIcon(item.type) }}</text>
-          <view class="workout-info">
-            <text class="workout-name">{{ getWorkoutTypeName(item.type) }}</text>
-            <text class="workout-time">{{ formatWorkoutTime(item.startTimeStr || item.startTime) }}</text>
-          </view>
-          <view class="workout-data">
-            <text class="workout-duration">{{ item.duration ? Math.floor(item.duration / 60) + '分钟' : '-' }}</text>
-            <text class="workout-calories" v-if="item.calories">{{ item.calories }}千卡</text>
-          </view>
+          <text class="day-num">{{ day.day }}</text>
+          <view class="day-dot" v-if="day.hasRecord"></view>
+        </view>
+      </view>
+      <view class="calendar-footer">
+        <text class="back-today" v-if="!isCurrentMonthView" @click="backToToday">回到今天</text>
+        <view class="expand-toggle" @click="calendarExpanded = !calendarExpanded">
+          <text class="expand-text">{{ calendarExpanded ? '收起' : '展开' }}</text>
+          <text class="expand-icon" :class="{ expanded: calendarExpanded }">▼</text>
         </view>
       </view>
     </view>
+
+    <!-- 近期运动记录 -->
+    <view class="record-section">
+      <view class="section-header">
+        <text class="section-title">近7天运动</text>
+        <text class="more-link" @click="goToWorkoutList">查看全部 ›</text>
+      </view>
+
+      <view class="record-list" v-if="filteredRecords.length > 0">
+        <view
+          class="record-item"
+          v-for="item in filteredRecords"
+          :key="item.id"
+          @click="goToWorkoutDetail(item.id)"
+        >
+          <view class="record-icon" :class="'type-' + item.type">
+            <text>{{ getTypeIcon(item.type) }}</text>
+          </view>
+          <view class="record-info">
+            <text class="record-name">{{ item.typeName || getTypeName(item.type) }}</text>
+            <text class="record-time">{{ formatTime(item.startTime) }}</text>
+          </view>
+          <view class="record-stats">
+            <text class="record-duration">{{ formatDuration(item.duration) }}</text>
+            <text class="record-distance" v-if="item.distance">{{ formatDistance(item.distance) }}</text>
+            <text class="record-calories" v-if="item.calories">{{ item.calories }}千卡</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="empty" v-else>
+        <text>近7天暂无运动记录</text>
+      </view>
+    </view>
+
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
-import TaskFlow from '../../components/TaskFlow.vue'
-import { getTaskFlow, getTaskFlowByDate, updateTaskOrder, startTask } from '../../api/task'
-import { getWorkoutList } from '../../api/workout'
+import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { getTodayStats } from '@/api/stats'
+import { getWorkoutList } from '@/api/workout'
+import { formatDate, formatDuration, formatDistance } from '@/utils'
+import TrainingStatusCard from '@/components/TrainingStatusCard.vue'
 
-const taskFlowRef = ref(null)
+// ===================== State =====================
+const todayStats = ref({})
+const workoutRecords = ref([])
+const recordDates = ref(new Set())
 
-// 当前目标
-const currentGoal = ref({
-  id: 1,
-  title: '增肌塑形计划',
-  description: '12周增肌训练，提升力量与体型',
-  targetProgress: 100
-})
+// 日历状态
+const currentYear = ref(new Date().getFullYear())
+const currentMonth = ref(new Date().getMonth() + 1)
+const selectedDate = ref('') // 格式 YYYY-MM-DD
+const calendarExpanded = ref(false)
 
-// 任务列表
-const taskList = ref([])
+const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
-// 日期列表
-const dateList = ref([])
-
-// 当前选中的日期
-const currentDate = ref('')
-
-// 运动打卡日期列表
-const workoutDates = ref([])
-
-// 近期运动记录
-const recentWorkouts = ref([])
-
-onLoad((options) => {
-  currentDate.value = options.date || getTodayDate()
-  initDateList()
-  loadTaskFlow()
-  loadWorkoutRecords()
-})
-
-function getTodayDate() {
+// ===================== 计算属性 =====================
+const isCurrentMonthView = computed(() => {
   const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
+  return currentYear.value === now.getFullYear() && currentMonth.value === now.getMonth() + 1
+})
 
-function initDateList() {
-  const dates = []
-  const today = new Date()
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-  
-  for (let i = -7; i <= 7; i++) {
-    const date = new Date(today)
-    date.setDate(today.getDate() + i)
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    dates.push({
-      week: i === 0 ? '今天' : '周' + weekDays[date.getDay()],
-      day: date.getDate(),
-      isToday: i === 0,
-      hasTask: true,
-      fullDate: dateStr
-    })
-  }
-  dateList.value = dates
-}
+const selectedDateStr = computed(() => {
+  if (!selectedDate.value) return ''
+  const d = new Date(selectedDate.value)
+  return `${d.getMonth() + 1}月${d.getDate()}日`
+})
 
-async function loadTaskFlow() {
-  uni.showLoading({ title: '加载中', mask: true })
-  try {
-    const res = await getTaskFlow(currentDate.value)
-    
-    if (res.code === 200 && res.data) {
-      if (res.data.goal) {
-        currentGoal.value = res.data.goal
-      }
-      if (res.data.tasks) {
-        taskList.value = res.data.tasks.sort((a, b) => a.order - b.order)
-      }
-    }
-  } catch (e) {
-    console.error('加载任务流程失败:', e)
-    // 使用默认数据
-    taskList.value = getDefaultTasks()
-  } finally {
-    uni.hideLoading()
-  }
-}
+const filteredRecords = computed(() => {
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  return workoutRecords.value.filter(item => {
+    const timeStr = item.startTimeStr || item.startTime || ''
+    if (!timeStr) return false
+    const itemDate = new Date(timeStr)
+    return itemDate >= sevenDaysAgo && itemDate <= now
+  }).slice(0, 7)
+})
 
-function getDefaultTasks() {
-  return [
-    {
-      id: 1,
-      name: '热身运动',
-      type: 'warmup',
-      priority: 'high',
-      status: 2,
-      duration: 10,
-      sets: 1,
-      calories: 50,
-      order: 1
-    },
-    {
-      id: 2,
-      name: '杠铃深蹲',
-      type: 'strength',
-      priority: 'high',
-      status: 1,
-      duration: 15,
-      sets: 4,
-      calories: 120,
-      order: 2
-    },
-    {
-      id: 3,
-      name: '哑铃卧推',
-      type: 'strength',
-      priority: 'medium',
-      status: 0,
-      duration: 12,
-      sets: 3,
-      calories: 80,
-      order: 3
-    },
-    {
-      id: 4,
-      name: '平板支撑',
-      type: 'core',
-      priority: 'medium',
-      status: 0,
-      duration: 5,
-      sets: 3,
-      calories: 30,
-      order: 4
-    },
-    {
-      id: 5,
-      name: '拉伸放松',
-      type: 'stretch',
-      priority: 'low',
-      status: 0,
-      duration: 8,
-      sets: 1,
-      calories: 20,
-      order: 5
-    }
-  ]
-}
+const calendarDays = computed(() => {
+  const todayStr = formatDate(new Date(), 'YYYY-MM-DD')
 
-// 事件处理
-function onTaskSelect(task) {
-  console.log('选中任务:', task)
-}
+  if (calendarExpanded.value) {
+    // 月视图：和原来一致
+    const year = currentYear.value
+    const month = currentMonth.value
+    const firstDayOfMonth = new Date(year, month - 1, 1)
+    const lastDayOfMonth = new Date(year, month, 0)
+    const daysInMonth = lastDayOfMonth.getDate()
+    const startWeekDay = firstDayOfMonth.getDay()
 
-async function onTaskStart(task) {
-  try {
-    await startTask(task.id)
-    uni.showToast({ title: '开始训练', icon: 'success' })
-    
-    // 更新本地状态
-    const index = taskList.value.findIndex(t => t.id === task.id)
-    if (index !== -1) {
-      taskList.value[index].status = 1
-    }
-    
-    // 跳转到动作详情
-    setTimeout(() => {
-      uni.navigateTo({
-        url: `/pages/task/exercise-detail?id=${task.id}`
+    const days = []
+
+    // 上月末尾日期
+    const prevMonthLastDay = new Date(year, month - 1, 0).getDate()
+    for (let i = startWeekDay - 1; i >= 0; i--) {
+      const day = prevMonthLastDay - i
+      const dateStr = formatDate(new Date(year, month - 2, day), 'YYYY-MM-DD')
+      days.push({
+        day,
+        isCurrentMonth: false,
+        isToday: dateStr === todayStr,
+        dateStr,
+        hasRecord: recordDates.value.has(dateStr)
       })
-    }, 500)
-  } catch (e) {
-    uni.showToast({ title: '开始失败', icon: 'none' })
+    }
+
+    // 当月日期
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dateStr = formatDate(new Date(year, month - 1, i), 'YYYY-MM-DD')
+      days.push({
+        day: i,
+        isCurrentMonth: true,
+        isToday: dateStr === todayStr,
+        dateStr,
+        hasRecord: recordDates.value.has(dateStr)
+      })
+    }
+
+    // 下月开头日期
+    const remaining = 42 - days.length
+    for (let i = 1; i <= remaining; i++) {
+      const dateStr = formatDate(new Date(year, month, i), 'YYYY-MM-DD')
+      days.push({
+        day: i,
+        isCurrentMonth: false,
+        isToday: dateStr === todayStr,
+        dateStr,
+        hasRecord: recordDates.value.has(dateStr)
+      })
+    }
+
+    return days
+  } else {
+    // 周视图：只展示当前选中日期所在周
+    const anchor = selectedDate.value ? new Date(selectedDate.value) : new Date()
+    const dayOfWeek = anchor.getDay()
+    const weekStart = new Date(anchor)
+    weekStart.setDate(anchor.getDate() - dayOfWeek)
+
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart)
+      d.setDate(weekStart.getDate() + i)
+      const dateStr = formatDate(d, 'YYYY-MM-DD')
+      days.push({
+        day: d.getDate(),
+        isCurrentMonth: d.getMonth() + 1 === currentMonth.value && d.getFullYear() === currentYear.value,
+        isToday: dateStr === todayStr,
+        dateStr,
+        hasRecord: recordDates.value.has(dateStr)
+      })
+    }
+    return days
+  }
+})
+
+// ===================== 方法 =====================
+const isSelectedDay = (day) => {
+  return selectedDate.value === day.dateStr
+}
+
+const selectDay = (day) => {
+  selectedDate.value = day.dateStr
+  if (calendarExpanded.value && !day.isCurrentMonth) {
+    // 月视图下点击其他月份日期时切换月份
+    if (day.day > 20) {
+      changeMonth(-1)
+    } else {
+      changeMonth(1)
+    }
+  }
+  if (!calendarExpanded.value) {
+    // 周视图下同步更新年月
+    const d = new Date(day.dateStr)
+    currentYear.value = d.getFullYear()
+    currentMonth.value = d.getMonth() + 1
   }
 }
 
-function onTaskContinue(task) {
-  uni.navigateTo({
-    url: `/pages/task/exercise-detail?id=${task.id}`
-  })
+const changeMonth = (delta) => {
+  let newMonth = currentMonth.value + delta
+  let newYear = currentYear.value
+  if (newMonth > 12) {
+    newMonth = 1
+    newYear++
+  } else if (newMonth < 1) {
+    newMonth = 12
+    newYear--
+  }
+  currentMonth.value = newMonth
+  currentYear.value = newYear
 }
 
-async function onTaskReorder(tasks) {
-  taskList.value = tasks
-  
-  try {
-    // 调用API更新顺序
-    const orderData = tasks.map((task, index) => ({
-      taskId: task.id,
-      order: index + 1
-    }))
-    await updateTaskOrder(orderData)
-  } catch (e) {
-    console.error('更新任务顺序失败:', e)
+const changeView = (delta) => {
+  if (calendarExpanded.value) {
+    changeMonth(delta)
+  } else {
+    const anchor = selectedDate.value ? new Date(selectedDate.value) : new Date()
+    anchor.setDate(anchor.getDate() + delta * 7)
+    selectedDate.value = formatDate(anchor, 'YYYY-MM-DD')
+    currentYear.value = anchor.getFullYear()
+    currentMonth.value = anchor.getMonth() + 1
   }
 }
 
-async function onDateChange(date) {
-  currentDate.value = date.fullDate
-  await loadTaskFlow()
+const backToToday = () => {
+  const now = new Date()
+  currentYear.value = now.getFullYear()
+  currentMonth.value = now.getMonth() + 1
+  selectedDate.value = formatDate(now, 'YYYY-MM-DD')
+  calendarExpanded.value = false
 }
 
-// 加载运动打卡记录
-async function loadWorkoutRecords() {
+// ===================== 数据加载 =====================
+const loadTodayStats = async () => {
   try {
-    // 查询最近30天的运动记录
-    const endDate = getTodayDate()
-    const startDate = getDateDaysAgo(30)
+    const res = await getTodayStats()
+    if (res.code === 200) {
+      todayStats.value = res.data || {}
+    }
+  } catch (error) {
+    console.error('加载今日统计失败:', error)
+  }
+}
+
+const loadWorkoutRecords = async () => {
+  try {
+    const now = new Date()
+    const startDate = formatDate(new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), 'YYYY-MM-DD')
+    const endDate = formatDate(now, 'YYYY-MM-DD')
     const res = await getWorkoutList({ page: 1, size: 100, startDate, endDate })
-    
+
     if (res.code === 200 && res.data) {
-      const list = res.data.list || []
-      recentWorkouts.value = list.slice(0, 5)
-      
-      // 提取有运动的日期
+      workoutRecords.value = res.data.list || []
+
+      // 提取有记录的日期
       const dates = new Set()
-      list.forEach(item => {
-        if (item.startTimeStr) {
-          const dateStr = item.startTimeStr.split(' ')[0]
-          dates.add(dateStr)
-        } else if (item.startTime) {
-          const dateStr = item.startTime.substring(0, 10)
-          dates.add(dateStr)
+      workoutRecords.value.forEach(item => {
+        const timeStr = item.startTimeStr || item.startTime || ''
+        if (timeStr) {
+          dates.add(timeStr.substring(0, 10))
         }
       })
-      workoutDates.value = Array.from(dates)
+      recordDates.value = dates
     }
-  } catch (e) {
-    console.error('加载运动记录失败:', e)
+  } catch (error) {
+    console.error('加载运动记录失败:', error)
   }
 }
 
-function getDateDaysAgo(days) {
-  const date = new Date()
-  date.setDate(date.getDate() - days)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-function formatWorkoutTime(timeStr) {
-  if (!timeStr) return ''
-  return timeStr.substring(0, 16).replace('T', ' ')
-}
-
-function getWorkoutTypeName(type) {
-  const map = { 1: '跑步', 2: '健走', 3: '骑行' }
-  return map[type] || '运动'
-}
-
-function getWorkoutTypeIcon(type) {
+// ===================== 工具函数 =====================
+const getTypeIcon = (type) => {
   const map = { 1: '🏃', 2: '🚶', 3: '🚴' }
   return map[type] || '🏃'
 }
 
-function goToStats() {
-  uni.switchTab({ url: '/pages/stats/stats' })
+const getTypeName = (type) => {
+  const map = { 1: '跑步', 2: '健走', 3: '骑行' }
+  return map[type] || '运动'
 }
 
-function goToWorkoutDetail(id) {
+const formatTime = (time) => {
+  if (!time) return ''
+  const str = typeof time === 'string' ? time : ''
+  return str.substring(0, 16).replace('T', ' ')
+}
+
+const goToWorkoutDetail = (id) => {
   uni.navigateTo({ url: `/pages/workout/detail?id=${id}` })
 }
 
-// 页面显示时刷新
-function refresh() {
-  loadTaskFlow()
+const goToWorkoutList = () => {
+  uni.switchTab({ url: '/pages/workout/workout' })
 }
 
-defineExpose({
-  refresh
+// ===================== 生命周期 =====================
+onMounted(() => {
+  selectedDate.value = formatDate(new Date(), 'YYYY-MM-DD')
+  loadTodayStats()
+  loadWorkoutRecords()
+})
+
+onShow(() => {
+  loadTodayStats()
+  loadWorkoutRecords()
 })
 </script>
 
 <style lang="scss" scoped>
 .container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  display: flex;
-  flex-direction: column;
+  background: #f5f5f5;
+  padding-top: 20rpx;
   padding-bottom: 40rpx;
 }
 
-/* 让 TaskFlow 组件占据剩余空间 */
-:deep(.task-flow-container) {
-  flex: 1;
-  min-height: 0;
-  height: auto !important;
-}
-
-.workout-section {
-  margin: 20rpx 30rpx 0;
+/* ===================== 日历卡片 ===================== */
+.calendar-card {
+  margin: 0 28rpx 20rpx;
   background: #fff;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+  border-radius: 24rpx;
+  padding: 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
 }
 
-.workout-header {
+.calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20rpx;
 }
 
-.workout-title {
+.month-nav {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 50%;
+
+  &:active {
+    background: #e5e5e5;
+  }
+}
+
+.nav-arrow {
+  font-size: 32rpx;
+  color: #22c55e;
+  font-weight: bold;
+}
+
+.month-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.week-row {
+  display: flex;
+  margin-bottom: 12rpx;
+}
+
+.week-cell {
+  flex: 1;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+  padding: 10rpx 0;
+}
+
+.day-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.day-cell {
+  width: calc(100% / 7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14rpx 0;
+  position: relative;
+
+  .day-num {
+    font-size: 28rpx;
+    color: #333;
+    width: 56rpx;
+    height: 56rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .day-dot {
+    width: 8rpx;
+    height: 8rpx;
+    border-radius: 50%;
+    background: #22c55e;
+    margin-top: 4rpx;
+  }
+
+  &.other-month {
+    .day-num {
+      color: #ccc;
+    }
+  }
+
+  &.today {
+    .day-num {
+      background: #f0fdf4;
+      color: #16a34a;
+      font-weight: 600;
+    }
+  }
+
+  &.selected {
+    .day-num {
+      background: #22c55e;
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+
+  &.has-record:not(.selected) {
+    .day-num {
+      color: #22c55e;
+      font-weight: 600;
+    }
+  }
+}
+
+.calendar-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f5f5f5;
+}
+
+.back-today {
+  font-size: 24rpx;
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.expand-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 8rpx 16rpx;
+  background: #f5f5f7;
+  border-radius: 24rpx;
+
+  &:active {
+    background: #e5e5e5;
+  }
+}
+
+.expand-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.expand-icon {
+  font-size: 20rpx;
+  color: #666;
+  transition: transform 0.2s;
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
+}
+
+/* ===================== 记录列表 ===================== */
+.record-section {
+  margin: 0 28rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #1c1c1e;
+  color: #333;
 }
 
-.workout-more {
-  font-size: 24rpx;
-  color: #3b82f6;
+.more-link {
+  font-size: 26rpx;
+  color: #22c55e;
 }
 
-.workout-list {
+.record-list {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
 }
 
-.workout-item {
+.record-item {
   display: flex;
   align-items: center;
   padding: 20rpx;
@@ -369,67 +548,63 @@ defineExpose({
   }
 }
 
-.workout-icon {
-  width: 64rpx;
-  height: 64rpx;
+.record-icon {
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
+  font-size: 36rpx;
   margin-right: 20rpx;
+  background: #f0f0f0;
+
+  &.type-1 { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); }
+  &.type-2 { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); }
+  &.type-3 { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); }
 }
 
-.workout-info {
+.record-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 8rpx;
+
+  .record-name {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .record-time {
+    font-size: 24rpx;
+    color: #999;
+  }
 }
 
-.workout-name {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #1c1c1e;
-}
-
-.workout-time {
-  font-size: 22rpx;
-  color: #64748b;
-}
-
-.workout-data {
+.record-stats {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4rpx;
-}
+  gap: 6rpx;
 
-.workout-duration {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #3b82f6;
-}
-
-.workout-calories {
-  font-size: 22rpx;
-  color: #64748b;
-}
-
-.navigate-btn {
-  margin: 20rpx 30rpx 0;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  text-align: center;
-  color: #3b82f6;
-  font-size: 28rpx;
-  font-weight: 500;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
-
-  &:active {
-    background: #f8fafc;
+  .record-duration {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #22c55e;
   }
+
+  .record-distance,
+  .record-calories {
+    font-size: 22rpx;
+    color: #999;
+  }
+}
+
+.empty {
+  padding: 60rpx 0;
+  text-align: center;
+  color: #999;
+  font-size: 28rpx;
 }
 </style>

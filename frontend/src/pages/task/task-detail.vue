@@ -80,7 +80,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getTodayTask, startTodayTask } from '../../api/task'
 
 const task = ref({})
@@ -89,6 +89,10 @@ const taskDate = ref('')
 
 onLoad((options) => {
   taskDate.value = options.date || getTodayDate()
+  loadTaskDetail()
+})
+
+onShow(() => {
   loadTaskDetail()
 })
 
@@ -109,9 +113,10 @@ async function loadTaskDetail() {
   }
 }
 
-function goToExerciseDetail(exercise) {
+function goToExerciseDetail(exItem) {
+  uni.setStorageSync('currentExercise', JSON.stringify(exItem))
   uni.navigateTo({
-    url: `/pages/task/exercise-detail?id=${exercise.id}`
+    url: `/pages/task/exercise-detail?id=${exItem.id}`
   })
 }
 

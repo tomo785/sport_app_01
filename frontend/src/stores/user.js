@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getUserInfo, login as loginApi, loginByPassword as loginByPasswordApi, adminLogin as adminLoginApi } from '../api/user'
+import { getUserInfo, login as loginApi, loginByPassword as loginByPasswordApi } from '../api/user'
 
 export const useUserStore = defineStore('user', () => {
   // State
@@ -12,7 +12,6 @@ export const useUserStore = defineStore('user', () => {
   // Getters
   const isLoggedIn = computed(() => !!token.value)
   const isGuest = computed(() => userInfo.value?.isGuest || false)
-  const isAdmin = computed(() => userInfo.value?.isAdmin || false)
   const nickname = computed(() => userInfo.value?.nickname || '运动爱好者')
   const avatar = computed(() => userInfo.value?.avatar || '/static/icons/user.png')
 
@@ -90,28 +89,6 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  // 管理员登录
-  const adminLogin = async (username, password) => {
-    isLoading.value = true
-    try {
-      const res = await adminLoginApi(username, password)
-      if (res.code === 200) {
-        setToken(res.data.token)
-        setUserInfo({
-          ...res.data,
-          isAdmin: true
-        })
-        isFirstLogin.value = false
-        return { success: true, data: res.data }
-      }
-      return { success: false, message: res.message }
-    } catch (error) {
-      return { success: false, message: error.message || '管理员登录失败' }
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   // 检查是否首次登录
   const checkFirstLogin = async () => {
     const hasLoggedBefore = uni.getStorageSync('hasLoggedBefore')
@@ -159,7 +136,6 @@ export const useUserStore = defineStore('user', () => {
     // Getters
     isLoggedIn,
     isGuest,
-    isAdmin,
     nickname,
     avatar,
     // Actions
@@ -169,7 +145,6 @@ export const useUserStore = defineStore('user', () => {
     fetchUserInfo,
     login,
     loginByPassword,
-    adminLogin,
     checkFirstLogin,
     logout,
     exitGuestMode,

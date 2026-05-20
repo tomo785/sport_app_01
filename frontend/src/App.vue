@@ -4,12 +4,12 @@ import { useUserStore } from './stores/user'
 export default {
   onLaunch() {
     console.log('App Launch')
-    
-    // 初始化用户状态
-    const userStore = useUserStore()
-    
-    // 检查是否首次登录
-    this.checkFirstLogin(userStore)
+
+    // 检查是否首次登录（使用 setTimeout 确保页面栈已就绪）
+    setTimeout(() => {
+      const userStore = useUserStore()
+      this.checkFirstLogin(userStore)
+    }, 300)
   },
   onShow() {
     console.log('App Show')
@@ -22,7 +22,7 @@ export default {
     checkFirstLogin(userStore) {
       // 1. 检查本地是否有登录标记
       const hasLoggedBefore = uni.getStorageSync('hasLoggedBefore')
-      
+
       if (!hasLoggedBefore && !userStore.isLoggedIn) {
         // 首次登录且未登录，跳转到登录页面
         console.log('首次登录，跳转到登录页面')
@@ -40,7 +40,8 @@ export default {
 </script>
 
 <style lang="scss">
-@use 'static/styles/common.scss' as *;
+/* 引入全局公共样式 - 使用 @import 替代 @use 以兼容微信小程序编译环境 */
+@import 'static/styles/common.scss';
 
 page {
   background-color: #f5f5f5;

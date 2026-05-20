@@ -1,6 +1,6 @@
 // 基础URL配置
-const BASE_URL = 'http://localhost:8080/api/v1'
-//const BASE_URL = 'http://10.97.73.85:8080/api/v1'
+//const BASE_URL = 'http://localhost:8080/api/v1'
+const BASE_URL = 'http://10.97.73.85:8080/api/v1'
 // 请求拦截器
 const request = (options) => {
   // 获取token

@@ -2,8 +2,35 @@
   <view class="container">
     <!-- ==================== 准备阶段 ==================== -->
     <block v-if="phase === 'ready'">
-      <!-- GPS 地图 -->
-      <view class="map-area">
+      <!-- 活动类型选择条 -->
+      <view class="activity-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
+        <view class="activity-bar-inner">
+          <view class="activity-center-bg"></view>
+          <scroll-view
+            class="activity-scroll"
+            scroll-x
+            :show-scrollbar="false"
+            :scroll-left="scrollLeft"
+            scroll-with-animation
+          >
+            <view class="activity-spacer"></view>
+            <view
+              class="activity-item"
+              v-for="(act, idx) in activityList"
+              :key="act.key"
+              :id="'act-' + idx"
+              :class="{ active: selectedActivityIndex === idx }"
+              @click="selectActivity(idx)"
+            >
+              <text class="act-name">{{ act.name }}</text>
+            </view>
+            <view class="activity-spacer"></view>
+          </scroll-view>
+        </view>
+      </view>
+
+      <!-- GPS 地图 / 非 GPS 活动说明 -->
+      <view class="map-area" v-if="isGpsActivity">
         <map
           id="runMap"
           class="gps-map"
@@ -27,11 +54,17 @@
           <text>点击重试</text>
         </view>
       </view>
+      <view class="activity-info-card" v-else>
+        <text class="activity-info-name">{{ selectedActivity.name }}</text>
+        <text class="activity-info-desc">专注训练，享受运动的每一刻</text>
+      </view>
 
       <!-- 底部操作卡片 -->
-      <view class="bottom-card">
-        <!-- 模式切换 -->
-        <view class="mode-tabs">
+      <view class="bottom-card" :class="{ compact: !isGpsActivity }">
+        <!-- GPS 相关选项（非 GPS 活动自动折叠） -->
+        <view class="gps-options-wrap" :class="{ collapsed: !isGpsActivity }">
+          <!-- 模式切换 -->
+          <view class="mode-tabs">
           <view
             class="mode-tab"
             :class="{ active: goalType === 'none' }"
@@ -57,12 +90,18 @@
               class="sub-tab"
               :class="{ active: goalType === 'distance' }"
               @click="goalType = 'distance'"
+              v-if="isGpsActivity"
             >距离</view>
             <view
               class="sub-tab"
               :class="{ active: goalType === 'duration' }"
               @click="goalType = 'duration'"
             >时长</view>
+            <view
+              class="sub-tab"
+              :class="{ active: goalType === 'custom' }"
+              @click="goalType = 'custom'"
+            >定制</view>
           </view>
 
           <scroll-view class="picker-scroll" scroll-x :show-scrollbar="false" v-if="goalType === 'distance'">
@@ -94,19 +133,45 @@
               </view>
             </view>
           </scroll-view>
+
+          <!-- 定制跑 - 已创建的定制活动列表 -->
+          <scroll-view class="custom-scroll" scroll-y v-if="goalType === 'custom'">
+            <view
+              class="custom-act-item"
+              v-for="act in runningActivities"
+              :key="act.id"
+              :class="{ selected: selectedActId === act.id }"
+              @click="selectCustomActivity(act)"
+            >
+              <view class="custom-act-left">
+                <text class="custom-act-icon">定</text>
+              </view>
+              <view class="custom-act-info">
+                <text class="custom-act-title">{{ act.title }}</text>
+                <text class="custom-act-meta">{{ act.warmupCount }}步热身 · {{ act.mainCount }}项主训练 · {{ act.repeatCount }}组循环</text>
+              </view>
+              <view class="custom-act-check" v-if="selectedActId === act.id">✓</view>
+            </view>
+            <view class="custom-act-empty" v-if="runningActivities.length === 0">
+              <text class="empty-icon">无</text>
+              <text class="empty-text">暂无定制活动</text>
+              <text class="empty-hint">去「定制」页面创建一个吧</text>
+            </view>
+          </scroll-view>
         </view>
 
+        </view>
         <!-- 开始按钮 -->
         <view class="start-run-btn" @click="startRunning">
-          <text class="start-run-text">开始跑步</text>
+          <text class="start-run-text">{{ startBtnText }}</text>
         </view>
       </view>
     </block>
 
     <!-- ==================== 运动中 ==================== -->
     <block v-if="phase === 'active'">
-      <!-- 全屏地图 -->
-      <view class="map-area full-map">
+      <!-- 全屏地图（仅 GPS 活动） -->
+      <view class="map-area full-map" v-if="isGpsActivity">
         <map
           id="runMapActive"
           class="gps-map"
@@ -122,8 +187,8 @@
         />
       </view>
 
-      <!-- 数据浮层 -->
-      <cover-view class="data-overlay">
+      <!-- GPS 活动数据浮层 -->
+      <cover-view class="data-overlay" v-if="isGpsActivity">
         <cover-view class="data-top">
           <cover-view class="goal-tag" v-if="hasGoal">
             <cover-view class="goal-tag-text">{{ goalLabel }}</cover-view>
@@ -161,6 +226,34 @@
         </cover-view>
       </cover-view>
 
+      <!-- 非 GPS 活动数据浮层 -->
+      <cover-view class="data-overlay indoor-overlay" v-else>
+        <cover-view class="indoor-top">
+          <cover-view class="goal-tag" v-if="hasGoal">
+            <cover-view class="goal-tag-text">{{ goalLabel }}</cover-view>
+          </cover-view>
+          <cover-view class="indoor-label">{{ selectedActivity.name }}</cover-view>
+        </cover-view>
+
+        <cover-view class="indoor-main">
+          <cover-view class="indoor-timer">{{ formatDuration(elapsedSeconds) }}</cover-view>
+          <cover-view class="indoor-timer-label">已进行</cover-view>
+        </cover-view>
+
+        <cover-view class="data-sub">
+          <cover-view class="data-sub-item">
+            <cover-view class="data-sub-val">{{ currentCalories }}</cover-view>
+            <cover-view class="data-sub-lbl">千卡</cover-view>
+          </cover-view>
+        </cover-view>
+
+        <cover-view class="progress-wrap" v-if="hasGoal && goalType === 'duration'">
+          <cover-view class="progress-track">
+            <cover-view class="progress-fill" :style="{ width: progressPercent + '%' }"></cover-view>
+          </cover-view>
+        </cover-view>
+      </cover-view>
+
       <!-- 底部控制 -->
       <cover-view class="active-ctrl-bar">
         <cover-view class="ctrl-btn" @click="discardRunning">
@@ -171,13 +264,13 @@
         </cover-view>
         <cover-view class="ctrl-btn" @click="togglePause">
           <cover-view class="ctrl-icon-wrap main">
-            <cover-view class="ctrl-icon-txt">{{ isPaused ? '▶' : '❚❚' }}</cover-view>
+            <cover-view class="ctrl-icon-txt">{{ isPaused ? '▶' : '||' }}</cover-view>
           </cover-view>
           <cover-view class="ctrl-label">{{ isPaused ? '继续' : '暂停' }}</cover-view>
         </cover-view>
         <cover-view class="ctrl-btn" @click="finishRunning">
           <cover-view class="ctrl-icon-wrap">
-            <cover-view class="ctrl-icon-txt">🏁</cover-view>
+            <cover-view class="ctrl-icon-txt">完</cover-view>
           </cover-view>
           <cover-view class="ctrl-label">完成</cover-view>
         </cover-view>
@@ -187,8 +280,8 @@
     <!-- ==================== 总结阶段 ==================== -->
     <block v-if="phase === 'summary'">
       <scroll-view class="summary-scroll" scroll-y>
-        <!-- 路线地图 -->
-        <view class="summary-map-area">
+        <!-- 路线地图（仅 GPS 活动） -->
+        <view class="summary-map-area" v-if="isGpsActivity">
           <map
             id="summaryMap"
             class="gps-map"
@@ -207,9 +300,12 @@
         <!-- 核心数据 -->
         <view class="summary-card">
           <view class="summary-hero-row">
-            <view class="summary-hero-distance">
+            <view class="summary-hero-distance" v-if="isGpsActivity">
               <text class="hero-dist-num">{{ summaryData.distance }}</text>
               <text class="hero-dist-unit">km</text>
+            </view>
+            <view class="summary-hero-timer" v-else>
+              <text class="hero-timer-num">{{ formatDuration(summaryData.duration) }}</text>
             </view>
             <text class="summary-hero-date">{{ todayDate }}</text>
           </view>
@@ -219,7 +315,7 @@
               <text class="stat-item-num">{{ formatDuration(summaryData.duration) }}</text>
               <text class="stat-item-label">时长</text>
             </view>
-            <view class="summary-stat-item">
+            <view class="summary-stat-item" v-if="isGpsActivity">
               <text class="stat-item-num">{{ formatPace(summaryData.avgPace) }}</text>
               <text class="stat-item-label">配速</text>
             </view>
@@ -227,7 +323,7 @@
               <text class="stat-item-num">{{ summaryData.calories }}</text>
               <text class="stat-item-label">千卡</text>
             </view>
-            <view class="summary-stat-item">
+            <view class="summary-stat-item" v-if="isGpsActivity">
               <text class="stat-item-num">{{ summaryData.avgSpeed }}</text>
               <text class="stat-item-label">km/h</text>
             </view>
@@ -235,13 +331,14 @@
 
           <!-- 目标达成 -->
           <view class="summary-goal-banner" v-if="hasGoal">
-            <text>{{ goalAchieved ? '✅ 目标达成！太棒了！' : '💪 继续加油，下次一定行！' }}</text>
+            <text>{{ goalAchieved ? '目标达成！太棒了！' : '继续加油，下次一定行！' }}</text>
           </view>
         </view>
 
         <!-- 操作 -->
         <view class="summary-actions">
           <view class="summary-btn primary" @click="shareResult">分享记录</view>
+          <view class="summary-btn secondary" @click="goToRecordDetail" v-if="summaryData.recordId">查看记录</view>
           <view class="summary-btn secondary" @click="resetToReady">再来一次</view>
         </view>
 
@@ -253,11 +350,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { formatDate, formatDuration, formatPace } from '@/utils'
 import { startWorkout, finishWorkout, uploadTrajectory } from '@/api/workout'
 import { getStatsSummary } from '@/api/stats'
 
 // ===================== 状态 =====================
+const statusBarHeight = ref(0)
+const screenWidth = ref(750)
+const scrollLeft = ref(0)
 const phase = ref('ready')
 const isPaused = ref(false)
 const goalType = ref('distance')
@@ -292,7 +393,32 @@ const summaryData = ref({
 const distanceOptions = [1, 2, 3, 5, 8, 10, 15, 21.1]
 const durationOptions = [10, 15, 20, 30, 45, 60, 90, 120]
 
+// 定制跑 - 已创建的跑步活动
+const selectedActId = ref(null)
+const selectedCustomActivity = ref(null)
+const runningActivities = ref([])
+
+// 活动类型选择条
+const activityList = [
+  { key: 'run-outdoor', name: '跑步', type: 1, needsGps: true },
+  { key: 'bike-outdoor', name: '骑行', type: 3, needsGps: true },
+  { key: 'hike', name: '徒步', type: 2, needsGps: true },
+  { key: 'walk', name: '健步走', type: 2, needsGps: true },
+  { key: 'climb', name: '登山', type: 2, needsGps: true },
+  { key: 'bike-indoor', name: '骑行台', type: 3, needsGps: false },
+  { key: 'swim', name: '游泳', type: 1, needsGps: false },
+  { key: 'yoga', name: '瑜伽', type: 1, needsGps: false },
+  { key: 'strength', name: '力量', type: 1, needsGps: false },
+  { key: 'aerobic', name: '有氧操', type: 1, needsGps: false },
+  { key: 'stretch', name: '拉伸', type: 1, needsGps: false }
+]
+const selectedActivityIndex = ref(0)
+
+const selectedActivity = computed(() => activityList[selectedActivityIndex.value])
+const startBtnText = computed(() => '开始' + selectedActivity.value.name)
+
 // ===================== 计算属性 =====================
+const isGpsActivity = computed(() => selectedActivity.value.needsGps)
 const currentDistance = computed(() => (totalDistanceMeters.value / 1000).toFixed(2))
 const avgPace = computed(() => {
   if (totalDistanceMeters.value < 10) return 0
@@ -302,10 +428,12 @@ const hasGoal = computed(() => goalType.value !== 'none')
 const goalLabel = computed(() => {
   if (goalType.value === 'distance') return '目标 ' + goalValue.value + 'km'
   if (goalType.value === 'duration') return '目标 ' + goalValue.value + 'min'
-  return '自由跑'
+  if (goalType.value === 'custom' && selectedCustomActivity.value) return selectedCustomActivity.value.title
+  if (goalType.value === 'custom') return '定制'
+  return '自由' + selectedActivity.value.name
 })
 const progressPercent = computed(() => {
-  if (!hasGoal.value) return 0
+  if (!hasGoal.value || goalType.value === 'custom') return 0
   if (goalType.value === 'distance')
     return Math.min(100, Math.round((totalDistanceMeters.value / (goalValue.value * 1000)) * 100))
   if (goalType.value === 'duration')
@@ -341,6 +469,20 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return EARTH_RADIUS * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+// MET 值表（基于活动类型估算卡路里）
+const metMap = {
+  'run-outdoor': 9.8, 'bike-outdoor': 7.5, 'hike': 6.0,
+  'walk': 3.5, 'climb': 8.0, 'bike-indoor': 7.0,
+  'swim': 8.0, 'yoga': 2.5, 'strength': 5.0,
+  'aerobic': 6.5, 'stretch': 2.0
+}
+const userWeight = ref(70) // kg，可从本地存储读取
+
+function calcCaloriesByMet(seconds) {
+  const met = metMap[selectedActivity.value.key] || 5
+  return Math.round(met * userWeight.value * (seconds / 3600))
+}
+
 function onLocationChange(res) {
   if (isPaused.value || !res || !res.latitude || !res.longitude) return
   const { latitude, longitude, accuracy, speed } = res
@@ -362,17 +504,22 @@ function onLocationChange(res) {
   if (hasGoal.value && progressPercent.value >= 100 && elapsedSeconds.value > 5) autoFinish()
 }
 
-// ===================== 跑步控制 =====================
+// ===================== 运动控制 =====================
 async function startRunning() {
-  // 1. 先确保GPS已就绪
-  if (!gpsReady.value) {
+  // 0. 定制跑模式下必须选中活动
+  if (goalType.value === 'custom' && !selectedCustomActivity.value) {
+    uni.showToast({ title: '请先选择一个定制活动', icon: 'none' })
+    return
+  }
+
+  // 1. GPS 活动先确保定位已就绪
+  if (isGpsActivity.value && !gpsReady.value) {
     uni.showToast({ title: 'GPS未就绪，请稍候', icon: 'none' })
     const granted = await ensureLocationPermission()
     if (!granted) {
       showGpsPermissionGuide()
       return
     }
-    // 权限已获取，重新触发 checkGps
     gpsReady.value = false
     await initGpsLocation()
     if (!gpsReady.value) {
@@ -390,37 +537,38 @@ async function startRunning() {
   trajectory.value = []
   pausedDuration.value = { accumulated: 0, start: 0 }
 
-  // 2. 启动持续定位
-  uni.startLocationUpdate({
-    type: 'gcj02',
-    success: () => { gpsReady.value = true },
-    fail: (err) => {
-      console.error('startLocationUpdate fail:', err)
-      // 微信小程序可能需要在用户操作后调用
-      // #ifdef MP-WEIXIN
-      showGpsPermissionGuide()
-      // #endif
-      // #ifndef MP-WEIXIN
-      uni.showModal({
-        title: 'GPS 不可用',
-        content: '请在系统设置中开启定位权限',
-        confirmText: '去设置',
-        cancelText: '取消',
-        success: r => {
-          if (r.confirm) {
-            // #ifdef APP-PLUS
-            plus.runtime.openURL('app-settings:')
-            // #endif
+  // 2. GPS 活动启动持续定位
+  if (isGpsActivity.value) {
+    uni.startLocationUpdate({
+      type: 'gcj02',
+      success: () => { gpsReady.value = true },
+      fail: (err) => {
+        console.error('startLocationUpdate fail:', err)
+        // #ifdef MP-WEIXIN
+        showGpsPermissionGuide()
+        // #endif
+        // #ifndef MP-WEIXIN
+        uni.showModal({
+          title: 'GPS 不可用',
+          content: '请在系统设置中开启定位权限',
+          confirmText: '去设置',
+          cancelText: '取消',
+          success: r => {
+            if (r.confirm) {
+              // #ifdef APP-PLUS
+              plus.runtime.openURL('app-settings:')
+              // #endif
+            }
           }
-        }
-      })
-      // #endif
-    }
-  })
-  uni.onLocationChange(onLocationChange)
+        })
+        // #endif
+      }
+    })
+    uni.onLocationChange(onLocationChange)
+  }
 
   try {
-    const res = await startWorkout({ type: 1 })
+    const res = await startWorkout({ type: selectedActivity.value.type, activityName: selectedActivity.value.name })
     if (res.code === 200 && res.data) recordId.value = res.data.recordId
   } catch (e) { /* offline */ }
 
@@ -432,6 +580,10 @@ async function startRunning() {
     const now = Date.now()
     const acc = typeof pausedDuration.value.accumulated === 'number' ? pausedDuration.value.accumulated : 0
     elapsedSeconds.value = Math.floor((now - startTimestamp.value - acc) / 1000)
+    // 非 GPS 活动：用 MET 值实时估算卡路里
+    if (!isGpsActivity.value) {
+      currentCalories.value = calcCaloriesByMet(elapsedSeconds.value)
+    }
     if (trajectory.value.length >= 10 && recordId.value) uploadTrajectoryToServer()
   }, 1000)
 }
@@ -460,8 +612,10 @@ function uploadTrajectoryToServer() {
 function autoFinish() { setTimeout(() => finishRunning(), 1500) }
 
 async function finishRunning() {
-  uni.offLocationChange(onLocationChange)
-  uni.stopLocationUpdate()
+  if (isGpsActivity.value) {
+    uni.offLocationChange(onLocationChange)
+    uni.stopLocationUpdate()
+  }
   if (timerInterval.value) { clearInterval(timerInterval.value); timerInterval.value = null }
 
   if (recordId.value && trajectory.value.length > 0) {
@@ -473,9 +627,13 @@ async function finishRunning() {
   const p = avgPace.value
   const spd = totalDistanceMeters.value > 0 ? ((totalDistanceMeters.value / 1000) / (d / 3600)).toFixed(1) : '0'
 
-  summaryData.value = { distance: dist, duration: d, avgPace: p, maxPace: p, maxPaceStr: formatPace(p), calories: currentCalories.value, steps: currentSteps.value, avgSpeed: spd }
+  if (isGpsActivity.value) {
+    summaryData.value = { distance: dist, duration: d, avgPace: p, maxPace: p, maxPaceStr: formatPace(p), calories: currentCalories.value, steps: currentSteps.value, avgSpeed: spd, recordId: recordId.value }
+  } else {
+    summaryData.value = { distance: '0.00', duration: d, avgPace: 0, maxPace: 0, maxPaceStr: '--', calories: currentCalories.value, steps: 0, avgSpeed: '0', recordId: recordId.value }
+  }
 
-  if (recordId.value) { try { await finishWorkout(recordId.value) } catch (e) {}; recordId.value = null }
+  if (recordId.value) { try { await finishWorkout(recordId.value) } catch (e) {} }
   phase.value = 'summary'
 }
 
@@ -492,6 +650,13 @@ function discardRunning() {
   })
 }
 
+function goToRecordDetail() {
+  const id = summaryData.value.recordId
+  if (id) {
+    uni.navigateTo({ url: `/pages/workout/detail?id=${id}` })
+  }
+}
+
 function resetToReady() {
   totalDistanceMeters.value = 0; elapsedSeconds.value = 0
   currentCalories.value = 0; currentSteps.value = 0
@@ -502,11 +667,11 @@ function resetToReady() {
 function shareResult() {
   uni.share({
     provider: 'weixin',
-    title: `刚跑了 ${summaryData.value.distance}km！`,
+    title: `${selectedActivity.value.name}完成！${summaryData.value.distance}km`,
     content: `配速 ${formatPace(summaryData.value.avgPace)}，消耗 ${summaryData.value.calories} 千卡`,
     success: () => uni.showToast({ title: '分享成功', icon: 'success' }),
     fail: () => {
-      uni.setClipboardData({ data: `跑步完成！${summaryData.value.distance}km，配速 ${formatPace(summaryData.value.avgPace)}` })
+      uni.setClipboardData({ data: `${selectedActivity.value.name}完成！${summaryData.value.distance}km，配速 ${formatPace(summaryData.value.avgPace)}` })
       uni.showToast({ title: '已复制', icon: 'none' })
     }
   })
@@ -519,6 +684,35 @@ async function loadStats() {
       stats.value = { totalRuns: res.data.monthlyWorkouts || 0, totalDistance: res.data.totalDistanceStr || '0', totalDuration: Math.round((res.data.totalDuration || 0) / 60).toString() }
     }
   } catch (e) {}
+}
+
+function loadCustomActivities() {
+  try {
+    const raw = uni.getStorageSync('userActivities')
+    const list = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : []
+    runningActivities.value = (list || [])
+      .filter(a => a.type === 'run' || a.type === '跑步')
+      .map(a => ({
+        ...a,
+        warmupCount: (a.warmup || []).length,
+        mainCount: (a.main || []).length,
+        repeatCount: (a.repeats || a.repeatGroups || []).length
+      }))
+  } catch (e) {
+    runningActivities.value = []
+  }
+}
+
+function selectCustomActivity(act) {
+  selectedActId.value = act.id
+  selectedCustomActivity.value = act
+  goalValue.value = act.id
+}
+
+function selectActivity(index) {
+  selectedActivityIndex.value = index
+  // 160rpx 是每项宽度，将 rpx 转换为 px
+  scrollLeft.value = Math.round(index * 160 * screenWidth.value / 750)
 }
 
 function initGpsLocation() {
@@ -562,7 +756,7 @@ function initGpsLocation() {
     // #endif
 
     // #ifndef MP-WEIXIN
-    // App/iOS/Android：直接调用getLocation
+    // App/H5：先尝试gcj02坐标系统
     uni.getLocation({
       type: 'gcj02',
       success: (res) => {
@@ -574,12 +768,13 @@ function initGpsLocation() {
         resolve(true)
       },
       fail: (err) => {
-        console.error('getLocation fail:', err)
-        gpsErrorMsg.value = '定位失败，请检查GPS开关和权限'
-        // 权限被拒后重试一次
-        setTimeout(() => {
+        console.error('getLocation(gcj02) fail:', err)
+        const errMsg = typeof err === 'string' ? err : (err.errMsg || '')
+        // gcj02失败（常见于H5未配置地图服务商），回退到wgs84
+        if (errMsg.includes('translate coordinate') || errMsg.includes('map provider')) {
+          console.warn('gcj02 not available, falling back to wgs84')
           uni.getLocation({
-            type: 'gcj02',
+            type: 'wgs84',
             success: (res) => {
               gpsReady.value = true
               gpsAccuracy.value = res.accuracy || 0
@@ -588,9 +783,42 @@ function initGpsLocation() {
               gpsErrorMsg.value = ''
               resolve(true)
             },
-            fail: () => resolve(false)
+            fail: (retryErr) => {
+              console.error('getLocation(wgs84) fail:', retryErr)
+              gpsErrorMsg.value = '定位失败，请检查GPS开关和权限'
+              setTimeout(() => {
+                uni.getLocation({
+                  type: 'wgs84',
+                  success: (res) => {
+                    gpsReady.value = true
+                    gpsAccuracy.value = res.accuracy || 0
+                    currentLat.value = res.latitude
+                    currentLng.value = res.longitude
+                    gpsErrorMsg.value = ''
+                    resolve(true)
+                  },
+                  fail: () => resolve(false)
+                })
+              }, 1500)
+            }
           })
-        }, 1500)
+        } else {
+          gpsErrorMsg.value = '定位失败，请检查GPS开关和权限'
+          setTimeout(() => {
+            uni.getLocation({
+              type: 'gcj02',
+              success: (res) => {
+                gpsReady.value = true
+                gpsAccuracy.value = res.accuracy || 0
+                currentLat.value = res.latitude
+                currentLng.value = res.longitude
+                gpsErrorMsg.value = ''
+                resolve(true)
+              },
+              fail: () => resolve(false)
+            })
+          }, 1500)
+        }
       }
     })
     // #endif
@@ -641,7 +869,19 @@ async function ensureLocationPermission() {
     uni.getLocation({
       type: 'gcj02',
       success: () => resolve(true),
-      fail: () => resolve(false)
+      fail: (err) => {
+        const errMsg = typeof err === 'string' ? err : (err.errMsg || '')
+        // gcj02失败（H5未配置地图服务商），回退到wgs84
+        if (errMsg.includes('translate coordinate') || errMsg.includes('map provider')) {
+          uni.getLocation({
+            type: 'wgs84',
+            success: () => resolve(true),
+            fail: () => resolve(false)
+          })
+        } else {
+          resolve(false)
+        }
+      }
     })
   })
   // #endif
@@ -651,7 +891,7 @@ function showGpsPermissionGuide() {
   // #ifdef MP-WEIXIN
   wx.showModal({
     title: '定位未授权',
-    content: '请在右上角设置中开启"位置信息"，用于记录跑步轨迹。\n操作：右上角 ··· → 设置 → 位置信息 → 开启',
+    content: '请在右上角设置中开启"位置信息"，用于记录运动轨迹。\n操作：右上角 ··· → 设置 → 位置信息 → 开启',
     showCancel: false,
     confirmText: '知道了'
   })
@@ -683,9 +923,14 @@ async function retryGps() {
 }
 
 onMounted(async () => {
+  const sys = uni.getSystemInfoSync()
+  statusBarHeight.value = sys.statusBarHeight || 0
+  screenWidth.value = sys.screenWidth || 750
   loadStats()
+  loadCustomActivities()
   await initGpsLocation()
 })
+onShow(() => { loadCustomActivities() })
 onUnmounted(() => {
   uni.offLocationChange(onLocationChange); uni.stopLocationUpdate()
   if (timerInterval.value) { clearInterval(timerInterval.value); timerInterval.value = null }
@@ -693,12 +938,78 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.container { height: 100vh; overflow: hidden; background: #f5f5f5; }
+.container { height: 100vh; overflow: hidden; background: #f5f5f5; display: flex; flex-direction: column; }
+
+/* ==================== 活动选择条 ==================== */
+.activity-bar {
+  position: relative;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.4) 70%, transparent 100%);
+  flex-shrink: 0;
+}
+
+.activity-bar-inner {
+  position: relative;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+}
+
+.activity-center-bg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 150rpx;
+  height: 56rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 28rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+}
+
+.activity-scroll {
+  white-space: nowrap;
+  width: 100%;
+}
+
+.activity-spacer {
+  display: inline-block;
+  width: 295rpx;
+  height: 1rpx;
+}
+
+.activity-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 160rpx;
+  height: 72rpx;
+  vertical-align: middle;
+  opacity: 0.25;
+  transition: all 0.25s ease;
+
+  &.active {
+    opacity: 1;
+    transform: scale(1.1);
+
+    .act-name {
+      color: #16a34a;
+      font-weight: 700;
+      font-size: 30rpx;
+    }
+  }
+}
+
+.act-name {
+  font-size: 26rpx;
+  color: #333;
+  transition: all 0.25s ease;
+}
 
 /* ==================== 地图区域 ==================== */
 .map-area {
   width: 100%;
-  height: 58vh;
+  flex: 1;
   position: relative;
   overflow: hidden;
 }
@@ -758,9 +1069,34 @@ onUnmounted(() => {
   z-index: 10;
 }
 
+/* 非 GPS 活动说明卡片 */
+.activity-info-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  margin: 0 28rpx 20rpx;
+  border-radius: 24rpx;
+  gap: 12rpx;
+}
+
+.activity-info-name {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1c1c1e;
+}
+
+.activity-info-desc {
+  font-size: 26rpx;
+  color: #94a3b8;
+}
+
 /* ==================== 底部操作卡片 ==================== */
 .bottom-card {
   height: 42vh;
+  min-height: 280rpx;
   background: #fff;
   border-radius: 32rpx 32rpx 0 0;
   margin-top: -24rpx;
@@ -770,6 +1106,26 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   box-shadow: 0 -4rpx 24rpx rgba(0, 0, 0, 0.06);
+  transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-card.compact {
+  height: 220rpx;
+}
+
+/* GPS 选项折叠动画 */
+.gps-options-wrap {
+  max-height: 600rpx;
+  opacity: 1;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gps-options-wrap.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* 模式切换 */
@@ -846,6 +1202,98 @@ onUnmounted(() => {
 
 .picker-chip.selected .chip-num { color: #16a34a; }
 .picker-chip.selected .chip-unit { color: #22c55e; }
+
+/* 定制跑活动列表 */
+.custom-scroll {
+  max-height: 220rpx;
+}
+
+.custom-act-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 10rpx;
+  background: #f9fafb;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &.selected {
+    background: #f0fdf4;
+    border-color: #22c55e;
+  }
+
+  &:active { background: #f0fdf4; }
+}
+
+.custom-act-left {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 14rpx;
+  background: #f0fdf4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-act-icon { font-size: 28rpx; }
+
+.custom-act-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.custom-act-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-act-meta {
+  font-size: 20rpx;
+  color: #999;
+  margin-top: 4rpx;
+  display: block;
+}
+
+.custom-act-check {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #fff;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.custom-act-empty {
+  text-align: center;
+  padding: 30rpx 0;
+}
+
+.empty-icon { font-size: 40rpx; display: block; }
+
+.empty-text {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 12rpx;
+  display: block;
+}
+
+.empty-hint {
+  font-size: 20rpx;
+  color: #bbb;
+  margin-top: 6rpx;
+  display: block;
+}
 
 /* 开始按钮 - Keep 风格绿色 */
 .start-run-btn {
@@ -934,6 +1382,45 @@ onUnmounted(() => {
 
 .data-sub-val { font-size: 28rpx; font-weight: 600; color: #fff; }
 .data-sub-lbl { font-size: 22rpx; color: rgba(255, 255, 255, 0.45); margin-top: 4rpx; }
+
+/* 非 GPS 活动运动中浮层 */
+.indoor-overlay {
+  background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 40%);
+}
+
+.indoor-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.indoor-label {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: #fff;
+}
+
+.indoor-main {
+  text-align: center;
+  margin-bottom: 50rpx;
+}
+
+.indoor-timer {
+  font-size: 120rpx;
+  font-weight: 300;
+  color: #fff;
+  letter-spacing: -2rpx;
+  line-height: 1;
+}
+
+.indoor-timer-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 10rpx;
+}
 
 .progress-wrap {
   width: 100%;
@@ -1036,6 +1523,19 @@ onUnmounted(() => {
 .hero-dist-unit { font-size: 28rpx; color: #999; }
 
 .summary-hero-date { font-size: 24rpx; color: #999; }
+
+.summary-hero-timer {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.hero-timer-num {
+  font-size: 56rpx;
+  font-weight: 300;
+  color: #111;
+  letter-spacing: -2rpx;
+}
 
 .summary-stat-row {
   display: flex;

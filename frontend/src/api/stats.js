@@ -56,3 +56,26 @@ export function getMonthlyTrend() {
 export function getYearlyTrend(year) {
   return get('/stats/trend/yearly', { year })
 }
+
+/**
+ * 上报今日步数（将 App 原生读取或微信运动解密后的步数同步到后端）
+ * @param {Object} data
+ * @param {number} data.steps - 步数
+ * @param {number} data.calories - 卡路里（可选）
+ * @param {number} data.distance - 距离（可选）
+ * @param {number} data.duration - 时长（可选）
+ * @param {string} data.source - 数据来源：health / pedometer / werun / backend
+ */
+export function reportTodaySteps(data) {
+  return post('/stats/steps/today', data)
+}
+
+/**
+ * 上报微信运动加密数据（供后端解密）
+ * @param {Object} data
+ * @param {string} data.encryptedData - 微信运动加密数据
+ * @param {string} data.iv - 加密算法的初始向量
+ */
+export function reportWeRunData(data) {
+  return post('/stats/werun/decrypt', data)
+}

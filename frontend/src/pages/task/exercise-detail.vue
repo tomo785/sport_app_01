@@ -124,28 +124,28 @@ const formatCountdown = computed(() => {
 })
 
 onLoad((options) => {
-  // 模拟加载数据
   loadExerciseData(options.id)
 })
 
 function loadExerciseData(id) {
-  // 模拟数据，实际应该从API获取
-  exercise.value = {
-    id: id || 1,
-    exerciseName: '俯卧撑',
-    typeDesc: '力量训练',
-    targetMuscles: '胸肌、三头肌、肩部',
-    setsPlanned: 3,
-    setsCompleted: 1,
-    repsPlanned: 15,
-    durationPlanned: null,
-    restTime: 60,
-    weightUsed: null,
-    status: 1, // 0未完成 1进行中 2已完成
-    caloriesBurned: 25,
-    heartRateAvg: 125
+  // 优先从本地存储读取 task-detail 传递过来的数据
+  try {
+    const raw = uni.getStorageSync('currentExercise')
+    if (raw) {
+      const data = typeof raw === 'string' ? JSON.parse(raw) : raw
+      if (data && String(data.id) === String(id)) {
+        exercise.value = { ...data }
+        countdown.value = exercise.value.restTime || 60
+        return
+      }
+    }
+  } catch (e) {
+    console.error('读取动作数据失败:', e)
   }
-  countdown.value = exercise.value.restTime || 60
+
+  // 降级：显示空状态
+  exercise.value = { id }
+  uni.showToast({ title: '加载动作数据失败', icon: 'none' })
 }
 
 function startRest() {
@@ -167,7 +167,12 @@ async function completeSet() {
   try {
     // 更新完成组数
     exercise.value.setsCompleted++
-    
+
+    // 同步更新本地缓存
+    try {
+      uni.setStorageSync('currentExercise', JSON.stringify(exercise.value))
+    } catch (e) {}
+
     // 如果全部完成
     if (exercise.value.setsCompleted >= exercise.value.setsPlanned) {
       exercise.value.status = 2
@@ -176,6 +181,9 @@ async function completeSet() {
         actualDuration: exercise.value.durationPlanned
       })
       uni.showToast({ title: '动作完成！', icon: 'success' })
+      setTimeout(() => {
+        uni.navigateBack()
+      }, 800)
     } else {
       exercise.value.status = 1
       uni.showToast({ title: `第${exercise.value.setsCompleted}组完成`, icon: 'success' })

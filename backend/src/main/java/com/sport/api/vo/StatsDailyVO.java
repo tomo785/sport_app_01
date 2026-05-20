@@ -39,6 +39,11 @@ public class StatsDailyVO implements Serializable {
     private Integer totalCalories;
 
     /**
+     * 总步数
+     */
+    private Integer steps;
+
+    /**
      * 运动次数
      */
     private Integer recordCount;

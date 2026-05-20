@@ -4,7 +4,6 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.sport.api.dto.AdminLoginDTO;
 import com.sport.api.dto.LoginDTO;
 import com.sport.api.dto.PasswordLoginDTO;
 import com.sport.api.dto.RegisterDTO;
@@ -229,47 +228,6 @@ public class UserServiceImpl implements UserService {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, username);
         return userMapper.selectOne(wrapper);
-    }
-
-    @Override
-    public LoginVO adminLogin(AdminLoginDTO dto) {
-        String username = dto.getUsername();
-        String password = dto.getPassword();
-
-        // 查询用户（通过昵称/用户名）
-        User user = getUserByNickname(username);
-        if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST);
-        }
-
-        // 检查用户状态
-        if (user.getStatus() == 0) {
-            throw new BusinessException(ResultCode.USER_DISABLED);
-        }
-
-        // 检查是否是管理员
-        if (user.getRole() == null || user.getRole() != 2) {
-            throw new BusinessException(ResultCode.PERMISSION_DENIED);
-        }
-
-        // 验证密码
-        //String encryptedPassword = DigestUtil.md5Hex(password);
-        String encryptedPassword = password;
-        if (!encryptedPassword.equals(user.getPassword())) {
-            throw new BusinessException(ResultCode.PARAM_INVALID);
-        }
-
-        // 生成Token
-        String token = jwtUtil.generateToken(user.getId(), user.getPhone());
-
-        log.info("管理员登录成功 - 用户ID: {}, 用户名: {}", user.getId(), username);
-
-        return LoginVO.builder()
-                .token(token)
-                .userId(user.getId())
-                .nickname(user.getNickname())
-                .avatar(user.getAvatar())
-                .build();
     }
 
     @Override

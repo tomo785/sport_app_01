@@ -14,7 +14,7 @@
         @click="openDayEditor(day)"
       >
         <text class="day-label">{{ day.label }}</text>
-        <text class="day-icon">{{ getTypeIcon(day.plan?.type) }}</text>
+        <image class="day-icon-img" :src="getTypeIcon(day.plan?.type)" mode="aspectFit" />
         <text class="day-title">{{ day.plan?.title || '点击添加' }}</text>
         <text class="day-meta">{{ getMeta(day.plan) }}</text>
       </view>
@@ -44,6 +44,7 @@
     <TypeSelector
       :visible="showTypeSelector"
       :initialData="editingDay?.plan || null"
+      :editingDay="editingDay"
       @close="showTypeSelector = false"
       @confirm="onTypeConfirm"
     />
@@ -209,8 +210,14 @@ function publishPlan() {
 }
 
 function getTypeIcon(type) {
-  const map = { run: '🏃', strength: '🏋', yoga: '🧘', rest: '🛌', custom: '📝' }
-  return map[type] || '+'
+  const map = {
+    run: '/static/images/plan/run.png',
+    strength: '/static/images/plan/strength.png',
+    yoga: '/static/images/plan/yoga.png',
+    rest: '/static/images/plan/rest.png',
+    custom: '/static/images/plan/custom.png'
+  }
+  return map[type] || '/static/images/plan/add.png'
 }
 
 function getMeta(plan) {
@@ -278,10 +285,11 @@ function getMeta(plan) {
   color: #64748b;
 }
 
-.day-icon {
+.day-icon-img {
   margin-top: 8rpx;
   display: block;
-  font-size: 34rpx;
+  width: 48rpx;
+  height: 48rpx;
 }
 
 .day-title {

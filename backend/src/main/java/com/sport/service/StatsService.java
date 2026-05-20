@@ -71,4 +71,15 @@ public interface StatsService {
      * @param statDate 统计日期
      */
     void updateDailyStats(Long userId, LocalDate statDate);
+
+    /**
+     * 保存或更新用户步数数据
+     *
+     * @param userId   用户ID
+     * @param steps    步数
+     * @param calories 卡路里（可选）
+     * @param distance 距离（可选）
+     * @param duration 时长（可选）
+     */
+    void saveStepsData(Long userId, Integer steps, Integer calories, Integer distance, Integer duration);
 }

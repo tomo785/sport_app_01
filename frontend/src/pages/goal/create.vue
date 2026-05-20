@@ -58,6 +58,15 @@
           :class="{ disabled: currentWeek >= planData.totalWeeks }">▶</view>
       </view>
 
+      <!-- 周操作栏 -->
+      <view class="week-actions">
+        <text class="week-status">已设置 {{ getWeekCourseCount(currentWeek) }} 天</text>
+        <view class="week-copy-btns">
+          <view class="wcp-btn" v-if="currentWeek < planData.totalWeeks" @click="copyWeekToNext">复制到下周</view>
+          <view class="wcp-btn primary" @click="copyWeekToAll">应用到所有周</view>
+        </view>
+      </view>
+
       <scroll-view class="day-grid-scroll" scroll-y>
         <view class="day-grid">
           <view class="day-card" v-for="(label, idx) in dayLabels" :key="idx"
@@ -67,7 +76,7 @@
 
             <view class="day-courses" v-if="getDayCourses(idx + 1).length > 0">
               <view class="day-course-tag" v-for="(course, ci) in getDayCourses(idx + 1)" :key="ci">
-                <text class="dct-type">{{ getTypeEmoji(course.type) }}</text>
+                <text class="dct-type"></text>
                 <text class="dct-name">{{ course.name }}</text>
               </view>
             </view>
@@ -83,58 +92,83 @@
     </view>
 
     <!-- 课程编辑弹窗（Step 2中使用） -->
-    <view class="modal-mask" v-if="editingDay > 0" @click="closeDayEditor">
-      <view class="modal-card" @click.stop>
+    <view class="modal-mask" v-if="editingDay > 0" @click="onMaskClick">
+      <view class="modal-card" @click="onCardClick">
         <view class="modal-head">
           <text class="modal-title">周{{ currentWeek }} · 周{{ dayLabels[editingDay - 1] }}</text>
           <text class="modal-close" @click="closeDayEditor">✕</text>
         </view>
 
-        <scroll-view class="modal-body" scroll-y>
-          <!-- 当前课程列表 -->
-          <view class="section-label" v-if="getDayCourses(editingDay).length > 0">
-            已添加 {{ getDayCourses(editingDay).length }} 项训练
+        <!-- 已选课程（紧凑展示） -->
+        <view class="selected-bar" v-if="getDayCourses(editingDay).length > 0">
+          <scroll-view class="selected-scroll" scroll-x :show-scrollbar="false">
+            <view class="selected-chip" v-for="(course, ci) in getDayCourses(editingDay)" :key="ci">
+              <text class="sc-name">{{ course.name }}</text>
+              <text class="sc-del" @click="removeCourse(ci)">✕</text>
+            </view>
+          </scroll-view>
+        </view>
+
+        <!-- 左右分栏主体 -->
+        <view class="modal-body">
+          <!-- 左侧筛选栏 -->
+          <view class="add-filter-side">
+            <view class="add-filter-item" :class="{ active: addTab === 'quick' }" @click="addTab = 'quick'">
+              <text class="afi-text">快速添加</text>
+            </view>
+            <view class="add-filter-item" :class="{ active: addTab === 'my' }" @click="addTab = 'my'">
+              <text class="afi-text">我的活动</text>
+            </view>
+            <view class="add-filter-item" :class="{ active: addTab === 'custom' }" @click="addTab = 'custom'">
+              <text class="afi-text">自定义</text>
+            </view>
           </view>
-          <view class="course-item" v-for="(course, ci) in getDayCourses(editingDay)" :key="ci">
-            <view class="ci-left">
-              <text class="ci-emoji">{{ getTypeEmoji(course.type) }}</text>
-              <view class="ci-info">
-                <text class="ci-name">{{ course.name }}</text>
-                <text class="ci-meta">
-                  {{ course.duration ? course.duration + '分钟' : '' }}
-                  {{ course.exercises && course.exercises.length > 0 ? '·' + course.exercises.length + '个步骤' : '' }}
-                </text>
+
+          <!-- 右侧内容区 -->
+          <scroll-view class="add-filter-content" scroll-y>
+            <!-- 快速添加 -->
+            <view v-if="addTab === 'quick'">
+              <view class="content-title">快速添加活动</view>
+              <view class="content-grid">
+                <view class="content-chip" v-for="act in quickActivities" :key="act.type" @click="quickAddCourse(act)">
+                  <text class="cc-name">{{ act.name }}</text>
+                  <text class="cc-meta">{{ act.duration }}分钟</text>
+                </view>
               </view>
             </view>
-            <view class="ci-actions">
-              <text class="ci-edit" @click="editCourse(ci)">✎</text>
-              <text class="ci-del" @click="removeCourse(ci)">✕</text>
-            </view>
-          </view>
 
-          <!-- 快速添加活动 -->
-          <view class="section-label">快速添加活动</view>
-          <view class="quick-add">
-            <view class="qa-item" v-for="act in quickActivities" :key="act.type" @click="quickAddCourse(act)">
-              <text class="qa-emoji">{{ act.emoji }}</text>
-              <text class="qa-name">{{ act.name }}</text>
+            <!-- 我的活动 -->
+            <view v-if="addTab === 'my'">
+              <view class="content-title">我的活动</view>
+              <view class="content-grid" v-if="myActivities.length > 0">
+                <view class="content-chip" v-for="act in myActivities" :key="act.id" @click="addMyActivity(act)">
+                  <text class="cc-name">{{ act.title || act.name }}</text>
+                  <text class="cc-meta">{{ (act.exercises || []).length }}个步骤</text>
+                </view>
+              </view>
+              <view class="content-empty" v-else>
+                <text>暂无自定义活动</text>
+                <text class="ce-hint">去「定制」页面创建吧</text>
+              </view>
             </view>
-          </view>
 
-          <!-- 自定义添加 -->
-          <view class="section-label">或自定义活动</view>
-          <view class="custom-form">
-            <input class="cf-input" v-model="customCourse.name" placeholder="活动名称" />
-            <view class="cf-row">
-              <picker class="cf-picker" :range="activityTypes" :value="customTypeIndex"
-                @change="onCustomTypeChange">
-                <text>{{ activityTypes[customTypeIndex] }}</text>
-              </picker>
-              <input class="cf-input sm" v-model.number="customCourse.duration" placeholder="时长(分)" type="number" />
+            <!-- 自定义添加 -->
+            <view v-if="addTab === 'custom'">
+              <view class="content-title">自定义活动</view>
+              <view class="custom-form">
+                <input class="cf-input" v-model="customCourse.name" placeholder="活动名称" />
+                <view class="cf-row">
+                  <picker class="cf-picker" :range="activityTypes" :value="customTypeIndex"
+                    @change="onCustomTypeChange">
+                    <text>{{ activityTypes[customTypeIndex] }}</text>
+                  </picker>
+                  <input class="cf-input sm" v-model.number="customCourse.duration" placeholder="时长(分)" type="number" />
+                </view>
+                <view class="cf-btn" @click="addCustomCourse">添加活动</view>
+              </view>
             </view>
-            <view class="cf-btn" @click="addCustomCourse">添加活动</view>
-          </view>
-        </scroll-view>
+          </scroll-view>
+        </view>
 
         <view class="modal-foot">
           <view class="mbtn secondary" @click="closeDayEditor">完成</view>
@@ -147,7 +181,7 @@
       <view class="section-label">所有训练活动</view>
       <view class="activity-list" v-for="(course, idx) in allCourses" :key="idx">
         <view class="al-header" @click="editingCourseIdx = editingCourseIdx === idx ? -1 : idx">
-          <text class="al-emoji">{{ getTypeEmoji(course.type) }}</text>
+          <text class="al-emoji"></text>
           <view class="al-info">
             <text class="al-name">第{{ course.week }}周 周{{ dayLabels[course.day - 1] }} · {{ course.name }}</text>
             <text class="al-meta">{{ course.duration || 0 }}分钟 · {{ course.exercises.length }}个步骤</text>
@@ -200,7 +234,7 @@
       </view>
 
       <view class="empty-state" v-if="allCourses.length === 0">
-        <text class="empty-icon">📝</text>
+        <text class="empty-icon"></text>
         <text class="empty-title">还没有添加训练活动</text>
         <text class="empty-sub">请返回上一步，点击日期添加训练内容</text>
       </view>
@@ -239,31 +273,31 @@ const activityTypes = ['有氧', '力量', '拉伸', 'HIIT', '综合']
 const exerciseTypes = ['有氧', '力量', '拉伸']
 
 const quickActivities = [
-  { type: 1, name: '热身跑', emoji: '🏃', duration: 10, warmUpDuration: 10 },
-  { type: 2, name: '400米间歇跑', emoji: '🏃', duration: 45, exercises: [
+  { type: 1, name: '热身跑', duration: 10, warmUpDuration: 10 },
+  { type: 2, name: '400米间歇跑', duration: 45, exercises: [
     { name: '热身慢跑', type: 1, duration: 600, distance: 2000 },
     { name: '400米冲刺', type: 1, duration: 90, distance: 400, sets: 8, reps: 1, restTime: 90 },
     { name: '缓和慢跑', type: 3, duration: 600 }
   ]},
-  { type: 2, name: '长距离慢跑', emoji: '🏃', duration: 60, exercises: [
+  { type: 2, name: '长距离慢跑', duration: 60, exercises: [
     { name: '热身', type: 1, duration: 300 },
     { name: '慢跑', type: 1, duration: 3000, distance: 10000 },
     { name: '缓和', type: 3, duration: 300 }
   ]},
-  { type: 2, name: '节奏跑', emoji: '🏃', duration: 50, exercises: [
+  { type: 2, name: '节奏跑', duration: 50, exercises: [
     { name: '热身', type: 1, duration: 600, distance: 2000 },
     { name: '节奏跑', type: 1, duration: 1800, distance: 5000 },
     { name: '缓和', type: 3, duration: 600 }
   ]},
-  { type: 2, name: '全身力量训练', emoji: '💪', duration: 45, exercises: [
+  { type: 2, name: '全身力量训练', duration: 45, exercises: [
     { name: '深蹲', type: 2, sets: 4, reps: 12, restTime: 60 },
     { name: '俯卧撑', type: 2, sets: 4, reps: 15, restTime: 60 },
     { name: '引体向上', type: 2, sets: 3, reps: 8, restTime: 90 }
   ]},
-  { type: 1, name: '有氧操', emoji: '🤸', duration: 40 },
-  { type: 3, name: '瑜伽拉伸', emoji: '🧘', duration: 30 },
-  { type: 1, name: '骑行', emoji: '🚴', duration: 60 },
-  { type: 1, name: '游泳', emoji: '🏊', duration: 45 },
+  { type: 1, name: '有氧操', duration: 40 },
+  { type: 3, name: '瑜伽拉伸', duration: 30 },
+  { type: 1, name: '骑行', duration: 60 },
+  { type: 1, name: '游泳', duration: 45 },
 ]
 
 const planData = reactive({
@@ -272,6 +306,7 @@ const planData = reactive({
   description: '',
   totalWeeks: 4,
   level: 1,
+  startDate: '',
   // courses: [{ week, day, name, type, duration, warmUpDuration, coolDownDuration, exercises: [{ name, type, duration, sets, reps, restTime, distance }] }]
   courses: []
 })
@@ -281,6 +316,9 @@ const customCourse = reactive({
   type: 1,
   duration: 30
 })
+
+const addTab = ref('quick')
+const myActivities = ref([])
 
 const newExercise = reactive({
   name: '',
@@ -306,6 +344,8 @@ onMounted(() => {
   const page = pages[pages.length - 1]
   if (page && page.options && page.options.id) {
     loadPlan(page.options.id)
+  } else {
+    planData.startDate = formatDate(new Date())
   }
 })
 
@@ -318,6 +358,7 @@ function loadPlan(id) {
       planData.description = detail.description || ''
       planData.totalWeeks = detail.totalWeeks
       planData.level = detail.level
+      planData.startDate = detail.startDate || formatDate(new Date())
       // 转换课程
       if (detail.courses) {
         planData.courses = detail.courses.map(c => ({
@@ -342,11 +383,101 @@ function loadPlan(id) {
         }))
       }
     }
-  }).catch(() => {})
+  }).catch(() => {
+    // API失败时尝试从本地加载
+    const local = uni.getStorageSync('myTrainingPlans')
+    let plans = []
+    try { plans = JSON.parse(local || '[]') } catch (e) { plans = [] }
+    const plan = plans.find(p => String(p.id) === String(id))
+    if (plan) {
+      planData.id = plan.id
+      planData.name = plan.name
+      planData.description = plan.description || ''
+      planData.totalWeeks = plan.totalWeeks || 4
+      planData.level = plan.level || 1
+      planData.startDate = plan.startDate || formatDate(new Date())
+      planData.courses = (plan.courses || []).map(c => ({
+        week: c.week,
+        day: c.day,
+        name: c.name,
+        type: c.type,
+        duration: c.duration,
+        warmUpDuration: c.warmUpDuration || 0,
+        coolDownDuration: c.coolDownDuration || 0,
+        exercises: (c.exercises || []).map(e => ({
+          name: e.name,
+          type: e.type,
+          duration: e.duration,
+          sets: e.sets,
+          reps: e.reps,
+          restTime: e.restTime,
+          distance: e.distance,
+          isRepeatGroup: e.isRepeatGroup,
+          repeatCount: e.repeatCount
+        }))
+      }))
+    }
+  })
 }
 
 function getDayCourses(day) {
   return planData.courses.filter(c => c.week === currentWeek.value && c.day === day)
+}
+
+function getWeekCourseCount(week) {
+  const days = new Set(planData.courses.filter(c => c.week === week).map(c => c.day))
+  return days.size
+}
+
+function copyWeekToNext() {
+  const sourceWeek = currentWeek.value
+  const targetWeek = sourceWeek + 1
+  if (targetWeek > planData.totalWeeks) {
+    uni.showToast({ title: '已经是最后一周', icon: 'none' })
+    return
+  }
+  doCopyWeek(sourceWeek, [targetWeek])
+}
+
+function copyWeekToAll() {
+  const sourceWeek = currentWeek.value
+  const targetWeeks = []
+  for (let w = 1; w <= planData.totalWeeks; w++) {
+    if (w !== sourceWeek) targetWeeks.push(w)
+  }
+  if (targetWeeks.length === 0) return
+
+  uni.showModal({
+    title: '应用到所有周',
+    content: `将第${sourceWeek}周的安排复制到其余 ${targetWeeks.length} 周，会覆盖目标周已有内容。确定吗？`,
+    confirmText: '确定复制',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm) doCopyWeek(sourceWeek, targetWeeks)
+    }
+  })
+}
+
+function doCopyWeek(sourceWeek, targetWeeks) {
+  const sourceCourses = planData.courses.filter(c => c.week === sourceWeek)
+  if (sourceCourses.length === 0) {
+    uni.showToast({ title: '当前周没有安排', icon: 'none' })
+    return
+  }
+
+  targetWeeks.forEach(targetWeek => {
+    // 删除目标周原有课程
+    planData.courses = planData.courses.filter(c => c.week !== targetWeek)
+    // 复制源周课程到目标周
+    sourceCourses.forEach(course => {
+      planData.courses.push({
+        ...course,
+        week: targetWeek
+      })
+    })
+  })
+
+  uni.showToast({ title: '复制成功', icon: 'success' })
 }
 
 function prevWeek() {
@@ -362,10 +493,21 @@ function editDay(day) {
   customCourse.name = ''
   customCourse.type = 1
   customCourse.duration = 30
+  addTab.value = 'quick'
+  loadMyActivities()
 }
 
 function closeDayEditor() {
   editingDay.value = 0
+}
+
+// 微信小程序不支持 @click.stop，改用方法判断
+function onMaskClick() {
+  closeDayEditor()
+}
+
+function onCardClick() {
+  // 阻止冒泡 - 微信小程序中使用空方法阻止事件传播
 }
 
 function quickAddCourse(act) {
@@ -377,6 +519,51 @@ function quickAddCourse(act) {
     duration: act.duration,
     warmUpDuration: act.warmUpDuration || 0,
     coolDownDuration: 0,
+    exercises: (act.exercises || []).map(e => ({ ...e }))
+  }
+  planData.courses.push(course)
+}
+
+function loadMyActivities() {
+  try {
+    const raw = uni.getStorageSync('userActivities')
+    if (raw) {
+      const list = typeof raw === 'string' ? JSON.parse(raw) : raw
+      myActivities.value = (list || []).map(item => ({
+        id: item.id || Date.now() + Math.random(),
+        title: item.title || item.name || '未命名活动',
+        name: item.title || item.name || '未命名活动',
+        type: 1,
+        duration: 30,
+        warmUpDuration: 0,
+        coolDownDuration: 0,
+        exercises: [
+          ...(item.warmup || []).map(s => ({ name: s.name, type: 1, duration: s.duration || 60 })),
+          ...(item.main || []).map(s => ({
+            name: s.name,
+            type: s.type === 'reps' ? 2 : 1,
+            duration: s.duration || null,
+            sets: s.sets || null,
+            reps: s.reps || null
+          })),
+          ...(item.cooldown || []).map(s => ({ name: s.name, type: 3, duration: s.duration || 60 }))
+        ].filter(e => e.name)
+      }))
+    }
+  } catch (e) {
+    myActivities.value = []
+  }
+}
+
+function addMyActivity(act) {
+  const course = {
+    week: currentWeek.value,
+    day: editingDay.value,
+    name: act.name,
+    type: act.type,
+    duration: act.duration,
+    warmUpDuration: act.warmUpDuration || 0,
+    coolDownDuration: act.coolDownDuration || 0,
     exercises: (act.exercises || []).map(e => ({ ...e }))
   }
   planData.courses.push(course)
@@ -472,9 +659,15 @@ function removeExercise(courseIdx, exIdx) {
   }
 }
 
+function formatDate(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function getTypeEmoji(type) {
-  const emojis = { 1: '🏃', 2: '💪', 3: '🧘', 4: '⚡', 5: '🔀', 6: '🧊', 7: '🔀' }
-  return emojis[type] || '📌'
+  return ''
 }
 
 function savePlan() {
@@ -490,6 +683,7 @@ function savePlan() {
     description: planData.description.trim(),
     totalWeeks: planData.totalWeeks,
     level: planData.level,
+    startDate: planData.startDate || formatDate(new Date()),
     courses: planData.courses.map(c => ({
       name: c.name,
       description: '',
@@ -519,16 +713,17 @@ function savePlan() {
   apiCall
     .then(res => {
       if (res.code === 200) {
-        uni.showToast({ title: '保存成功', icon: 'success' })
-        // 清除本地缓存
+        const savedId = planData.id || res.data?.id || Date.now()
+        const localData = { ...data, id: savedId }
+        updateLocalPlans(localData)
         uni.removeStorageSync('weeklyPlan_current')
+        uni.showToast({ title: '保存成功', icon: 'success' })
         setTimeout(() => uni.navigateBack(), 1200)
       } else {
         uni.showToast({ title: res.message || '保存失败', icon: 'none' })
       }
     })
     .catch(() => {
-      // 降级到本地存储
       saveLocalPlan(data)
     })
     .finally(() => {
@@ -536,17 +731,36 @@ function savePlan() {
     })
 }
 
+function updateLocalPlans(plan) {
+  const local = uni.getStorageSync('myTrainingPlans') || '[]'
+  let plans = []
+  try { plans = JSON.parse(local) } catch (e) { plans = [] }
+  const idx = plans.findIndex(p => String(p.id) === String(plan.id))
+  if (idx > -1) {
+    plans[idx] = { ...plan }
+  } else {
+    plans.unshift(plan)
+  }
+  uni.setStorageSync('myTrainingPlans', JSON.stringify(plans))
+}
+
 function saveLocalPlan(data) {
   const localPlans = uni.getStorageSync('myTrainingPlans') || '[]'
-  let plans
+  let plans = []
   try { plans = JSON.parse(localPlans) } catch (e) { plans = [] }
 
+  const planToSave = { ...data, startDate: planData.startDate || formatDate(new Date()) }
+
   if (planData.id) {
-    const idx = plans.findIndex(p => p.id === planData.id)
-    if (idx > -1) plans[idx] = { ...data, id: planData.id }
+    const idx = plans.findIndex(p => String(p.id) === String(planData.id))
+    if (idx > -1) {
+      plans[idx] = { ...planToSave, id: planData.id }
+    } else {
+      plans.unshift({ ...planToSave, id: planData.id })
+    }
   } else {
     planData.id = Date.now()
-    plans.push({ ...data, id: planData.id })
+    plans.unshift({ ...planToSave, id: planData.id })
   }
 
   uni.setStorageSync('myTrainingPlans', JSON.stringify(plans))
@@ -734,9 +948,47 @@ function saveLocalPlan(data) {
   color: #1e293b;
 }
 
+.week-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30rpx;
+  margin-bottom: 16rpx;
+}
+
+.week-status {
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.week-copy-btns {
+  display: flex;
+  gap: 12rpx;
+}
+
+.wcp-btn {
+  padding: 10rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: #3b82f6;
+  background: #eff6ff;
+  border: 1rpx solid #bfdbfe;
+
+  &.primary {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #3b82f6;
+  }
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
 // Day Grid
 .day-grid-scroll {
   flex: 1;
+  height: 0; /* 微信小程序需要显式设置高度 */
   padding: 0 24rpx;
 }
 
@@ -825,7 +1077,7 @@ function saveLocalPlan(data) {
 
 .modal-card {
   width: 100%;
-  max-height: 75vh;
+  max-height: 85vh;
   background: #fff;
   border-radius: 28rpx 28rpx 0 0;
   display: flex;
@@ -853,13 +1105,18 @@ function saveLocalPlan(data) {
 
 .modal-body {
   flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
   padding: 0 28rpx;
-  max-height: 50vh;
-  min-height: 300rpx;
+  max-height: 68vh;
+  min-height: 420rpx;
+  overflow: hidden;
 }
 
 .modal-foot {
-  padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
+    padding: 20rpx 28rpx calc(20rpx + constant(safe-area-inset-bottom));
+    padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
 }
 
 .mbtn {
@@ -938,30 +1195,151 @@ function saveLocalPlan(data) {
   color: #ef4444;
 }
 
-// Quick Add
-.quick-add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14rpx;
+// Selected courses bar
+.selected-bar {
+  margin: 0 28rpx 16rpx;
 }
 
-.qa-item {
-  padding: 14rpx 22rpx;
-  border-radius: 10rpx;
-  background: #f8fafc;
-  border: 2rpx solid #e2e8f0;
-  display: flex;
+.selected-scroll {
+  white-space: nowrap;
+}
+
+.selected-chip {
+  display: inline-flex;
   align-items: center;
   gap: 8rpx;
+  padding: 8rpx 16rpx;
+  background: #f0fdf4;
+  border: 2rpx solid #bbf7d0;
+  border-radius: 24rpx;
+  margin-right: 10rpx;
 }
 
-.qa-emoji {
+.sc-name {
+  font-size: 22rpx;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.sc-del {
+  font-size: 20rpx;
+  color: #22c55e;
+  padding: 4rpx;
+}
+
+// Left filter sidebar
+.add-filter-side {
+  width: 136rpx;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  max-height: 480rpx;
+  overflow-y: auto;
+  &::-webkit-scrollbar { display: none; }
+}
+
+.add-filter-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  position: relative;
+  transition: background 0.2s;
+
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 20rpx;
+    right: 20rpx;
+    height: 1rpx;
+    background: #f1f5f9;
+  }
+
+  &.active {
+    background: #f0fdf4;
+    .afi-text { color: #16a34a; font-weight: 600; }
+  }
+}
+
+.afi-text {
+  font-size: 22rpx;
+  color: #64748b;
+  font-weight: 500;
+}
+
+// Right content area
+.add-filter-content {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  padding: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.content-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 14rpx;
+}
+
+.content-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.content-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14rpx 18rpx;
+  border-radius: 12rpx;
+  background: #f8fafc;
+  border: 2rpx solid #e2e8f0;
+  min-width: 140rpx;
+  transition: all 0.2s;
+
+  &:active {
+    background: #f0fdf4;
+    border-color: #86efac;
+  }
+}
+
+.cc-name {
+  font-size: 24rpx;
+  color: #334155;
+  font-weight: 500;
+}
+
+.cc-meta {
+  font-size: 20rpx;
+  color: #94a3b8;
+  margin-top: 4rpx;
+}
+
+.content-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 20rpx;
+  color: #94a3b8;
   font-size: 24rpx;
 }
 
-.qa-name {
-  font-size: 24rpx;
-  color: #475569;
+.ce-hint {
+  font-size: 22rpx;
+  color: #cbd5e1;
+  margin-top: 8rpx;
 }
 
 // Custom Form
@@ -1178,6 +1556,7 @@ function saveLocalPlan(data) {
 .step-footer {
   display: flex;
   gap: 20rpx;
+  padding: 20rpx 24rpx calc(20rpx + constant(safe-area-inset-bottom));
   padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
   background: #fff;
   border-top: 1rpx solid #f1f5f9;

@@ -2,6 +2,6 @@
   "navigationStyle": "custom",
   "backgroundColor": "#f8fafc",
   "usingComponents": {
-    "task-flow": "../../components/TaskFlow"
+    "training-status-card": "../../components/TrainingStatusCard"
   }
 }

@@ -33,6 +33,8 @@ public class WorkoutRecord implements Serializable {
 
     private Integer calories;
 
+    private Integer steps;
+
     private BigDecimal avgSpeed;
 
     private BigDecimal maxSpeed;

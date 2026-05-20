@@ -12,6 +12,8 @@
     "pages/goal/goal",
     "pages/goal/create",
     "pages/goal/detail",
+    "pages/goal/community",
+    "pages/goal/activity-editor",
     "pages/plan/editor",
     "pages/task/task-detail",
     "pages/task/exercise-detail",
@@ -42,13 +44,13 @@
         "pagePath": "pages/task/task-flow",
         "iconPath": "static/icons/flow.png",
         "selectedIconPath": "static/icons/flow-active.png",
-        "text": "流程"
+        "text": "记录"
       },
       {
         "pagePath": "pages/running/running",
         "iconPath": "static/icons/workout.png",
         "selectedIconPath": "static/icons/workout-active.png",
-        "text": "跑步"
+        "text": "运动"
       },
       {
         "pagePath": "pages/goal/goal",
@@ -70,6 +72,9 @@
     },
     "scope.bluetooth": {
       "desc": "用于连接智能穿戴设备"
+    },
+    "scope.werun": {
+      "desc": "用于获取微信运动步数"
     }
   },
   "requiredBackgroundModes": [

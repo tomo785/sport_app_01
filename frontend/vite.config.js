@@ -23,7 +23,7 @@ export default defineConfig({
         // 使用现代 Sass API
         api: 'modern',
         // 禁用旧版 JavaScript API 警告
-        silenceDeprecations: ['legacy-js-api'],
+        silenceDeprecations: ['legacy-js-api', 'import'],
         // 全局变量
         additionalData: `
           $primary-color: #3b82f6;

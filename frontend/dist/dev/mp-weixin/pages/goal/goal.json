@@ -1,6 +1,6 @@
 {
-  "navigationBarTitleText": "训练定制",
-  "navigationBarBackgroundColor": "#ffffff",
-  "navigationBarTextStyle": "black",
+  "navigationStyle": "custom",
+  "enablePullDownRefresh": false,
+  "backgroundColor": "#f5f5f5",
   "usingComponents": {}
 }

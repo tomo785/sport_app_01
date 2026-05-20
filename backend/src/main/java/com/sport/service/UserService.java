@@ -1,6 +1,5 @@
 package com.sport.service;
 
-import com.sport.api.dto.AdminLoginDTO;
 import com.sport.api.dto.LoginDTO;
 import com.sport.api.dto.PasswordLoginDTO;
 import com.sport.api.dto.RegisterDTO;
@@ -29,11 +28,6 @@ public interface UserService {
      * 密码登录
      */
     LoginVO loginByPassword(PasswordLoginDTO dto);
-
-    /**
-     * 管理员登录
-     */
-    LoginVO adminLogin(AdminLoginDTO dto);
 
     /**
      * 用户注册

@@ -1,1 +1,0 @@
-"use strict";const t=require("../utils/request.js");exports.completeGoal=function(e){return t.put(`/goal/${e}/complete`)},exports.createGoal=function(e){return t.post("/goal",e)},exports.deleteGoal=function(e){return t.del(`/goal/${e}`)},exports.getGoalList=function(e={}){return t.get("/goal",e)};

@@ -1,7 +1,10 @@
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS sport_app DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE sport_app;
+-- =============================================
+-- 数据库初始化脚本
+-- 使用方式:
+--   1. 先手动创建数据库: CREATE DATABASE IF NOT EXISTS sport_app DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+--   2. Spring Boot 启动时自动执行本脚本建表 (spring.sql.init.mode=always)
+--   或手动执行: mysql -u root -p sport_app < schema.sql
+-- =============================================
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS t_user (
@@ -11,6 +14,7 @@ CREATE TABLE IF NOT EXISTS t_user (
     password        VARCHAR(128) COMMENT '加密密码',
     openid          VARCHAR(128) UNIQUE COMMENT '微信OpenID',
     unionid         VARCHAR(128) UNIQUE COMMENT '微信UnionID',
+    session_key     VARCHAR(128) COMMENT '微信SessionKey',
     nickname        VARCHAR(64) COMMENT '昵称',
     avatar          VARCHAR(512) COMMENT '头像URL',
     gender          TINYINT DEFAULT 0 COMMENT '性别 0未知 1男 2女',
@@ -37,6 +41,7 @@ CREATE TABLE IF NOT EXISTS t_workout_record (
     duration        INT COMMENT '时长(秒)',
     distance        INT COMMENT '距离(米)',
     calories        INT COMMENT '卡路里(千卡)',
+    steps           INT COMMENT '步数',
     avg_speed       DECIMAL(5,2) COMMENT '平均配速(米/秒)',
     max_speed       DECIMAL(5,2) COMMENT '最大配速(米/秒)',
     min_altitude    INT COMMENT '最低海拔(米)',
@@ -91,6 +96,7 @@ CREATE TABLE IF NOT EXISTS t_user_daily_stats (
     total_distance  INT DEFAULT 0 COMMENT '总距离(米)',
     total_duration  INT DEFAULT 0 COMMENT '总时长(秒)',
     total_calories  INT DEFAULT 0 COMMENT '总卡路里(千卡)',
+    total_steps     INT DEFAULT 0 COMMENT '总步数',
     record_count    INT DEFAULT 0 COMMENT '运动次数',
     goal_id         BIGINT COMMENT '关联目标ID',
     goal_progress   INT DEFAULT 0 COMMENT '目标完成进度(%)',
@@ -314,9 +320,3 @@ CREATE TABLE IF NOT EXISTS t_task_progress (
     INDEX idx_user_id (user_id),
     INDEX idx_task_id (task_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务进度表';
-
--- 插入默认管理员账号（账号: admin，密码: admin123）
--- 密码使用 MD5 加密: 0192023a7bbd73250516f069df18b500
-INSERT INTO t_user (username, phone, password, nickname, gender, role, status, create_time, update_time)
-VALUES ('admin', '13800000000', '0192023a7bbd73250516f069df18b500', 'admin', 0, 2, 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE username = 'admin', password = '0192023a7bbd73250516f069df18b500', role = 2;

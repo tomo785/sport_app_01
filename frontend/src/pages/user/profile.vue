@@ -2,37 +2,55 @@
   <view class="profile-container">
     <!-- 用户信息卡片 -->
     <view class="user-card">
-      <view class="user-header">
-        <image class="user-avatar" :src="userStore.avatar" mode="aspectFill"></image>
+      <!-- 用户信息行 -->
+      <view class="user-header" @click="editProfile">
+        <view class="user-avatar-wrap">
+          <image class="user-avatar" :src="userStore.avatar" mode="aspectFill"></image>
+        </view>
         <view class="user-info">
           <text class="user-name">{{ userStore.nickname }}</text>
-          <view class="user-tags">
-            <text class="tag admin-tag" v-if="userStore.isAdmin">管理员</text>
-            <text class="tag guest-tag" v-else-if="userStore.isGuest">游客</text>
-            <text class="tag user-tag" v-else>普通用户</text>
-          </view>
         </view>
-        <text class="edit-icon" @click="editProfile">✏️</text>
+        <text class="header-arrow">›</text>
       </view>
-      
-      <!-- 运动数据概览 -->
-      <view class="stats-row">
-        <view class="stat-item">
-          <text class="stat-num">{{ userStats.workoutCount }}</text>
-          <text class="stat-label">运动次数</text>
+
+      <!-- 数据统计行 -->
+      <view class="social-row">
+        <view class="social-item">
+          <text class="social-num">0</text>
+          <text class="social-label">关注</text>
         </view>
-        <view class="stat-item">
-          <text class="stat-num">{{ formatDistance(userStats.totalDistance) }}</text>
-          <text class="stat-label">总距离</text>
+        <view class="social-divider"></view>
+        <view class="social-item">
+          <text class="social-num">0</text>
+          <text class="social-label">粉丝</text>
         </view>
-        <view class="stat-item">
-          <text class="stat-num">{{ formatDuration(userStats.totalDuration) }}</text>
-          <text class="stat-label">总时长</text>
+        <view class="social-divider"></view>
+        <view class="social-item">
+          <text class="social-num">0</text>
+          <text class="social-label">加油</text>
         </view>
-        <view class="stat-item">
-          <text class="stat-num">{{ userStats.totalCalories }}</text>
-          <text class="stat-label">卡路里</text>
-        </view>
+      </view>
+
+      <!-- 成就标签行 -->
+      <view class="achievement-bar">
+        <scroll-view class="achievement-scroll" scroll-x :show-scrollbar="false">
+          <view class="achievement-tag">
+            <text class="ach-icon">🏅</text>
+            <text class="ach-text">最新成就</text>
+          </view>
+          <view class="achievement-tag">
+            <text class="ach-icon">🔥</text>
+            <text class="ach-text">连续打卡 0 天</text>
+          </view>
+          <view class="achievement-tag">
+            <text class="ach-icon">⭐</text>
+            <text class="ach-text">运动新手</text>
+          </view>
+          <view class="achievement-tag">
+            <text class="ach-icon">🎯</text>
+            <text class="ach-text">目标达成 0 次</text>
+          </view>
+        </scroll-view>
       </view>
     </view>
 
@@ -74,23 +92,6 @@
         <view class="menu-item" @click="showAbout">
           <text class="menu-icon">ℹ️</text>
           <text class="menu-text">关于我们</text>
-          <text class="menu-arrow">›</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 管理员专区 -->
-    <view class="menu-section" v-if="userStore.isAdmin">
-      <view class="menu-title admin-title">管理员专区</view>
-      <view class="menu-list">
-        <view class="menu-item" @click="goToUserManage">
-          <text class="menu-icon">👥</text>
-          <text class="menu-text">用户管理</text>
-          <text class="menu-arrow">›</text>
-        </view>
-        <view class="menu-item" @click="goToSystemSettings">
-          <text class="menu-icon">🔧</text>
-          <text class="menu-text">系统设置</text>
           <text class="menu-arrow">›</text>
         </view>
       </view>
@@ -190,16 +191,6 @@ const showAbout = () => {
   })
 }
 
-// 用户管理（管理员）
-const goToUserManage = () => {
-  uni.showToast({ title: '用户管理功能开发中', icon: 'none' })
-}
-
-// 系统设置（管理员）
-const goToSystemSettings = () => {
-  uni.showToast({ title: '系统设置功能开发中', icon: 'none' })
-}
-
 // 退出登录
 const handleLogout = () => {
   const isGuest = userStore.isGuest
@@ -240,94 +231,116 @@ onShow(() => {
 
 // 用户卡片
 .user-card {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  padding: 60rpx 40rpx 40rpx;
-  border-radius: 0 0 40rpx 40rpx;
+  background: #fff;
+  padding: 40rpx 30rpx 30rpx;
 }
 
 .user-header {
   display: flex;
   align-items: center;
-  margin-bottom: 40rpx;
+  padding: 0 10rpx;
+}
+
+.user-avatar-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  border: 2rpx solid #e5e5e5;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .user-avatar {
-  width: 120rpx;
-  height: 120rpx;
-  border-radius: 50%;
-  border: 4rpx solid rgba(255, 255, 255, 0.3);
-  background: #fff;
+  width: 100%;
+  height: 100%;
 }
 
 .user-info {
   flex: 1;
-  margin-left: 30rpx;
+  margin-left: 24rpx;
 }
 
 .user-name {
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #fff;
-  display: block;
-  margin-bottom: 12rpx;
-}
-
-.user-tags {
-  display: flex;
-  gap: 12rpx;
-}
-
-.tag {
-  font-size: 22rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 20rpx;
-}
-
-.admin-tag {
-  background: #FF5722;
-  color: #fff;
-}
-
-.guest-tag {
-  background: #9E9E9E;
-  color: #fff;
-}
-
-.user-tag {
-  background: rgba(255, 255, 255, 0.3);
-  color: #fff;
-}
-
-.edit-icon {
   font-size: 36rpx;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.header-arrow {
+  font-size: 40rpx;
+  color: #c7c7cc;
   padding: 10rpx;
 }
 
-// 统计数据
-.stats-row {
+// 社交统计
+.social-row {
   display: flex;
-  justify-content: space-around;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 20rpx;
-  padding: 30rpx 20rpx;
+  justify-content: center;
+  align-items: center;
+  margin-top: 32rpx;
+  padding: 0 10rpx;
 }
 
-.stat-item {
+.social-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0 40rpx;
 }
 
-.stat-num {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #fff;
-  margin-bottom: 8rpx;
+.social-num {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1c1c1e;
+  margin-bottom: 6rpx;
 }
 
-.stat-label {
+.social-label {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: #8e8e93;
+}
+
+.social-divider {
+  width: 1rpx;
+  height: 40rpx;
+  background: #e5e5e5;
+}
+
+// 成就标签
+.achievement-bar {
+  margin-top: 28rpx;
+}
+
+.achievement-scroll {
+  white-space: nowrap;
+}
+
+.achievement-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 14rpx 24rpx;
+  margin-right: 16rpx;
+  background: #f2f2f7;
+  border-radius: 28rpx;
+
+  &:last-child {
+    margin-right: 30rpx;
+  }
+
+  &:first-child {
+    margin-left: 10rpx;
+  }
+}
+
+.ach-icon {
+  font-size: 24rpx;
+}
+
+.ach-text {
+  font-size: 24rpx;
+  color: #1c1c1e;
+  font-weight: 500;
 }
 
 // 菜单区域
@@ -343,11 +356,6 @@ onShow(() => {
   color: #999;
   padding: 24rpx 30rpx 16rpx;
   border-bottom: 1rpx solid #f5f5f5;
-}
-
-.admin-title {
-  color: #FF5722;
-  background: #FFF3E0;
 }
 
 .menu-list {

@@ -96,6 +96,9 @@
       },
       "scope.bluetooth": {
         "desc": "用于连接智能穿戴设备"
+      },
+      "scope.werun": {
+        "desc": "用于获取微信运动步数"
       }
     },
     "requiredBackgroundModes": ["audio", "location"],

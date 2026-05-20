@@ -29,6 +29,8 @@ public class UserDailyStats implements Serializable {
 
     private Integer totalCalories;
 
+    private Integer totalSteps;
+
     private Integer recordCount;
 
     private Long goalId;

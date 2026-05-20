@@ -29,6 +29,8 @@ public class User implements Serializable {
 
     private String unionid;
 
+    private String sessionKey;
+
     private String nickname;
 
     private String avatar;

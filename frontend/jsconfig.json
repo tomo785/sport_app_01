@@ -3,8 +3,8 @@
     "target": "es2015",
     "module": "esnext",
     "baseUrl": "./",
-    "moduleResolution": "node",
-    "ignoreDeprecations": "5.0",
+    "moduleResolution": "bundler",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
