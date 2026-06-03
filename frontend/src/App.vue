@@ -43,10 +43,41 @@ export default {
 /* 引入全局公共样式 - 使用 @import 替代 @use 以兼容微信小程序编译环境 */
 @import 'static/styles/common.scss';
 
+/* ===== 浅色模式（默认）= 白绿色调 ===== */
+.light-mode, :root {
+  --bg-primary: #f0faf0;
+  --bg-card: #ffffff;
+  --bg-secondary: #f6fdf6;
+  --text-primary: #1a1a2e;
+  --text-secondary: #334155;
+  --text-tertiary: #94a3b8;
+  --border-color: #e8f5e9;
+  --shadow-color: rgba(34, 197, 94, 0.06);
+  --accent-green: #22c55e;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+}
+
+/* ===== 深色模式 = 黑蓝紫色调 ===== */
+.dark-mode {
+  --bg-primary: #0a0a14;
+  --bg-card: #141428;
+  --bg-secondary: #1c1c36;
+  --text-primary: #eeeef8;
+  --text-secondary: #b8b8d0;
+  --text-tertiary: #6e6e8a;
+  --border-color: #2a2a48;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --accent-green: #4ade80;
+  --accent-blue: #60a5fa;
+  --accent-purple: #a78bfa;
+}
+
 page {
-  background-color: #f5f5f5;
+  background-color: var(--bg-primary);
   font-size: 28rpx;
-  color: #333;
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 
   /* 为 TaskFlow 等组件提供状态栏高度 CSS 变量 */
   --status-bar-height: 44rpx;

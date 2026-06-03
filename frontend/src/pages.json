@@ -51,6 +51,14 @@
       }
     },
     {
+      "path": "pages/user/ai-settings",
+      "style": {
+        "navigationBarTitleText": "AI 配置",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
       "path": "pages/design/design",
       "style": {
         "navigationBarTitleText": "设计",
@@ -159,6 +167,10 @@
     "selectedColor": "#3b82f6",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
+    "height": "50px",
+    "iconWidth": "24px",
+    "iconHeight": "24px",
+    "fontSize": "10px",
     "list": [
       {
         "pagePath": "pages/index/index",

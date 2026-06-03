@@ -99,14 +99,74 @@
           <text class="modal-close" @click="closeDayEditor">✕</text>
         </view>
 
-        <!-- 已选课程（紧凑展示） -->
+        <!-- 已选课程（可点击展开设计详情） -->
         <view class="selected-bar" v-if="getDayCourses(editingDay).length > 0">
           <scroll-view class="selected-scroll" scroll-x :show-scrollbar="false">
-            <view class="selected-chip" v-for="(course, ci) in getDayCourses(editingDay)" :key="ci">
+            <view class="selected-chip" v-for="(course, ci) in getDayCourses(editingDay)" :key="ci"
+              :class="{ 'chip-active': selectedDesignIdx === ci }"
+              @click="selectDesignCourse(ci)">
+              <text class="sc-type-icon">{{ getTypeIcon(course.type) }}</text>
               <text class="sc-name">{{ course.name }}</text>
-              <text class="sc-del" @click="removeCourse(ci)">✕</text>
+              <text class="sc-del" @click.stop="removeCourse(ci)">✕</text>
             </view>
           </scroll-view>
+        </view>
+
+        <!-- 小项目设计器（选中某个活动时展开） -->
+        <view class="designer-panel" v-if="selectedDesignCourse">
+          <view class="dp-head">
+            <text class="dp-title">小项目设计 · {{ selectedDesignCourse.name }}</text>
+            <text class="dp-close" @click="selectedDesignIdx = -1">收起 ▲</text>
+          </view>
+
+          <!-- 已有步骤列表 -->
+          <view class="dp-steps" v-if="selectedDesignCourse.exercises && selectedDesignCourse.exercises.length > 0">
+            <view class="dp-step" v-for="(ex, ei) in selectedDesignCourse.exercises" :key="ei">
+              <text class="dps-icon">{{ ex.type === 2 ? '💪' : ex.type === 3 ? '🧘' : '🏃' }}</text>
+              <view class="dps-info">
+                <text class="dps-name">{{ ex.name }}</text>
+                <text class="dps-meta" v-if="ex.duration">{{ Math.round(ex.duration/60) }}分</text>
+                <text class="dps-meta" v-if="ex.sets">{{ ex.sets }}组×{{ ex.reps }}次</text>
+              </view>
+              <text class="dps-del" @click="removeDesignerStep(ei)">✕</text>
+            </view>
+          </view>
+
+          <!-- 添加步骤 Tab: 默认项目 / 自定义项目 -->
+          <view class="dp-tabs">
+            <text class="dp-tab" :class="{ active: designerTab === 'preset' }" @click="designerTab = 'preset'">默认项目</text>
+            <text class="dp-tab" :class="{ active: designerTab === 'custom' }" @click="designerTab = 'custom'">自定义项目</text>
+          </view>
+
+          <!-- 默认步骤列表 -->
+          <view class="dp-preset-list" v-if="designerTab === 'preset'">
+            <view class="dp-preset-item" v-for="(preset, pi) in presetExercises" :key="pi" @click="addPresetStep(preset)">
+              <text class="dpp-icon">{{ preset.icon }}</text>
+              <text class="dpp-name">{{ preset.name }}</text>
+              <text class="dpp-meta">{{ preset.meta }}</text>
+            </view>
+          </view>
+
+          <!-- 自定义步骤表单 -->
+          <view class="dp-custom-form" v-if="designerTab === 'custom'">
+            <view class="dp-cf-row">
+              <input class="dp-cf-input" v-model="designerStep.name" placeholder="步骤名称（如：深蹲）" />
+              <picker class="dp-cf-picker" :range="['有氧', '力量', '拉伸']" :value="designerStepTypeIndex"
+                @change="onDesignerTypeChange">
+                <text>{{ ['有氧', '力量', '拉伸'][designerStepTypeIndex] }}</text>
+              </picker>
+            </view>
+            <view class="dp-cf-row" v-if="designerStep.type === 1">
+              <input class="dp-cf-input sm" v-model.number="designerStep.duration" placeholder="时长(秒)" type="number" />
+              <input class="dp-cf-input sm" v-model.number="designerStep.distance" placeholder="距离(米)" type="number" />
+            </view>
+            <view class="dp-cf-row" v-if="designerStep.type === 2">
+              <input class="dp-cf-input sm" v-model.number="designerStep.sets" placeholder="组数" type="number" />
+              <input class="dp-cf-input sm" v-model.number="designerStep.reps" placeholder="次数" type="number" />
+              <input class="dp-cf-input sm" v-model.number="designerStep.rest" placeholder="休息(秒)" type="number" />
+            </view>
+            <view class="dp-cf-btn" @click="addDesignerStep">+ 添加步骤</view>
+          </view>
         </view>
 
         <!-- 左右分栏主体 -->
@@ -320,6 +380,29 @@ const customCourse = reactive({
 const addTab = ref('quick')
 const myActivities = ref([])
 
+const selectedDesignIdx = ref(-1)
+const designerTab = ref('preset')
+const designerStepTypeIndex = ref(0)
+const designerStep = reactive({
+  name: '', type: 1, duration: null, distance: null,
+  sets: null, reps: null, rest: null
+})
+
+const presetExercises = [
+  { icon: '🏃', name: '慢跑热身', type: 1, meta: '5-10分 · 1-2km', duration: 600, distance: 2000 },
+  { icon: '🏃', name: '400米冲刺', type: 1, meta: '90秒 · 1组', duration: 90, distance: 400, sets: 1, reps: 1 },
+  { icon: '🏃', name: '800米间歇', type: 1, meta: '180秒 · 4组', duration: 180, distance: 800, sets: 4, reps: 1 },
+  { icon: '💪', name: '深蹲', type: 2, meta: '4组×12次', sets: 4, reps: 12 },
+  { icon: '💪', name: '俯卧撑', type: 2, meta: '4组×15次', sets: 4, reps: 15 },
+  { icon: '💪', name: '平板支撑', type: 2, meta: '3组×60秒', sets: 3, reps: 60 },
+  { icon: '💪', name: '卷腹', type: 2, meta: '3组×20次', sets: 3, reps: 20 },
+  { icon: '💪', name: '弓步蹲', type: 2, meta: '3组×12次/腿', sets: 3, reps: 12 },
+  { icon: '🧘', name: '全身拉伸', type: 3, meta: '10分钟', duration: 600 },
+  { icon: '🧘', name: '哈他瑜伽', type: 3, meta: '30分钟', duration: 1800 },
+  { icon: '🧘', name: '泡沫轴放松', type: 3, meta: '15分钟', duration: 900 },
+  { icon: '🚶', name: '缓和散步', type: 1, meta: '5-10分 · 0.5km', duration: 300, distance: 500 },
+]
+
 const newExercise = reactive({
   name: '',
   type: 1,
@@ -328,6 +411,12 @@ const newExercise = reactive({
   reps: null,
   restTime: null,
   distance: null
+})
+
+const selectedDesignCourse = computed(() => {
+  if (selectedDesignIdx.value < 0) return null
+  const courses = getDayCourses(editingDay.value)
+  return courses[selectedDesignIdx.value] || null
 })
 
 const allCourses = computed(() => {
@@ -632,6 +721,64 @@ function addCustomCourse() {
   customCourse.name = ''
 }
 
+function getTypeIcon(type) {
+  return { 1: '🏃', 2: '💪', 3: '🧘', 4: '⚡', 5: '⚡', 6: '😴' }[type] || '🏃'
+}
+
+function selectDesignCourse(idx) {
+  selectedDesignIdx.value = selectedDesignIdx.value === idx ? -1 : idx
+  designerTab.value = 'preset'
+}
+
+function removeDesignerStep(ei) {
+  const course = selectedDesignCourse.value
+  if (course && course.exercises) {
+    course.exercises.splice(ei, 1)
+  }
+}
+
+function addPresetStep(preset) {
+  const course = selectedDesignCourse.value
+  if (!course) return
+  if (!course.exercises) course.exercises = []
+  course.exercises.push({
+    name: preset.name,
+    type: preset.type,
+    duration: preset.duration || null,
+    distance: preset.distance || null,
+    sets: preset.sets || null,
+    reps: preset.reps || null,
+    restTime: null
+  })
+}
+
+function addDesignerStep() {
+  if (!designerStep.name.trim()) { uni.showToast({ title: '请输入步骤名称', icon: 'none' }); return }
+  const course = selectedDesignCourse.value
+  if (!course) return
+  if (!course.exercises) course.exercises = []
+  course.exercises.push({
+    name: designerStep.name.trim(),
+    type: designerStep.type,
+    duration: designerStep.duration || null,
+    distance: designerStep.distance || null,
+    sets: designerStep.sets || null,
+    reps: designerStep.reps || null,
+    restTime: designerStep.rest || null
+  })
+  designerStep.name = ''
+  designerStep.duration = null
+  designerStep.distance = null
+  designerStep.sets = null
+  designerStep.reps = null
+  designerStep.rest = null
+}
+
+function onDesignerTypeChange(e) {
+  designerStepTypeIndex.value = e.detail.value
+  designerStep.type = e.detail.value + 1
+}
+
 function editCourse(idx) {
   // 跳转到step 3并展开对应课程
   editingDay.value = 0
@@ -645,6 +792,7 @@ function removeCourse(idx) {
   const dayCourses = getDayCourses(editingDay.value)
   if (dayCourses[idx]) {
     planData.courses = planData.courses.filter(c => c !== dayCourses[idx])
+    if (selectedDesignIdx.value === idx) selectedDesignIdx.value = -1
   }
 }
 
@@ -816,16 +964,17 @@ function saveLocalPlan(data) {
 <style lang="scss" scoped>
 .container {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
+  transition: background 0.3s;
 }
 
 // 步骤条
 .steps-bar {
   display: flex;
   padding: 24rpx 32rpx;
-  background: #fff;
+  background: var(--bg-card);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -842,19 +991,19 @@ function saveLocalPlan(data) {
   width: 44rpx;
   height: 44rpx;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-weight: 600;
   flex-shrink: 0;
   margin-right: 8rpx;
 }
 
 .step.active .step-dot {
-  background: #22c55e;
+  background: var(--accent-green);
   color: #fff;
 }
 
@@ -865,7 +1014,7 @@ function saveLocalPlan(data) {
 
 .step-label {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
 
@@ -875,13 +1024,13 @@ function saveLocalPlan(data) {
   top: 50%;
   width: calc(100% - 52rpx);
   height: 3rpx;
-  background: #f1f5f9;
+  background: var(--border-color);
   transform: translateY(-50%);
   z-index: -1;
 }
 
 .step-line.filled {
-  background: #22c55e;
+  background: var(--accent-green);
 }
 
 // Step Body
@@ -899,7 +1048,7 @@ function saveLocalPlan(data) {
 
 // Form
 .form-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   padding: 28rpx;
 }
@@ -911,7 +1060,7 @@ function saveLocalPlan(data) {
 .form-label {
   font-size: 28rpx;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   display: block;
   margin-bottom: 14rpx;
 }
@@ -920,20 +1069,20 @@ function saveLocalPlan(data) {
   height: 80rpx;
   border-radius: 12rpx;
   padding: 0 20rpx;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   font-size: 28rpx;
-  color: #1e293b;
-  border: 2rpx solid #e2e8f0;
+  color: var(--text-primary);
+  border: 2rpx solid var(--border-color);
 }
 
 .form-textarea {
   min-height: 140rpx;
   border-radius: 12rpx;
   padding: 16rpx 20rpx;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   font-size: 28rpx;
-  color: #1e293b;
-  border: 2rpx solid #e2e8f0;
+  color: var(--text-primary);
+  border: 2rpx solid var(--border-color);
   width: 100%;
   box-sizing: border-box;
 }
@@ -948,9 +1097,9 @@ function saveLocalPlan(data) {
   padding: 16rpx 32rpx;
   border-radius: 12rpx;
   font-size: 28rpx;
-  color: #64748b;
-  background: #f8fafc;
-  border: 2rpx solid #e2e8f0;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border: 2rpx solid var(--border-color);
   transition: all 0.2s;
 }
 
@@ -974,12 +1123,12 @@ function saveLocalPlan(data) {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24rpx;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .ws-btn.disabled {
@@ -989,7 +1138,7 @@ function saveLocalPlan(data) {
 .ws-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .week-actions {
@@ -1002,7 +1151,7 @@ function saveLocalPlan(data) {
 
 .week-status {
   font-size: 24rpx;
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .week-copy-btns {
@@ -1044,7 +1193,7 @@ function saveLocalPlan(data) {
 }
 
 .day-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   padding: 20rpx 24rpx;
   border: 2rpx solid transparent;
@@ -1059,7 +1208,7 @@ function saveLocalPlan(data) {
 .day-label {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .day-courses {
@@ -1103,7 +1252,7 @@ function saveLocalPlan(data) {
   top: 50%;
   transform: translateY(-50%);
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 // Modal
@@ -1122,7 +1271,7 @@ function saveLocalPlan(data) {
 .modal-card {
   width: 100%;
   max-height: 85vh;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 28rpx 28rpx 0 0;
   display: flex;
   flex-direction: column;
@@ -1138,12 +1287,12 @@ function saveLocalPlan(data) {
 .modal-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .modal-close {
   font-size: 32rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   padding: 8rpx;
 }
 
@@ -1174,14 +1323,14 @@ function saveLocalPlan(data) {
 }
 
 .mbtn.secondary {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--border-color);
+  color: var(--text-tertiary);
 }
 
 .section-label {
   font-size: 26rpx;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-tertiary);
   padding: 16rpx 0 12rpx;
 }
 
@@ -1191,7 +1340,7 @@ function saveLocalPlan(data) {
   justify-content: space-between;
   align-items: center;
   padding: 16rpx;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 12rpx;
   margin-bottom: 10rpx;
 }
@@ -1215,13 +1364,13 @@ function saveLocalPlan(data) {
 .ci-name {
   font-size: 28rpx;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   display: block;
 }
 
 .ci-meta {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .ci-actions {
@@ -1259,15 +1408,17 @@ function saveLocalPlan(data) {
   margin-right: 10rpx;
 }
 
+.sc-type-icon { font-size: 24rpx; }
+
 .sc-name {
   font-size: 22rpx;
-  color: #16a34a;
+  color: var(--accent-green);
   font-weight: 500;
 }
 
 .sc-del {
   font-size: 20rpx;
-  color: #22c55e;
+  color: var(--accent-green);
   padding: 4rpx;
 }
 
@@ -1275,7 +1426,7 @@ function saveLocalPlan(data) {
 .add-filter-side {
   width: 136rpx;
   flex-shrink: 0;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
   display: flex;
@@ -1300,7 +1451,7 @@ function saveLocalPlan(data) {
     left: 20rpx;
     right: 20rpx;
     height: 1rpx;
-    background: #f1f5f9;
+    background: var(--border-color);
   }
 
   &.active {
@@ -1311,14 +1462,14 @@ function saveLocalPlan(data) {
 
 .afi-text {
   font-size: 22rpx;
-  color: #64748b;
+  color: var(--text-tertiary);
   font-weight: 500;
 }
 
 // Right content area
 .add-filter-content {
   flex: 1;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
   padding: 16rpx;
@@ -1330,7 +1481,7 @@ function saveLocalPlan(data) {
 .content-title {
   font-size: 24rpx;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-secondary);
   margin-bottom: 14rpx;
 }
 
@@ -1347,8 +1498,8 @@ function saveLocalPlan(data) {
   justify-content: center;
   padding: 14rpx 18rpx;
   border-radius: 12rpx;
-  background: #f8fafc;
-  border: 2rpx solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: 2rpx solid var(--border-color);
   min-width: 140rpx;
   transition: all 0.2s;
 
@@ -1360,13 +1511,13 @@ function saveLocalPlan(data) {
 
 .cc-name {
   font-size: 24rpx;
-  color: #334155;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .cc-meta {
   font-size: 20rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 4rpx;
 }
 
@@ -1376,7 +1527,7 @@ function saveLocalPlan(data) {
   align-items: center;
   justify-content: center;
   padding: 60rpx 20rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 24rpx;
 }
 
@@ -1388,7 +1539,7 @@ function saveLocalPlan(data) {
 
 // Custom Form
 .custom-form {
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 14rpx;
   padding: 20rpx;
   margin-bottom: 16rpx;
@@ -1400,8 +1551,8 @@ function saveLocalPlan(data) {
   padding: 0 16rpx;
   background: #fff;
   font-size: 26rpx;
-  color: #1e293b;
-  border: 2rpx solid #e2e8f0;
+  color: var(--text-primary);
+  border: 2rpx solid var(--border-color);
   margin-bottom: 12rpx;
 }
 
@@ -1422,7 +1573,7 @@ function saveLocalPlan(data) {
   border-radius: 10rpx;
   padding: 0 16rpx;
   background: #fff;
-  border: 2rpx solid #e2e8f0;
+  border: 2rpx solid var(--border-color);
   display: flex;
   align-items: center;
   font-size: 26rpx;
@@ -1432,7 +1583,7 @@ function saveLocalPlan(data) {
 .cf-btn {
   height: 64rpx;
   border-radius: 10rpx;
-  background: #22c55e;
+  background: var(--accent-green);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1443,7 +1594,7 @@ function saveLocalPlan(data) {
 
 // Step 3 Activity List
 .activity-list {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16rpx;
   margin-bottom: 14rpx;
   overflow: hidden;
@@ -1468,18 +1619,18 @@ function saveLocalPlan(data) {
 .al-name {
   font-size: 28rpx;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   display: block;
 }
 
 .al-meta {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .al-toggle {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .al-detail {
@@ -1512,13 +1663,13 @@ function saveLocalPlan(data) {
 .ex-name {
   font-size: 26rpx;
   font-weight: 500;
-  color: #334155;
+  color: var(--text-secondary);
   display: block;
 }
 
 .ex-meta {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .ex-del {
@@ -1528,7 +1679,7 @@ function saveLocalPlan(data) {
 }
 
 .add-step-form {
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 12rpx;
   padding: 16rpx;
 }
@@ -1536,7 +1687,7 @@ function saveLocalPlan(data) {
 .asf-label {
   font-size: 24rpx;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-tertiary);
   display: block;
   margin-bottom: 10rpx;
 }
@@ -1554,8 +1705,8 @@ function saveLocalPlan(data) {
   padding: 0 12rpx;
   background: #fff;
   font-size: 24rpx;
-  color: #1e293b;
-  border: 2rpx solid #e2e8f0;
+  color: var(--text-primary);
+  border: 2rpx solid var(--border-color);
 }
 
 .asf-input.sm {
@@ -1568,7 +1719,7 @@ function saveLocalPlan(data) {
   border-radius: 8rpx;
   padding: 0 12rpx;
   background: #fff;
-  border: 2rpx solid #e2e8f0;
+  border: 2rpx solid var(--border-color);
   display: flex;
   align-items: center;
   font-size: 24rpx;
@@ -1587,13 +1738,118 @@ function saveLocalPlan(data) {
 }
 
 .asf-btn.add {
-  background: #22c55e;
+  background: var(--accent-green);
   color: #fff;
 }
 
 .asf-btn.repeat {
   background: #dbeafe;
   color: #2563eb;
+}
+
+// ===== 小项目设计器 =====
+.designer-panel {
+  margin: 0 28rpx 16rpx;
+  background: var(--bg-secondary);
+  border-radius: 14rpx;
+  padding: 20rpx;
+  max-height: 420rpx;
+  overflow-y: auto;
+}
+
+.dp-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.dp-title { font-size: 24rpx; font-weight: 700; color: var(--text-primary); }
+.dp-close { font-size: 22rpx; color: var(--text-tertiary); }
+
+.dp-steps {
+  display: flex; flex-direction: column; gap: 8rpx;
+  margin-bottom: 16rpx;
+  padding: 12rpx;
+  background: var(--bg-card);
+  border-radius: 10rpx;
+}
+
+.dp-step {
+  display: flex; align-items: center; gap: 10rpx;
+  padding: 10rpx 12rpx;
+  border-bottom: 1rpx solid var(--border-color);
+  &:last-child { border-bottom: none; }
+}
+
+.dps-icon { font-size: 28rpx; width: 36rpx; text-align: center; }
+.dps-info { flex: 1; }
+.dps-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); display: block; }
+.dps-meta { font-size: 20rpx; color: var(--text-tertiary); margin-right: 10rpx; }
+.dps-del { font-size: 22rpx; color: #ef4444; padding: 6rpx; }
+
+.dp-tabs {
+  display: flex; gap: 10rpx; margin-bottom: 12rpx;
+}
+
+.dp-tab {
+  flex: 1; text-align: center; padding: 12rpx; border-radius: 8rpx;
+  font-size: 24rpx; font-weight: 500;
+  color: var(--text-tertiary); background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+
+  &.active { color: var(--accent-green); background: var(--bg-secondary); border-color: var(--accent-green); }
+}
+
+.dp-preset-list {
+  display: flex; flex-wrap: wrap; gap: 8rpx;
+}
+
+.dp-preset-item {
+  display: flex; align-items: center; gap: 6rpx;
+  padding: 10rpx 16rpx; border-radius: 8rpx;
+  background: var(--bg-card); border: 1rpx solid var(--border-color);
+  &:active { background: var(--bg-secondary); }
+}
+
+.dpp-icon { font-size: 24rpx; }
+.dpp-name { font-size: 24rpx; color: var(--text-primary); font-weight: 500; }
+.dpp-meta { font-size: 18rpx; color: var(--text-tertiary); }
+
+.dp-custom-form {
+  background: var(--bg-card); border-radius: 10rpx; padding: 16rpx;
+}
+
+.dp-cf-row {
+  display: flex; gap: 10rpx; margin-bottom: 10rpx;
+}
+
+.dp-cf-input {
+  flex: 1; height: 56rpx; border-radius: 8rpx; padding: 0 12rpx;
+  background: var(--bg-secondary); font-size: 24rpx; color: var(--text-primary);
+  border: 1rpx solid var(--border-color);
+
+  &.sm { flex: 1; }
+}
+
+.dp-cf-picker {
+  flex: 1; height: 56rpx; border-radius: 8rpx; padding: 0 12rpx;
+  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
+  display: flex; align-items: center; font-size: 24rpx; color: var(--text-primary);
+}
+
+.dp-cf-btn {
+  height: 56rpx; border-radius: 8rpx; background: var(--accent-green); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24rpx; font-weight: 600;
+  &:active { opacity: 0.85; }
+}
+
+.chip-active {
+  background: var(--accent-green) !important;
+  border-color: var(--accent-green) !important;
+  .sc-name { color: #fff !important; }
+  .sc-del { color: #fff !important; }
 }
 
 // Footer
@@ -1627,8 +1883,8 @@ function saveLocalPlan(data) {
 }
 
 .sf-btn.secondary {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--border-color);
+  color: var(--text-tertiary);
 }
 
 .empty-state {
@@ -1646,13 +1902,13 @@ function saveLocalPlan(data) {
 .empty-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #334155;
+  color: var(--text-secondary);
   margin-top: 16rpx;
 }
 
 .empty-sub {
   font-size: 26rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 8rpx;
 }
 </style>

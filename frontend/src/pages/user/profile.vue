@@ -2,7 +2,6 @@
   <view class="profile-container">
     <!-- 用户信息卡片 -->
     <view class="user-card">
-      <!-- 用户信息行 -->
       <view class="user-header" @click="editProfile">
         <view class="user-avatar-wrap">
           <image class="user-avatar" :src="userStore.avatar" mode="aspectFill"></image>
@@ -13,69 +12,71 @@
         <text class="header-arrow">›</text>
       </view>
 
-      <!-- 数据统计行 -->
-      <view class="social-row">
-        <view class="social-item">
-          <text class="social-num">0</text>
-          <text class="social-label">关注</text>
+      <!-- 个人数据行 -->
+      <view class="personal-stats-row">
+        <view class="ps-item">
+          <text class="ps-num">{{ userStats.checkinDays }}</text>
+          <text class="ps-label">打卡天数</text>
         </view>
-        <view class="social-divider"></view>
-        <view class="social-item">
-          <text class="social-num">0</text>
-          <text class="social-label">粉丝</text>
+        <view class="ps-divider"></view>
+        <view class="ps-item">
+          <text class="ps-num">{{ userStats.height || '--' }}</text>
+          <text class="ps-label">身高(cm)</text>
         </view>
-        <view class="social-divider"></view>
-        <view class="social-item">
-          <text class="social-num">0</text>
-          <text class="social-label">加油</text>
+        <view class="ps-divider"></view>
+        <view class="ps-item">
+          <text class="ps-num">{{ userStats.weight || '--' }}</text>
+          <text class="ps-label">体重(kg)</text>
         </view>
-      </view>
-
-      <!-- 成就标签行 -->
-      <view class="achievement-bar">
-        <scroll-view class="achievement-scroll" scroll-x :show-scrollbar="false">
-          <view class="achievement-tag">
-            <text class="ach-icon">🏅</text>
-            <text class="ach-text">最新成就</text>
-          </view>
-          <view class="achievement-tag">
-            <text class="ach-icon">🔥</text>
-            <text class="ach-text">连续打卡 0 天</text>
-          </view>
-          <view class="achievement-tag">
-            <text class="ach-icon">⭐</text>
-            <text class="ach-text">运动新手</text>
-          </view>
-          <view class="achievement-tag">
-            <text class="ach-icon">🎯</text>
-            <text class="ach-text">目标达成 0 次</text>
-          </view>
-        </scroll-view>
-      </view>
-    </view>
-
-    <!-- 功能菜单 -->
-    <view class="menu-section">
-      <view class="menu-title">我的运动</view>
-      <view class="menu-list">
-        <view class="menu-item" @click="goToWorkoutHistory">
-          <text class="menu-icon">📋</text>
-          <text class="menu-text">运动记录</text>
-          <text class="menu-arrow">›</text>
-        </view>
-        <view class="menu-item" @click="goToStats">
-          <text class="menu-icon">📊</text>
-          <text class="menu-text">数据统计</text>
-          <text class="menu-arrow">›</text>
-        </view>
-        <view class="menu-item" @click="goToGoals">
-          <text class="menu-icon">🎯</text>
-          <text class="menu-text">运动目标</text>
-          <text class="menu-arrow">›</text>
+        <view class="ps-divider"></view>
+        <view class="ps-item">
+          <text class="ps-num">{{ genderLabel }}</text>
+          <text class="ps-label">性别</text>
         </view>
       </view>
     </view>
 
+    <!-- 近七天运动峰值热度 -->
+    <view class="heatmap-section">
+      <view class="heatmap-header">
+        <text class="heatmap-title">近七天运动峰值热度</text>
+      </view>
+      <view class="heatmap-body">
+        <view class="heatmap-chart">
+          <view class="hm-bar-wrap" v-for="(day, idx) in weekHeatData" :key="idx" @click="onBarClick(day, idx)">
+            <view class="hm-bar-column">
+              <view class="hm-bar-fill" :style="{ height: day.pct + '%', background: day.color }"></view>
+            </view>
+            <text class="hm-bar-value" v-if="day.active">{{ day.label }}</text>
+            <text class="hm-bar-label">{{ day.dayLabel }}</text>
+          </view>
+        </view>
+        <view class="heatmap-stats">
+          <view class="hm-stat">
+            <text class="hm-stat-val">{{ weekSummary.totalCount }}</text>
+            <text class="hm-stat-label">总运动次数</text>
+          </view>
+          <view class="hm-stat">
+            <text class="hm-stat-val">{{ weekSummary.totalDuration }}</text>
+            <text class="hm-stat-label">总时长(分)</text>
+          </view>
+          <view class="hm-stat">
+            <text class="hm-stat-val">{{ weekSummary.peakDay }}</text>
+            <text class="hm-stat-label">峰值日</text>
+          </view>
+        </view>
+      </view>
+      <!-- 热度色阶 -->
+      <view class="heatmap-legend">
+        <text class="legend-label">低</text>
+        <view class="legend-bar">
+          <view class="legend-step" v-for="(c, i) in ['#22c55e','#84cc16','#eab308','#f97316','#ef4444']" :key="i" :style="{ background: c }"></view>
+        </view>
+        <text class="legend-label">高</text>
+      </view>
+    </view>
+
+    <!-- 个人设置 -->
     <view class="menu-section">
       <view class="menu-title">个人设置</view>
       <view class="menu-list">
@@ -84,15 +85,22 @@
           <text class="menu-text">编辑资料</text>
           <text class="menu-arrow">›</text>
         </view>
+        <view class="menu-item" @click="goToDesign">
+          <text class="menu-icon">🎨</text>
+          <text class="menu-text">设计</text>
+          <text class="menu-arrow">›</text>
+        </view>
         <view class="menu-item" @click="goToSettings">
           <text class="menu-icon">⚙️</text>
           <text class="menu-text">账号设置</text>
           <text class="menu-arrow">›</text>
         </view>
-        <view class="menu-item" @click="goToDesign">
-          <text class="menu-icon">🎨</text>
-          <text class="menu-text">设计</text>
-          <text class="menu-arrow">›</text>
+        <view class="menu-item" @click="themeStore.toggleTheme">
+          <text class="menu-icon">{{ themeStore.isDark ? '🌙' : '☀️' }}</text>
+          <text class="menu-text">深色模式</text>
+          <view class="theme-switch" :class="{ 'switch-on': themeStore.isDark }">
+            <view class="switch-knob"></view>
+          </view>
         </view>
         <view class="menu-item" @click="showAbout">
           <text class="menu-icon">ℹ️</text>
@@ -102,14 +110,13 @@
       </view>
     </view>
 
-    <!-- 退出登录按钮 -->
+    <!-- 退出登录 -->
     <view class="logout-section">
       <button class="logout-btn" @click="handleLogout">
         {{ userStore.isGuest ? '退出游客模式' : '退出登录' }}
       </button>
     </view>
 
-    <!-- 版本信息 -->
     <view class="version-info">
       <text>运动App v1.0.0</text>
     </view>
@@ -117,132 +124,167 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '../../stores/user'
-import { formatDuration, formatDistance } from '../../utils/index'
+import { useThemeStore } from '../../stores/theme'
+import { formatDate, formatDuration, formatDistance } from '../../utils/index'
 import { getWorkoutList } from '../../api/workout'
 
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 
-// 用户统计数据
-const userStats = reactive({
-  workoutCount: 0,
-  totalDistance: 0,
+const weekHeatData = reactive([])
+const weekSummary = reactive({
+  totalCount: 0,
   totalDuration: 0,
-  totalCalories: 0
+  peakDay: '-'
 })
 
-// 加载用户统计数据
-const loadUserStats = async () => {
-  try {
-    const res = await getWorkoutList({ page: 1, size: 1000 })
-    if (res.code === 200) {
-      const list = res.data?.list || []
-      userStats.workoutCount = list.length
-      userStats.totalDistance = list.reduce((sum, item) => sum + (item.distance || 0), 0)
-      userStats.totalDuration = list.reduce((sum, item) => sum + (item.duration || 0), 0)
-      userStats.totalCalories = list.reduce((sum, item) => sum + (item.calories || 0), 0)
-    }
-  } catch (e) {
-    console.error('加载统计数据失败:', e)
+const dayLabels = ['日', '一', '二', '三', '四', '五', '六']
+
+const userStats = reactive({
+  checkinDays: 0,
+  height: uni.getStorageSync('userInfo')?.height || '--',
+  weight: uni.getStorageSync('userInfo')?.weight || '--',
+  gender: uni.getStorageSync('userInfo')?.gender || 0
+})
+
+const genderLabel = computed(() => {
+  const map = { 0: '未设', 1: '男', 2: '女' }
+  return map[userStats.gender] || '未设'
+})
+
+function loadCheckinData() {
+  const raw = uni.getStorageSync('checkin_records')
+  if (raw) {
+    try { userStats.checkinDays = Object.keys(JSON.parse(raw)).length } catch (e) { userStats.checkinDays = 0 }
+  } else {
+    userStats.checkinDays = 0
   }
 }
 
-// 编辑资料
+function loadWeekHeatmap() {
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+  const startStr = formatDate(sevenDaysAgo, 'YYYY-MM-DD')
+  const endStr = formatDate(now, 'YYYY-MM-DD')
+
+  getWorkoutList({ page: 1, size: 200, startDate: startStr, endDate: endStr })
+    .then(res => {
+      const list = res.code === 200 && res.data ? (res.data.list || []) : []
+      const dayMap = {}
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(sevenDaysAgo)
+        d.setDate(sevenDaysAgo.getDate() + i)
+        const key = formatDate(d, 'YYYY-MM-DD')
+        dayMap[key] = { date: key, duration: 0, count: 0, dayOfWeek: d.getDay(), label: '' }
+      }
+
+      list.forEach(item => {
+        const timeStr = item.startTime || item.startTimeStr || ''
+        const key = timeStr.substring(0, 10)
+        if (dayMap[key]) {
+          dayMap[key].duration += (item.duration || 0)
+          dayMap[key].count++
+        }
+      })
+
+      let maxDur = 0
+      const entries = Object.entries(dayMap)
+      entries.forEach(([key, val]) => {
+        if (val.duration > maxDur) maxDur = val.duration
+      })
+
+      let peakDayKey = entries[0]?.[0] || ''
+      weekHeatData.length = 0
+      let totalCount = 0
+      let totalDuration = 0
+
+      entries.forEach(([key, val], idx) => {
+        const pct = maxDur > 0 ? Math.round((val.duration / maxDur) * 100) : 0
+        const color = getHeatColor(pct)
+        const d = new Date(key)
+        weekHeatData.push({
+          date: key,
+          dayLabel: '周' + dayLabels[d.getDay()],
+          label: val.duration > 0 ? Math.round(val.duration / 60) + '分' : '-',
+          pct: pct > 0 ? Math.max(pct, 8) : 4,
+          color,
+          active: val.duration > 0
+        })
+        totalCount += val.count
+        totalDuration += Math.round(val.duration / 60)
+        if (val.duration > (dayMap[peakDayKey]?.duration || 0)) peakDayKey = key
+      })
+
+      weekSummary.totalCount = totalCount
+      weekSummary.totalDuration = totalDuration
+      weekSummary.peakDay = peakDayKey ? formatDate(new Date(peakDayKey), 'MM/DD') : '-'
+    })
+    .catch(e => console.error('[峰值热度] 加载失败:', e))
+}
+
+function getHeatColor(pct) {
+  if (pct <= 20) return '#22c55e'
+  if (pct <= 40) return '#84cc16'
+  if (pct <= 60) return '#eab308'
+  if (pct <= 80) return '#f97316'
+  return '#ef4444'
+}
+
+function onBarClick(day, idx) {
+  const item = weekHeatData[idx]
+  if (!item.active) return
+  uni.showToast({ title: item.date + ' 运动 ' + item.label, icon: 'none' })
+}
+
 const editProfile = () => {
   if (userStore.isGuest) {
     uni.showModal({
-      title: '提示',
-      content: '游客无法编辑资料，请先注册账号',
+      title: '提示', content: '游客无法编辑资料，请先注册账号',
       confirmText: '去注册',
-      success: (res) => {
-        if (res.confirm) {
-          uni.navigateTo({ url: '/pages/user/register' })
-        }
-      }
+      success: (res) => { if (res.confirm) uni.navigateTo({ url: '/pages/user/register' }) }
     })
     return
   }
   uni.navigateTo({ url: '/pages/user/profile-edit' })
 }
 
-// 跳转运动记录
-const goToWorkoutHistory = () => {
-  uni.navigateTo({ url: '/pages/stats/stats' })
-}
+const goToSettings = () => uni.navigateTo({ url: '/pages/user/settings' })
+const goToDesign = () => uni.navigateTo({ url: '/pages/design/design' })
 
-// 跳转数据统计
-const goToStats = () => {
-  uni.navigateTo({ url: '/pages/stats/stats' })
-}
-
-// 跳转目标设置
-const goToGoals = () => {
-  uni.switchTab({ url: '/pages/goal/goal' })
-}
-
-// 账号设置
-const goToSettings = () => {
-  uni.navigateTo({ url: '/pages/user/settings' })
-}
-
-// 设计页面
-const goToDesign = () => {
-  uni.navigateTo({ url: '/pages/design/design' })
-}
-
-// 关于我们
 const showAbout = () => {
-  uni.showModal({
-    title: '关于运动App',
-    content: '运动App v1.0.0\n\n记录每一次运动，见证更好的自己。',
-    showCancel: false
-  })
+  uni.showModal({ title: '关于运动App', content: '运动App v1.0.0\n\n记录每一次运动，见证更好的自己。', showCancel: false })
 }
 
-// 退出登录
 const handleLogout = () => {
   const isGuest = userStore.isGuest
   const title = isGuest ? '退出游客模式' : '退出登录'
-  const content = isGuest 
-    ? '退出后需要重新登录才能使用完整功能' 
-    : '确定要退出当前账号吗？'
-  
+  const content = isGuest ? '退出后需要重新登录才能使用完整功能' : '确定要退出当前账号吗？'
   uni.showModal({
-    title,
-    content,
-    confirmText: '确定',
-    cancelText: '取消',
-    success: (res) => {
-      if (res.confirm) {
-        userStore.logout()
-      }
-    }
+    title, content, confirmText: '确定', cancelText: '取消',
+    success: (res) => { if (res.confirm) userStore.logout() }
   })
 }
 
-// 生命周期
-onMounted(() => {
-  loadUserStats()
-})
-
-onShow(() => {
-  loadUserStats()
-})
+onMounted(() => { loadWeekHeatmap(); loadCheckinData() })
+onShow(() => { loadWeekHeatmap(); loadCheckinData() })
 </script>
 
 <style lang="scss" scoped>
 .profile-container {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-primary);
   padding-bottom: 40rpx;
+  transition: background 0.3s;
 }
 
-// 用户卡片
+// ===== 用户卡片 =====
 .user-card {
-  background: #fff;
+  background: var(--bg-card);
   padding: 40rpx 30rpx 30rpx;
+  transition: background 0.3s;
 }
 
 .user-header {
@@ -252,184 +294,142 @@ onShow(() => {
 }
 
 .user-avatar-wrap {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 50%;
-  border: 2rpx solid #e5e5e5;
-  overflow: hidden;
-  flex-shrink: 0;
+  width: 96rpx; height: 96rpx; border-radius: 50%;
+  border: 2rpx solid var(--border-color);
+  overflow: hidden; flex-shrink: 0;
 }
 
-.user-avatar {
-  width: 100%;
-  height: 100%;
+.user-avatar { width: 100%; height: 100%; }
+
+.user-info { flex: 1; margin-left: 24rpx; }
+
+.user-name { font-size: 36rpx; font-weight: 600; color: var(--text-primary); }
+
+.header-arrow { font-size: 40rpx; color: var(--text-tertiary); padding: 10rpx; }
+
+// ===== 个人数据行 =====
+.personal-stats-row {
+  display: flex; justify-content: center; align-items: center; margin-top: 32rpx; padding: 0 10rpx;
 }
 
-.user-info {
-  flex: 1;
-  margin-left: 24rpx;
+.ps-item {
+  display: flex; flex-direction: column; align-items: center; padding: 0 30rpx;
 }
 
-.user-name {
-  font-size: 36rpx;
-  font-weight: 600;
-  color: #1c1c1e;
+.ps-num { font-size: 30rpx; font-weight: 700; color: var(--accent-green); margin-bottom: 4rpx; }
+
+.ps-label { font-size: 22rpx; color: var(--text-tertiary); }
+
+.ps-divider { width: 1rpx; height: 36rpx; background: var(--border-color); }
+
+// ===== 近七天热度图 =====
+.heatmap-section {
+  margin: 30rpx; background: var(--bg-card); border-radius: 20rpx; overflow: hidden; padding: 28rpx;
+  transition: background 0.3s;
 }
 
-.header-arrow {
-  font-size: 40rpx;
-  color: #c7c7cc;
-  padding: 10rpx;
+.heatmap-header { margin-bottom: 24rpx; }
+
+.heatmap-title { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
+
+.heatmap-body { display: flex; gap: 24rpx; }
+
+.heatmap-chart {
+  flex: 1; display: flex; align-items: flex-end; justify-content: space-between; height: 240rpx;
 }
 
-// 社交统计
-.social-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 32rpx;
-  padding: 0 10rpx;
+.hm-bar-wrap {
+  display: flex; flex-direction: column; align-items: center; flex: 1; gap: 8rpx;
 }
 
-.social-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 40rpx;
+.hm-bar-column {
+  flex: 1; width: 40rpx; display: flex; align-items: flex-end; justify-content: center;
 }
 
-.social-num {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1c1c1e;
-  margin-bottom: 6rpx;
+.hm-bar-fill {
+  width: 100%; border-radius: 8rpx; min-height: 6rpx; transition: height 0.4s;
 }
 
-.social-label {
-  font-size: 24rpx;
-  color: #8e8e93;
+.hm-bar-value {
+  font-size: 20rpx; color: var(--text-secondary); white-space: nowrap;
 }
 
-.social-divider {
-  width: 1rpx;
-  height: 40rpx;
-  background: #e5e5e5;
+.hm-bar-label { font-size: 22rpx; color: var(--text-tertiary); }
+
+.heatmap-stats {
+  width: 200rpx; display: flex; flex-direction: column; justify-content: center; gap: 20rpx;
 }
 
-// 成就标签
-.achievement-bar {
-  margin-top: 28rpx;
+.hm-stat { display: flex; flex-direction: column; gap: 4rpx; }
+
+.hm-stat-val { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
+
+.hm-stat-label { font-size: 22rpx; color: var(--text-tertiary); }
+
+// 热度色阶
+.heatmap-legend {
+  display: flex; align-items: center; gap: 8rpx; margin-top: 16rpx;
 }
 
-.achievement-scroll {
-  white-space: nowrap;
-}
+.legend-label { font-size: 20rpx; color: var(--text-tertiary); }
 
-.achievement-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 14rpx 24rpx;
-  margin-right: 16rpx;
-  background: #f2f2f7;
-  border-radius: 28rpx;
+.legend-bar { flex: 1; display: flex; height: 12rpx; border-radius: 6rpx; overflow: hidden; }
 
-  &:last-child {
-    margin-right: 30rpx;
-  }
+.legend-step { flex: 1; }
 
-  &:first-child {
-    margin-left: 10rpx;
-  }
-}
-
-.ach-icon {
-  font-size: 24rpx;
-}
-
-.ach-text {
-  font-size: 24rpx;
-  color: #1c1c1e;
-  font-weight: 500;
-}
-
-// 菜单区域
+// ===== 菜单区域 =====
 .menu-section {
-  margin: 30rpx;
-  background: #fff;
-  border-radius: 20rpx;
-  overflow: hidden;
+  margin: 30rpx; background: var(--bg-card); border-radius: 20rpx; overflow: hidden;
+  transition: background 0.3s;
 }
 
 .menu-title {
-  font-size: 28rpx;
-  color: #999;
-  padding: 24rpx 30rpx 16rpx;
-  border-bottom: 1rpx solid #f5f5f5;
+  font-size: 28rpx; color: var(--text-tertiary); padding: 24rpx 30rpx 16rpx;
+  border-bottom: 1rpx solid var(--border-color);
 }
 
-.menu-list {
-  padding: 0 20rpx;
-}
+.menu-list { padding: 0 20rpx; }
 
 .menu-item {
-  display: flex;
-  align-items: center;
-  padding: 28rpx 20rpx;
-  border-bottom: 1rpx solid #f5f5f5;
-  
-  &:last-child {
-    border-bottom: none;
+  display: flex; align-items: center; padding: 28rpx 20rpx;
+  border-bottom: 1rpx solid var(--border-color);
+  &:last-child { border-bottom: none; }
+  &:active { background: var(--bg-secondary); }
+}
+
+.menu-icon { font-size: 40rpx; margin-right: 20rpx; }
+
+.menu-text { flex: 1; font-size: 30rpx; color: var(--text-primary); }
+
+.menu-arrow { font-size: 32rpx; color: var(--text-tertiary); }
+
+// ===== 主题开关 =====
+.theme-switch {
+  width: 96rpx; height: 52rpx; background: var(--border-color); border-radius: 26rpx; position: relative;
+  transition: background 0.3s; flex-shrink: 0;
+
+  &.switch-on {
+    background: var(--accent-purple);
+    .switch-knob { left: 48rpx; }
   }
-  
-  &:active {
-    background: #f9f9f9;
-  }
 }
 
-.menu-icon {
-  font-size: 40rpx;
-  margin-right: 20rpx;
+.switch-knob {
+  position: absolute; top: 4rpx; left: 4rpx;
+  width: 44rpx; height: 44rpx; background: var(--bg-card); border-radius: 50%;
+  box-shadow: 0 2rpx 8rpx var(--shadow-color);
+  transition: left 0.3s;
+  border: 1rpx solid var(--border-color);
 }
 
-.menu-text {
-  flex: 1;
-  font-size: 30rpx;
-  color: #333;
-}
-
-.menu-arrow {
-  font-size: 32rpx;
-  color: #ccc;
-}
-
-// 退出登录
-.logout-section {
-  margin: 40rpx 30rpx;
-}
+// ===== 退出 =====
+.logout-section { margin: 40rpx 30rpx; }
 
 .logout-btn {
-  width: 100%;
-  height: 90rpx;
-  background: #fff;
-  color: #f56c6c;
-  font-size: 32rpx;
-  border-radius: 16rpx;
-  border: none;
-  
-  &:active {
-    background: #fef0f0;
-  }
+  width: 100%; height: 90rpx; background: var(--bg-card); color: #f56c6c;
+  font-size: 32rpx; border-radius: 16rpx; border: none;
+  &:active { background: #fef0f0; }
 }
 
-// 版本信息
-.version-info {
-  text-align: center;
-  padding: 20rpx;
-  
-  text {
-    font-size: 24rpx;
-    color: #999;
-  }
-}
+.version-info { text-align: center; padding: 20rpx; text { font-size: 24rpx; color: var(--text-tertiary); } }
 </style>

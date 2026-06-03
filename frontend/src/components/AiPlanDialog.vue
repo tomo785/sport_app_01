@@ -25,17 +25,63 @@
         </view>
       </view>
 
-      <!-- 模型选择下拉 -->
-      <view class="ai-model-picker" v-if="showModelPicker">
-        <view
-          v-for="model in modelList"
-          :key="model.id"
-          class="ai-model-option"
-          :class="{ 'ai-model-active': model.id === selectedModelId }"
-          @click="selectModel(model)"
-        >
-          <text>{{ model.name }}</text>
-          <text v-if="model.id === selectedModelId" class="ai-model-check">✓</text>
+      <!-- 模型设置面板 -->
+      <view class="ai-settings-panel" v-if="showModelPicker">
+        <view class="ai-settings-header">
+          <text class="ai-settings-title">模型配置</text>
+          <view class="ai-settings-close" @click="showModelPicker = false">✕</view>
+        </view>
+
+        <view class="ai-settings-section">
+          <text class="ai-settings-label">选择模型</text>
+          <view class="ai-provider-list">
+            <view
+              v-for="model in modelList"
+              :key="model.id"
+              class="ai-provider-card"
+              :class="{ 'ai-provider-active': model.id === selectedModelId }"
+              @click="selectModel(model)"
+            >
+              <view class="ai-provider-info">
+                <text class="ai-provider-name">{{ model.name }}</text>
+                <text class="ai-provider-id">{{ model.model }}</text>
+              </view>
+              <text v-if="model.id === selectedModelId" class="ai-provider-check">✓</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="ai-settings-section">
+          <text class="ai-settings-label">API Key</text>
+          <input
+            class="ai-settings-input"
+            :value="customApiKey"
+            @input="updateApiKey($event.detail.value)"
+            placeholder="输入自定义 API Key（留空使用后端配置）"
+            password
+          />
+        </view>
+
+        <view class="ai-settings-section">
+          <text class="ai-settings-label">连接测试</text>
+          <view class="ai-test-row">
+            <view
+              class="ai-test-btn"
+              :class="{ 'ai-test-running': testingConnection }"
+              @click="testConnection"
+            >
+              <text>{{ testingConnection ? '测试中...' : '测试连接' }}</text>
+            </view>
+            <view class="ai-test-result" v-if="testResult">
+              <text :class="testResult.ok ? 'ai-test-success' : 'ai-test-fail'">
+                {{ testResult.message }}
+              </text>
+            </view>
+          </view>
+        </view>
+
+        <view class="ai-settings-footer">
+          <text class="ai-settings-hint">配置仅保存在当前设备</text>
         </view>
       </view>
 
@@ -68,21 +114,20 @@
           </view>
         </view>
 
-        <!-- 加载中 -->
-        <view class="ai-message ai-message-assistant" v-if="loading">
-          <view class="ai-avatar">🤖</view>
-          <view class="ai-bubble ai-bubble-loading">
-            <view class="ai-dots">
-              <view class="ai-dot"></view>
-              <view class="ai-dot"></view>
-              <view class="ai-dot"></view>
-            </view>
-          </view>
-        </view>
       </scroll-view>
 
+      <!-- AI 思考中状态条 -->
+      <view class="ai-thinking-bar" v-if="loading">
+        <view class="ai-thinking-dots">
+          <view class="ai-dot"></view>
+          <view class="ai-dot"></view>
+          <view class="ai-dot"></view>
+        </view>
+        <text class="ai-thinking-text">AI 思考中...</text>
+      </view>
+
       <!-- 快捷标签 -->
-      <view class="ai-quick-tags" v-if="messages.length === 0 && !loading">
+      <view class="ai-quick-tags" v-if="messages.length === 0">
         <text class="ai-tag" v-for="tag in quickTags" :key="tag" @click="sendQuick(tag)">{{ tag }}</text>
       </view>
 
@@ -113,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onUnmounted, onMounted } from 'vue'
+import { ref, nextTick, onUnmounted, onMounted, watch, computed } from 'vue'
 import { WS_BASE_URL } from '@/utils/request.js'
 import { get, post } from '@/utils/request.js'
 
@@ -132,14 +177,49 @@ const modelList = ref([])
 const selectedModelId = ref(uni.getStorageSync('ai_selected_model') || '')
 const showModelPicker = ref(false)
 
+// 按模型分别存储 API Key
+const apiKeyMap = ref(JSON.parse(uni.getStorageSync('ai_api_key_map') || '{}'))
+const customApiKey = computed(() => apiKeyMap.value[selectedModelId.value] || '')
+
+// 连接测试
+const testingConnection = ref(false)
+const testResult = ref(null)
+
+const testConnection = async () => {
+  if (testingConnection.value) return
+  testingConnection.value = true
+  testResult.value = null
+  try {
+    const res = await post('/ai/test-connection', {
+      modelId: selectedModelId.value,
+      apiKey: customApiKey.value || undefined
+    })
+    if (res && res.code === 200) {
+      testResult.value = { ok: true, message: '连接成功！' }
+    } else {
+      testResult.value = { ok: false, message: res?.message || '连接失败' }
+    }
+  } catch (e) {
+    testResult.value = { ok: false, message: '网络请求失败，请检查后端服务' }
+  } finally {
+    testingConnection.value = false
+  }
+}
+
+const updateApiKey = (val) => {
+  apiKeyMap.value[selectedModelId.value] = val
+  uni.setStorageSync('ai_api_key_map', JSON.stringify(apiKeyMap.value))
+}
+
 const fetchModels = async () => {
   try {
     const res = await get('/ai/models')
-    if (res && Array.isArray(res)) {
-      modelList.value = res
+    const list = res?.data || res
+    if (Array.isArray(list)) {
+      modelList.value = list
       // 如果没有选过模型，默认选激活的
       if (!selectedModelId.value) {
-        const active = res.find(m => m.active)
+        const active = list.find(m => m.active)
         if (active) selectedModelId.value = active.id
       }
     }
@@ -668,6 +748,8 @@ defineExpose({ openDialog })
 
   &.ai-dialog-show {
     height: 80vh;
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -738,45 +820,170 @@ defineExpose({ openDialog })
   transform: rotate(180deg);
 }
 
-// 模型选择下拉
-.ai-model-picker {
+// 模型设置面板
+.ai-settings-panel {
   position: absolute;
   top: 100rpx;
-  left: 30rpx;
-  right: 30rpx;
+  left: 20rpx;
+  right: 20rpx;
   background: #fff;
-  border-radius: 16rpx;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
-  z-index: 10;
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+  z-index: 20;
   overflow: hidden;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
-.ai-model-option {
+.ai-settings-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 24rpx 30rpx;
-  font-size: 28rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.ai-settings-title {
+  font-size: 30rpx;
+  font-weight: bold;
   color: #333;
+}
+
+.ai-settings-close {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #666;
+
+  &:active {
+    background: #e0e0e0;
+  }
+}
+
+.ai-settings-section {
+  padding: 24rpx 30rpx;
   border-bottom: 1rpx solid #f5f5f5;
 
   &:last-child {
     border-bottom: none;
   }
+}
+
+.ai-settings-label {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+}
+
+.ai-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.ai-provider-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: #f8f8fc;
+  border: 2rpx solid transparent;
 
   &:active {
-    background: #f8f8fc;
+    background: #f0f0f7;
   }
 }
 
-.ai-model-active {
-  color: #667eea;
-  font-weight: 500;
+.ai-provider-active {
+  border-color: #667eea;
+  background: #f0f0ff;
 }
 
-.ai-model-check {
+.ai-provider-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.ai-provider-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.ai-provider-id {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.ai-provider-check {
   color: #667eea;
   font-size: 28rpx;
+  font-weight: bold;
+}
+
+.ai-settings-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  background: #f8f8fc;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  border: 2rpx solid #e0e0e0;
+  box-sizing: border-box;
+}
+
+.ai-test-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex-wrap: wrap;
+}
+
+.ai-test-btn {
+  padding: 16rpx 32rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-size: 26rpx;
+  color: #fff;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.ai-test-running {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.ai-test-result {
+  font-size: 26rpx;
+}
+
+.ai-test-success {
+  color: #10b981;
+}
+
+.ai-test-fail {
+  color: #e74c3c;
+}
+
+.ai-settings-footer {
+  padding: 20rpx 30rpx;
+  text-align: center;
+}
+
+.ai-settings-hint {
+  font-size: 22rpx;
+  color: #bbb;
 }
 
 // 消息区域
@@ -839,19 +1046,31 @@ defineExpose({ openDialog })
   color: #fff;
 }
 
-// 加载动画
-.ai-bubble-loading {
-  padding: 24rpx 32rpx;
+// AI 思考中状态条
+.ai-thinking-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 16rpx 0;
+  background: #fafafa;
+  border-top: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
 }
 
-.ai-dots {
+.ai-thinking-dots {
   display: flex;
-  gap: 12rpx;
+  gap: 8rpx;
+}
+
+.ai-thinking-text {
+  font-size: 24rpx;
+  color: #999;
 }
 
 .ai-dot {
-  width: 16rpx;
-  height: 16rpx;
+  width: 12rpx;
+  height: 12rpx;
   border-radius: 50%;
   background: #999;
   animation: ai-dot-bounce 1.4s infinite ease-in-out both;
@@ -924,7 +1143,8 @@ defineExpose({ openDialog })
   display: flex;
   align-items: center;
   gap: 16rpx;
-  padding: 16rpx 24rpx;
+  padding: 16rpx 24rpx calc(16rpx + constant(safe-area-inset-bottom));
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid #f0f0f0;
   background: #fafafa;
   flex-shrink: 0;

@@ -15,7 +15,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/sport_app?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: ZQQlpw1314
+    password: root
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
@@ -96,18 +96,18 @@ sms:
 
 # AI 模型配置（支持多提供商）
 ai:
-  default-provider: kimi
+  default-provider: deepseek
   providers:
     kimi:
       name: Kimi K2.6
-      api-key: sk-kimi-STHKGcC0rD0ld4OTRnT0YBE3rMjR6CmzuZ7FXwfbbPW3905ANL1WBQLzT61sF7xg
+      api-key: sk-kimi-vzatpEC3SjUsW46LzwOWM7BVcyWevbKygJegyju5tm3FezHuoBpyJUiO2sAUbctg
       base-url: https://api.moonshot.cn/v1
       model: kimi-k2.6
     deepseek:
-      name: DeepSeek V3
-      api-key: sk-deepseek-placeholder
+      name: DeepSeek V4 Flash
+      api-key: sk-da89d0b2b4fe42a29ba71d0e0e93b264
       base-url: https://api.deepseek.com/v1
-      model: deepseek-chat
+      model: deepseek-v4-flash
 
 # 天气API配置（X-QW-Api-Key 鉴权）
 weather:

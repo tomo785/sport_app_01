@@ -32,15 +32,12 @@
           @click="selectDay(day)"
         >
           <text class="day-num">{{ day.day }}</text>
+          <text class="day-steps" v-if="day.steps > 0">{{ day.steps > 999 ? (day.steps/1000).toFixed(1)+'k' : day.steps }}</text>
           <view class="day-dot" v-if="day.hasRecord"></view>
         </view>
       </view>
       <view class="calendar-footer">
         <text class="back-today" v-if="!isCurrentMonthView" @click="backToToday">回到今天</text>
-        <view class="expand-toggle" @click="calendarExpanded = !calendarExpanded">
-          <text class="expand-text">{{ calendarExpanded ? '收起' : '展开' }}</text>
-          <text class="expand-icon" :class="{ expanded: calendarExpanded }">▼</text>
-        </view>
       </view>
     </view>
 
@@ -85,6 +82,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getTodayStats } from '@/api/stats'
+import { getDailyStatsList } from '@/api/stats'
 import { getWorkoutList } from '@/api/workout'
 import { formatDate, formatDuration, formatDistance } from '@/utils'
 import TrainingStatusCard from '@/components/TrainingStatusCard.vue'
@@ -99,7 +97,7 @@ const recordDates = ref(new Set())
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
 const selectedDate = ref('') // 格式 YYYY-MM-DD
-const calendarExpanded = ref(false)
+const stepsMap = ref({}) // { 'YYYY-MM-DD': steps }
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -128,80 +126,42 @@ const filteredRecords = computed(() => {
 
 const calendarDays = computed(() => {
   const todayStr = formatDate(new Date(), 'YYYY-MM-DD')
+  const year = currentYear.value
+  const month = currentMonth.value
+  const firstDayOfMonth = new Date(year, month - 1, 1)
+  const lastDayOfMonth = new Date(year, month, 0)
+  const daysInMonth = lastDayOfMonth.getDate()
+  const startWeekDay = firstDayOfMonth.getDay()
 
-  if (calendarExpanded.value) {
-    // 月视图：和原来一致
-    const year = currentYear.value
-    const month = currentMonth.value
-    const firstDayOfMonth = new Date(year, month - 1, 1)
-    const lastDayOfMonth = new Date(year, month, 0)
-    const daysInMonth = lastDayOfMonth.getDate()
-    const startWeekDay = firstDayOfMonth.getDay()
-
-    const days = []
-
-    // 上月末尾日期
-    const prevMonthLastDay = new Date(year, month - 1, 0).getDate()
-    for (let i = startWeekDay - 1; i >= 0; i--) {
-      const day = prevMonthLastDay - i
-      const dateStr = formatDate(new Date(year, month - 2, day), 'YYYY-MM-DD')
-      days.push({
-        day,
-        isCurrentMonth: false,
-        isToday: dateStr === todayStr,
-        dateStr,
-        hasRecord: recordDates.value.has(dateStr)
-      })
+  const buildDay = (y, m, d, isCurrent) => {
+    const dateStr = formatDate(new Date(y, m - 1, d), 'YYYY-MM-DD')
+    return {
+      day: d, isCurrentMonth: isCurrent, isToday: dateStr === todayStr,
+      dateStr, hasRecord: recordDates.value.has(dateStr),
+      steps: stepsMap.value[dateStr] || 0
     }
-
-    // 当月日期
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = formatDate(new Date(year, month - 1, i), 'YYYY-MM-DD')
-      days.push({
-        day: i,
-        isCurrentMonth: true,
-        isToday: dateStr === todayStr,
-        dateStr,
-        hasRecord: recordDates.value.has(dateStr)
-      })
-    }
-
-    // 下月开头日期
-    const remaining = 42 - days.length
-    for (let i = 1; i <= remaining; i++) {
-      const dateStr = formatDate(new Date(year, month, i), 'YYYY-MM-DD')
-      days.push({
-        day: i,
-        isCurrentMonth: false,
-        isToday: dateStr === todayStr,
-        dateStr,
-        hasRecord: recordDates.value.has(dateStr)
-      })
-    }
-
-    return days
-  } else {
-    // 周视图：只展示当前选中日期所在周
-    const anchor = selectedDate.value ? new Date(selectedDate.value) : new Date()
-    const dayOfWeek = anchor.getDay()
-    const weekStart = new Date(anchor)
-    weekStart.setDate(anchor.getDate() - dayOfWeek)
-
-    const days = []
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart)
-      d.setDate(weekStart.getDate() + i)
-      const dateStr = formatDate(d, 'YYYY-MM-DD')
-      days.push({
-        day: d.getDate(),
-        isCurrentMonth: d.getMonth() + 1 === currentMonth.value && d.getFullYear() === currentYear.value,
-        isToday: dateStr === todayStr,
-        dateStr,
-        hasRecord: recordDates.value.has(dateStr)
-      })
-    }
-    return days
   }
+
+  const days = []
+
+  // 上月末尾日期
+  const prevMonthLastDay = new Date(year, month - 1, 0).getDate()
+  for (let i = startWeekDay - 1; i >= 0; i--) {
+    days.push(buildDay(year, month - 1, prevMonthLastDay - i, false))
+  }
+
+  // 当月日期
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(buildDay(year, month, i, true))
+  }
+
+  // 下月开头日期
+  const remaining = 42 - days.length
+  for (let i = 1; i <= remaining; i++) {
+    days.push(buildDay(year, month + 1, i, false))
+  }
+
+  return days
 })
 
 // ===================== 方法 =====================
@@ -211,20 +171,16 @@ const isSelectedDay = (day) => {
 
 const selectDay = (day) => {
   selectedDate.value = day.dateStr
-  if (calendarExpanded.value && !day.isCurrentMonth) {
-    // 月视图下点击其他月份日期时切换月份
+  if (!day.isCurrentMonth) {
     if (day.day > 20) {
       changeMonth(-1)
     } else {
       changeMonth(1)
     }
   }
-  if (!calendarExpanded.value) {
-    // 周视图下同步更新年月
-    const d = new Date(day.dateStr)
-    currentYear.value = d.getFullYear()
-    currentMonth.value = d.getMonth() + 1
-  }
+  const d = new Date(day.dateStr)
+  currentYear.value = d.getFullYear()
+  currentMonth.value = d.getMonth() + 1
 }
 
 const changeMonth = (delta) => {
@@ -239,18 +195,11 @@ const changeMonth = (delta) => {
   }
   currentMonth.value = newMonth
   currentYear.value = newYear
+  loadStepsData(newYear, newMonth)
 }
 
 const changeView = (delta) => {
-  if (calendarExpanded.value) {
-    changeMonth(delta)
-  } else {
-    const anchor = selectedDate.value ? new Date(selectedDate.value) : new Date()
-    anchor.setDate(anchor.getDate() + delta * 7)
-    selectedDate.value = formatDate(anchor, 'YYYY-MM-DD')
-    currentYear.value = anchor.getFullYear()
-    currentMonth.value = anchor.getMonth() + 1
-  }
+  changeMonth(delta)
 }
 
 const backToToday = () => {
@@ -258,7 +207,29 @@ const backToToday = () => {
   currentYear.value = now.getFullYear()
   currentMonth.value = now.getMonth() + 1
   selectedDate.value = formatDate(now, 'YYYY-MM-DD')
-  calendarExpanded.value = false
+  loadStepsData(currentYear.value, currentMonth.value)
+}
+
+// ===================== 步数数据加载 =====================
+const loadStepsData = async (year, month) => {
+  try {
+    const firstDay = `${year}-${String(month).padStart(2, '0')}-01`
+    const lastDayDate = new Date(year, month, 0)
+    const lastDay = `${year}-${String(month).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`
+    const res = await getDailyStatsList(firstDay, lastDay)
+    if (res.code === 200 && res.data) {
+      const map = {}
+      const list = Array.isArray(res.data) ? res.data : (res.data.list || [])
+      list.forEach(item => {
+        const dateStr = item.statDate || item.date || ''
+        const steps = item.steps || item.stepCount || 0
+        if (dateStr && steps > 0) map[dateStr] = steps
+      })
+      stepsMap.value = map
+    }
+  } catch (e) {
+    console.warn('[日历步数] 加载失败:', e)
+  }
 }
 
 // ===================== 数据加载 =====================
@@ -330,18 +301,20 @@ onMounted(() => {
   selectedDate.value = formatDate(new Date(), 'YYYY-MM-DD')
   loadTodayStats()
   loadWorkoutRecords()
+  loadStepsData(currentYear.value, currentMonth.value)
 })
 
 onShow(() => {
   loadTodayStats()
   loadWorkoutRecords()
+  loadStepsData(currentYear.value, currentMonth.value)
 })
 </script>
 
 <style lang="scss" scoped>
 .container {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-primary);
   padding-top: 20rpx;
   padding-bottom: 40rpx;
 }
@@ -354,10 +327,10 @@ onShow(() => {
 /* ===================== 日历卡片 ===================== */
 .calendar-card {
   margin: 0 28rpx 20rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 .calendar-header {
@@ -373,11 +346,11 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
+  background: var(--bg-primary);
   border-radius: 50%;
 
   &:active {
-    background: #e5e5e5;
+    background: var(--border-color);
   }
 }
 
@@ -390,7 +363,7 @@ onShow(() => {
 .month-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .week-row {
@@ -402,7 +375,7 @@ onShow(() => {
   flex: 1;
   text-align: center;
   font-size: 24rpx;
-  color: #999;
+  color: var(--text-tertiary);
   padding: 10rpx 0;
 }
 
@@ -422,7 +395,7 @@ onShow(() => {
 
   .day-num {
     font-size: 28rpx;
-    color: #333;
+    color: var(--text-primary);
     width: 56rpx;
     height: 56rpx;
     display: flex;
@@ -436,12 +409,22 @@ onShow(() => {
     height: 8rpx;
     border-radius: 50%;
     background: #22c55e;
-    margin-top: 4rpx;
+    margin-top: 2rpx;
+  }
+
+  .day-steps {
+    font-size: 18rpx;
+    color: #94a3b8;
+    margin-top: 2rpx;
+    line-height: 1;
   }
 
   &.other-month {
     .day-num {
-      color: #ccc;
+      color: var(--text-tertiary);
+    }
+    .day-steps {
+      color: var(--text-tertiary);
     }
   }
 
@@ -471,11 +454,11 @@ onShow(() => {
 
 .calendar-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: 16rpx;
   padding-top: 16rpx;
-  border-top: 1rpx solid #f5f5f5;
+  border-top: 1rpx solid var(--border-color);
 }
 
 .back-today {
@@ -484,41 +467,13 @@ onShow(() => {
   font-weight: 500;
 }
 
-.expand-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 8rpx 16rpx;
-  background: #f5f5f7;
-  border-radius: 24rpx;
-
-  &:active {
-    background: #e5e5e5;
-  }
-}
-
-.expand-text {
-  font-size: 24rpx;
-  color: #666;
-}
-
-.expand-icon {
-  font-size: 20rpx;
-  color: #666;
-  transition: transform 0.2s;
-
-  &.expanded {
-    transform: rotate(180deg);
-  }
-}
-
 /* ===================== 记录列表 ===================== */
 .record-section {
   margin: 0 28rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 .section-header {
@@ -531,7 +486,7 @@ onShow(() => {
 .section-title {
   font-size: 30rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .more-link {
@@ -549,7 +504,7 @@ onShow(() => {
   display: flex;
   align-items: center;
   padding: 20rpx;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 16rpx;
 
   &:active {
@@ -582,12 +537,12 @@ onShow(() => {
   .record-name {
     font-size: 30rpx;
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
   }
 
   .record-time {
     font-size: 24rpx;
-    color: #999;
+    color: var(--text-tertiary);
   }
 }
 
@@ -606,14 +561,14 @@ onShow(() => {
   .record-distance,
   .record-calories {
     font-size: 22rpx;
-    color: #999;
+    color: var(--text-tertiary);
   }
 }
 
 .empty {
   padding: 60rpx 0;
   text-align: center;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 28rpx;
 }
 </style>

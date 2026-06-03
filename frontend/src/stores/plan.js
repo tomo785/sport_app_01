@@ -9,7 +9,8 @@ import {
   getCommunityTemplates,
   saveCommunityTemplate,
   getCardOrder,
-  saveCardOrder
+  saveCardOrder,
+  normalizeDayPlan
 } from '../api/plan'
 
 export const usePlanStore = defineStore('plan', () => {
@@ -29,7 +30,8 @@ export const usePlanStore = defineStore('plan', () => {
     return (dateStr) => {
       if (!currentPlan.value || !currentPlan.value.days) return null
       const dayOfWeek = getDayOfWeek(dateStr)
-      return currentPlan.value.days.find(d => d.dayOfWeek === dayOfWeek) || null
+      const day = currentPlan.value.days.find(d => d.dayOfWeek === dayOfWeek)
+      return day ? normalizeDayPlan(day) : null
     }
   })
 
@@ -59,6 +61,7 @@ export const usePlanStore = defineStore('plan', () => {
     if (!currentPlan.value) return
     const days = currentPlan.value.days || []
     const index = days.findIndex(d => d.dayOfWeek === dayOfWeek)
+    // 支持多活动格式：如果传入的是 activities 数组或包含 type 的旧格式
     const newDay = {
       dayOfWeek,
       order: dayOfWeek,
@@ -66,6 +69,21 @@ export const usePlanStore = defineStore('plan', () => {
       personalNote: '',
       ...planData
     }
+    // 确保 activities 数组存在
+    if (!newDay.activities && newDay.type) {
+      // 旧格式单活动 → 包装为 activities 数组
+      const style = { run: '🏃', strength: '💪', yoga: '🧘', rest: '😴', custom: '⚡' }
+      newDay.activities = [{
+        icon: style[newDay.type] || '⚡',
+        type: newDay.type,
+        name: newDay.title || '训练',
+        duration: newDay.details?.duration || 30,
+        tags: [newDay.type],
+        summary: '',
+        details: newDay.details || {}
+      }]
+    }
+    if (!newDay.activities) newDay.activities = []
     if (index > -1) {
       days[index] = { ...days[index], ...newDay }
     } else {

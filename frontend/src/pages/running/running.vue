@@ -1337,7 +1337,7 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.container { height: 100vh; overflow: hidden; background: #f5f5f5; display: flex; flex-direction: column; }
+.container { height: 100vh; overflow: hidden; background: var(--bg-primary); display: flex; flex-direction: column; }
 
 /* ==================== 活动选择条 ==================== */
 .activity-bar {
@@ -1401,7 +1401,7 @@ onUnmounted(() => {
 
 .act-name {
   font-size: 26rpx;
-  color: #333;
+  color: var(--text-primary);
   transition: all 0.25s ease;
 }
 
@@ -1457,7 +1457,7 @@ onUnmounted(() => {
   position: absolute;
   top: 110rpx;
   left: 30rpx;
-  background: #fff;
+  background: var(--bg-card);
   padding: 10rpx 24rpx;
   border-radius: 20rpx;
   font-size: 22rpx;
@@ -1494,7 +1494,7 @@ onUnmounted(() => {
 .bottom-card {
   height: 42vh;
   min-height: 280rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 32rpx 32rpx 0 0;
   margin-top: -24rpx;
   z-index: 20;
@@ -1533,7 +1533,7 @@ onUnmounted(() => {
   flex: 1;
   padding: 20rpx 0;
   border-radius: 16rpx;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   text-align: center;
   transition: all 0.2s;
 
@@ -1543,8 +1543,8 @@ onUnmounted(() => {
   }
 }
 
-.mode-tab-text { font-size: 28rpx; font-weight: 600; color: #333; display: block; }
-.mode-tab-desc { font-size: 22rpx; color: #999; margin-top: 4rpx; display: block; }
+.mode-tab-text { font-size: 28rpx; font-weight: 600; color: var(--text-primary); display: block; }
+.mode-tab-desc { font-size: 22rpx; color: var(--text-tertiary); margin-top: 4rpx; display: block; }
 
 .mode-tab.active .mode-tab-text { color: #16a34a; }
 .mode-tab.active .mode-tab-desc { color: #22c55e; }
@@ -1561,8 +1561,8 @@ onUnmounted(() => {
   padding: 10rpx 28rpx;
   border-radius: 20rpx;
   font-size: 24rpx;
-  color: #666;
-  background: #f5f5f5;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
 
   &.active { background: #22c55e; color: #fff; font-weight: 600; }
 }
@@ -1580,7 +1580,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   padding: 20rpx 32rpx;
   border-radius: 16rpx;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   text-align: center;
   min-width: 100rpx;
   border: 2rpx solid transparent;
@@ -1591,8 +1591,8 @@ onUnmounted(() => {
   }
 }
 
-.chip-num { font-size: 32rpx; font-weight: 700; color: #333; display: block; }
-.chip-unit { font-size: 20rpx; color: #999; margin-top: 4rpx; display: block; }
+.chip-num { font-size: 32rpx; font-weight: 700; color: var(--text-primary); display: block; }
+.chip-unit { font-size: 20rpx; color: var(--text-tertiary); margin-top: 4rpx; display: block; }
 
 .picker-chip.selected .chip-num { color: #16a34a; }
 .picker-chip.selected .chip-unit { color: #22c55e; }
@@ -1640,7 +1640,7 @@ onUnmounted(() => {
 .custom-act-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1649,7 +1649,7 @@ onUnmounted(() => {
 
 .custom-act-meta {
   font-size: 20rpx;
-  color: #999;
+  color: var(--text-tertiary);
   margin-top: 4rpx;
   display: block;
 }
@@ -1676,7 +1676,7 @@ onUnmounted(() => {
 
 .empty-text {
   font-size: 24rpx;
-  color: #999;
+  color: var(--text-tertiary);
   margin-top: 12rpx;
   display: block;
 }
@@ -2115,7 +2115,7 @@ onUnmounted(() => {
 .panel-btn-circle.main {
   width: 96rpx;
   height: 96rpx;
-  background: #fff;
+  background: var(--bg-card);
   border: none;
   box-shadow: 0 4rpx 20rpx rgba(255, 255, 255, 0.12);
 }
@@ -2161,7 +2161,7 @@ onUnmounted(() => {
 }
 
 .indoor-panel .panel-btn-circle {
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border-color: #e5e5e5;
 }
 
@@ -2185,7 +2185,7 @@ onUnmounted(() => {
 }
 
 .indoor-panel .panel-btn-label {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .indoor-panel .panel-btn-row {
@@ -2246,7 +2246,7 @@ onUnmounted(() => {
 }
 
 .summary-card {
-  background: #fff;
+  background: var(--bg-card);
   margin: -24rpx 20rpx 0;
   border-radius: 24rpx 24rpx 0 0;
   padding: 32rpx;
@@ -2268,9 +2268,9 @@ onUnmounted(() => {
 }
 
 .hero-dist-num { font-size: 56rpx; font-weight: 300; color: #111; letter-spacing: -2rpx; }
-.hero-dist-unit { font-size: 28rpx; color: #999; }
+.hero-dist-unit { font-size: 28rpx; color: var(--text-tertiary); }
 
-.summary-hero-date { font-size: 24rpx; color: #999; }
+.summary-hero-date { font-size: 24rpx; color: var(--text-tertiary); }
 
 .summary-hero-timer {
   display: flex;
@@ -2299,8 +2299,8 @@ onUnmounted(() => {
 }
 
 .summary-stat-item { text-align: center; flex: 1; }
-.stat-item-num { font-size: 36rpx; font-weight: 600; color: #333; display: block; }
-.stat-item-label { font-size: 22rpx; color: #999; margin-top: 4rpx; display: block; }
+.stat-item-num { font-size: 36rpx; font-weight: 600; color: var(--text-primary); display: block; }
+.stat-item-label { font-size: 22rpx; color: var(--text-tertiary); margin-top: 4rpx; display: block; }
 
 .summary-goal-banner {
   margin-top: 24rpx;
@@ -2316,7 +2316,7 @@ onUnmounted(() => {
 /* ==================== 分段配速 ==================== */
 .splits-card {
   margin: 20rpx;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 20rpx;
   padding: 28rpx 32rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
@@ -2325,7 +2325,7 @@ onUnmounted(() => {
 .splits-title {
   font-size: 28rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 24rpx;
   display: block;
 }
@@ -2345,7 +2345,7 @@ onUnmounted(() => {
 .split-num {
   width: 48rpx;
   font-size: 24rpx;
-  color: #999;
+  color: var(--text-tertiary);
   text-align: center;
   flex-shrink: 0;
 }
@@ -2353,7 +2353,7 @@ onUnmounted(() => {
 .split-bar-wrap {
   flex: 1;
   height: 24rpx;
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   border-radius: 12rpx;
   overflow: hidden;
 }
@@ -2378,7 +2378,7 @@ onUnmounted(() => {
   width: 80rpx;
   font-size: 24rpx;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   text-align: right;
   flex-shrink: 0;
 }
@@ -2386,7 +2386,7 @@ onUnmounted(() => {
 .split-dist {
   width: 60rpx;
   font-size: 20rpx;
-  color: #999;
+  color: var(--text-tertiary);
   text-align: right;
   flex-shrink: 0;
 }
@@ -2407,7 +2407,7 @@ onUnmounted(() => {
   font-size: 28rpx; font-weight: 600;
 
   &.primary { background: #22c55e; color: #fff; box-shadow: 0 4rpx 16rpx rgba(34, 197, 94, 0.3); }
-  &.secondary { background: #f5f5f5; color: #666; }
+  &.secondary { background: #f5f5f5; color: var(--text-secondary); }
 
   &:active { opacity: 0.85; }
 }

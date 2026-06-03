@@ -171,14 +171,14 @@ function onBarClick(bar, idx) {
 }
 
 .ts-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
   height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 /* 顶部标题 */
@@ -192,7 +192,7 @@ function onBarClick(bar, idx) {
 .ts-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #000000;
+  color: var(--text-primary);
 }
 
 /* 中间内容 */
@@ -231,7 +231,7 @@ function onBarClick(bar, idx) {
 .ts-bar-value {
   font-size: 20rpx;
   font-weight: 600;
-  color: #000000;
+  color: var(--text-primary);
   position: absolute;
   top: -28rpx;
   white-space: nowrap;
@@ -246,7 +246,7 @@ function onBarClick(bar, idx) {
 
 .ts-bar-label {
   font-size: 22rpx;
-  color: #000000;
+  color: var(--text-primary);
 }
 
 /* 右侧指标 */
@@ -267,12 +267,12 @@ function onBarClick(bar, idx) {
 .ts-metric-value {
   font-size: 34rpx;
   font-weight: 700;
-  color: #000000;
+  color: var(--text-primary);
 }
 
 .ts-metric-label {
   font-size: 24rpx;
-  color: #000000;
+  color: var(--text-primary);
   opacity: 0.5;
 }
 
@@ -295,7 +295,7 @@ function onBarClick(bar, idx) {
 
 .ts-footer-text {
   font-size: 20rpx;
-  color: #000000;
+  color: var(--text-primary);
   opacity: 0.4;
 }
 
@@ -311,11 +311,13 @@ function onBarClick(bar, idx) {
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: #D1D5DB;
+  background: var(--text-tertiary);
   transition: all 0.3s;
+  opacity: 0.4;
 
   &.active {
-    background: #000000;
+    background: var(--accent-green);
+    opacity: 1;
   }
 }
 </style>

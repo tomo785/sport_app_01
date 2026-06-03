@@ -17,125 +17,176 @@
     <scroll-view class="page-body" scroll-y :refresher-enabled="true"
       :refresher-triggered="refreshing" @refresherrefresh="onRefresh">
 
-      <!-- 已有计划 -->
+      <!-- ===== 本周训练概览 ===== -->
+      <view class="week-overview" @click="goTodayPlan">
+        <view class="wo-left">
+          <view class="wo-ring-box">
+            <svg class="wo-ring-svg" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border-color)" stroke-width="10" />
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--accent-green)" stroke-width="10"
+                stroke-linecap="round"
+                :stroke-dasharray="ringCircumference"
+                :stroke-dashoffset="ringCircumference - (weekProgress / 100) * ringCircumference"
+                transform="rotate(-90 60 60)" />
+            </svg>
+            <view class="wo-ring-text-box">
+              <text class="wo-ring-num">{{ weekDoneDays }}</text>
+              <text class="wo-ring-den">/{{ weekTotalDays }}</text>
+            </view>
+          </view>
+        </view>
+        <view class="wo-right">
+          <view class="wo-header">
+            <text class="wo-title">本周训练</text>
+            <text class="wo-subtitle">第 {{ weekNum }} 周</text>
+          </view>
+          <view class="wo-week-row">
+            <view class="wo-day-item" v-for="(d, i) in weekDayPlans" :key="i">
+              <view class="wo-day-dot" :class="d.cls"></view>
+              <text class="wo-day-label">{{ dayNames[i] }}</text>
+            </view>
+          </view>
+          <text class="wo-desc">已完成 {{ weekDoneDays }} 天训练，{{ weekRemainDays > 0 ? '还剩 ' + weekRemainDays + ' 天' : '本周目标达成！' }}</text>
+        </view>
+      </view>
+
+      <!-- ===== 我的计划 ===== -->
       <view class="section">
         <view class="section-head">
-          <text class="section-title">已有计划</text>
+          <text class="section-title">我的计划</text>
         </view>
 
-        <view class="plan-list" v-if="myPlans.length > 0">
-          <view class="plan-swipe-item" v-for="(plan, idx) in myPlans" :key="plan.id"
-            @touchstart="touchStart($event, idx)" @touchmove="touchMove($event, idx)" @touchend="touchEnd($event, idx)">
-            <view class="plan-actions">
-              <view class="plan-action-btn modify" @click.stop="editPlan(plan)">修改</view>
-              <view class="plan-action-btn delete" @click.stop="confirmDeletePlan(plan)">删除</view>
-            </view>
-            <view class="plan-row" :class="{ shifted: swipeOpenIndex === idx }" @click="onRowClick(plan)">
-              <view class="plan-bar" :style="{ background: getLevelColor(plan.level) }"></view>
-              <view class="plan-info">
-                <text class="plan-name">{{ plan.name }}</text>
-                <view class="plan-tags">
-                  <text class="plan-tag" :style="{ background: getLevelColor(plan.level) + '1A', color: getLevelColor(plan.level) }">{{ plan.levelName || '新手' }}</text>
-                  <text class="plan-tag tag-gray">{{ plan.totalWeeks || 4 }}周</text>
-                  <text class="plan-tag tag-gray" v-if="plan.courses && plan.courses.length">每周{{ getWorkoutsPerWeek(plan) }}练</text>
-                </view>
-                <text class="plan-desc" v-if="plan.description">{{ plan.description }}</text>
-                <text class="plan-desc" v-else>第{{ plan.currentWeek || 1 }}/{{ plan.totalWeeks || 4 }}周 · 已完成 {{ getProgressPct(plan) }}%</text>
+        <view class="plan-cards" v-if="myPlans.length > 0">
+          <view class="plan-item" v-for="(plan, idx) in myPlans" :key="plan.id">
+            <view class="pi-top">
+              <view class="pi-name-row">
+                <view class="pi-level-dot" :style="{ background: getLevelColor(plan.level) }"></view>
+                <text class="pi-name">{{ plan.name }}</text>
               </view>
-              <view class="plan-right">
-                <view class="ring-wrap">
-                  <svg class="ring-svg" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="10"/>
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#22c55e" stroke-width="10"
-                      stroke-linecap="round"
-                      stroke-dasharray="251.3"
-                      :stroke-dashoffset="251.3 - (getProgressPct(plan) / 100) * 251.3"
-                      transform="rotate(-90 50 50)"/>
-                  </svg>
-                  <text class="ring-text">{{ getProgressPct(plan) }}</text>
+              <text class="pi-level-tag" :style="{ color: getLevelColor(plan.level), background: getLevelColor(plan.level) + '18' }">
+                {{ plan.levelName || '入门' }}
+              </text>
+            </view>
+
+            <!-- 进度条 -->
+            <view class="pi-progress-row">
+              <view class="pi-bar-track">
+                <view class="pi-bar-fill" :style="{ width: getProgressPct(plan) + '%', background: getLevelColor(plan.level) }"></view>
+              </view>
+              <text class="pi-bar-text">{{ getProgressPct(plan) }}%</text>
+            </view>
+
+            <!-- 7天训练详情（展开式） -->
+            <view class="pi-day-list">
+              <view class="pi-day-item" v-for="d in 7" :key="d" @click.stop="toggleDayExpand(plan.id, d)">
+                <view class="pi-day-head">
+                  <text class="pi-day-label">周{{ dayNames[d-1] }}</text>
+                  <text class="pi-day-status">{{ getDayStatusText(plan, d) }}</text>
                 </view>
+                <!-- 展开后显示活动详情 -->
+                <view class="pi-day-detail" v-if="isDayExpanded(plan.id, d) && getDayCourses(plan, d).length > 0">
+                  <view class="pi-act-card" v-for="(c, ci) in getDayCourses(plan, d)" :key="ci">
+                    <text class="pi-act-icon">{{ courseTypeIcon(c.type) }}</text>
+                    <text class="pi-act-name">{{ c.name }}</text>
+                    <text class="pi-act-dur" v-if="c.duration">{{ c.duration }}分</text>
+                  </view>
+                  <view class="pi-act-card pi-act-rest" v-if="isRestDay(plan, d)">
+                    <text class="pi-act-icon">😴</text>
+                    <text class="pi-act-name">休息自由活动</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+
+            <view class="pi-footer">
+              <text class="pi-stat">{{ plan.totalWeeks || 4 }} 周 · 每周 {{ getWorkoutsPerWeek(plan) }} 练</text>
+              <view class="pi-actions">
+                <text class="pi-action pi-action-edit" @click.stop="editPlan(plan)">修改</text>
+                <text class="pi-action pi-action-del" @click.stop="confirmDeletePlan(plan)">删除</text>
               </view>
             </view>
           </view>
         </view>
 
         <view class="plan-empty" v-else>
-          <text class="plan-empty-text">暂无计划，从热门推荐开始吧</text>
+          <view class="plan-empty-icon">📋</view>
+          <text class="plan-empty-text">还没有训练计划</text>
+          <text class="plan-empty-hint">创建一个计划，开始你的运动之旅</text>
         </view>
       </view>
 
-      <!-- 操作按钮区 -->
-      <view class="action-buttons">
-        <view class="action-btn action-btn-primary" @click="goCreatePlan">
-          <text class="action-btn-text action-btn-text-primary">+ 创建计划</text>
-        </view>
-        <view class="action-btn action-btn-secondary" @click="goCommunity">
-          <text class="action-btn-text action-btn-text-secondary">社区</text>
-        </view>
-      </view>
-
-      <!-- 热门计划 -->
+      <!-- ===== 小项目设计器 ===== -->
       <view class="section">
         <view class="section-head">
-          <text class="section-title">热门计划</text>
-          <!-- 查看更多已移除，由下方社区按钮统一入口 -->
+          <text class="section-title">小项目设计器</text>
+          <text class="section-more" @click="goActivityEditor">创建完整活动 ›</text>
         </view>
-        <scroll-view class="hot-scroll" scroll-x :show-scrollbar="false" @scroll="onHotScroll">
-          <view class="hot-track">
-            <view class="hot-card" v-for="(item, idx) in hotPlans" :key="idx" @click="goPlanDetail(item)">
-              <view class="hot-img" :class="'gradient-' + (idx % 3)">
-                <view class="hot-mask"></view>
-                <text class="hot-name">{{ item.name }}</text>
+
+        <view class="designer-section">
+          <!-- tabs -->
+          <view class="ds-tabs">
+            <text class="ds-tab" :class="{ active: dsTab === 'preset' }" @click="dsTab = 'preset'">默认项目</text>
+            <text class="ds-tab" :class="{ active: dsTab === 'custom' }" @click="dsTab = 'custom'">自定义项目</text>
+          </view>
+
+          <!-- 默认项目列表 -->
+          <view class="ds-grid" v-if="dsTab === 'preset'">
+            <view class="ds-card" v-for="(item, idx) in presetExercises" :key="idx">
+              <text class="ds-card-icon">{{ item.icon }}</text>
+              <view class="ds-card-info">
+                <text class="ds-card-name">{{ item.name }}</text>
+                <text class="ds-card-meta">{{ item.meta }}</text>
               </view>
+              <text class="ds-card-add" @click="quickAddToMyActivities(item)">+</text>
             </view>
           </view>
-        </scroll-view>
-        <view class="hot-dots">
-          <view class="hot-dot" :class="{ active: hotPage === i }" v-for="i in 3" :key="i"></view>
+
+          <!-- 自定义项目列表 -->
+          <view class="ds-custom" v-if="dsTab === 'custom'">
+            <!-- 已有自定义活动 -->
+            <view class="ds-custom-list" v-if="myActivitiesList.length > 0">
+              <view class="ds-custom-item" v-for="(act, idx) in myActivitiesList" :key="act.id || idx">
+                <text class="ds-ci-icon">⚡</text>
+                <view class="ds-ci-info">
+                  <text class="ds-ci-name">{{ act.title || act.name }}</text>
+                  <text class="ds-ci-meta">{{ (act.exercises || []).length }} 个步骤</text>
+                </view>
+                <text class="ds-ci-del" @click="deleteMyActivity(idx)">✕</text>
+              </view>
+            </view>
+
+            <!-- 新建自定义活动表单 -->
+            <view class="ds-custom-form">
+              <text class="ds-cf-title">新建自定义项目</text>
+              <input class="ds-cf-input" v-model="customActName" placeholder="项目名称（如：晨间唤醒组合）" />
+              <view class="ds-cf-presets">
+                <text class="ds-cf-preset" v-for="(ex, i) in selectedPresets" :key="i">
+                  {{ ex.name }}
+                  <text class="ds-cf-preset-del" @click="removePreset(i)">✕</text>
+                </text>
+              </view>
+              <view class="ds-cf-row">
+                <picker class="ds-cf-picker" :range="presetExerciseNames" :value="presetPickIdx"
+                  @change="onPresetPickChange">
+                  <text>{{ presetPickIdx >= 0 ? presetExerciseNames[presetPickIdx] : '选择预设步骤' }}</text>
+                </picker>
+                <view class="ds-cf-addstep" @click="addPresetToCustom">添加步骤</view>
+              </view>
+              <view class="ds-cf-save" @click="saveCustomActivity">保存自定义项目</view>
+            </view>
+          </view>
         </view>
       </view>
 
-      <!-- 创建活动 -->
-      <view class="section">
-        <view class="section-head">
-          <text class="section-title">创建活动</text>
+      <!-- ===== 快捷入口 ===== -->
+      <view class="quick-actions">
+        <view class="qa-btn qa-primary" @click="goCreatePlan">
+          <text class="qa-btn-icon">+</text>
+          <text class="qa-btn-text">创建新计划</text>
         </view>
-        <view class="filter-layout">
-          <view class="filter-side">
-            <view class="filter-item" v-for="cat in filterCategories" :key="cat.key"
-              :class="{ active: activeFilter === cat.key }" @click="activeFilter = cat.key">
-              <text class="fi-text">{{ cat.label }}</text>
-            </view>
-          </view>
-          <view class="filter-content">
-            <view class="fc-chip" v-for="act in filteredActivityTypes" :key="act"
-              :class="{ selected: selectedActivities.includes(act) }" @click="toggleActivity(act)">
-              <text class="fc-text">{{ act }}</text>
-              <text class="fc-check" v-if="selectedActivities.includes(act)">✓</text>
-            </view>
-            <view class="fc-empty" v-if="filteredActivityTypes.length === 0">
-              <text>暂无匹配活动</text>
-            </view>
-          </view>
-        </view>
-        <view class="create-activity-btn" @click="goActivityCreate">
-          <text class="cab-text">创建活动</text>
-        </view>
-        <view class="created-list" v-if="createdActivities.length > 0">
-          <view class="created-item" v-for="(item, idx) in createdActivities" :key="idx">
-            <view class="ci-left">
-              <view class="ci-info">
-                <text class="ci-name">{{ item.name }}</text>
-                <text class="ci-desc">{{ item.desc }}</text>
-              </view>
-            </view>
-            <view class="ci-right">
-              <text class="ci-delete" @click="removeCreatedActivity(idx)">✕</text>
-            </view>
-          </view>
-        </view>
-        <view class="empty-hint" v-else>
-          <text>选择上方活动类型，点击「创建活动」开始</text>
+        <view class="qa-btn qa-secondary" @click="goCommunity">
+          <text class="qa-btn-icon">🌐</text>
+          <text class="qa-btn-text">探索社区</text>
         </view>
       </view>
 
@@ -145,257 +196,224 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
-  getMyPlans,
-  deletePlan, uploadPlanToCommunity, getPlanDetail,
-  updatePlan
+  getMyPlans, deletePlan, getPlanDetail, updatePlan,
+  createDefaultWeeklyPlan
 } from '@/api/plan'
 
 const statusBarHeight = ref(0)
 const refreshing = ref(false)
-const hotPage = ref(0)
-const avatarUrl = ref('')
 const myPlans = ref([])
-const selectedPlan = ref(null)
-const activityMode = ref('add')
+const expandedDays = ref({}) // { 'planId_day': true }
 
-const dayLabels = ['一', '二', '三', '四', '五', '六', '日']
-const activityCats = ['有氧', '力量', '拉伸', 'HIIT', '综合']
+const dayNames = ['一', '二', '三', '四', '五', '六', '日']
 
-const customTypeIdx = ref(2)
-const customWeekIdx = ref(0)
-const customDayIdx = ref(0)
-const customCourse = reactive({ name: '', type: 3, duration: 30 })
+const ringCircumference = 2 * Math.PI * 50
 
-const selectedActivities = ref([])
-const activeFilter = ref('run')
+const courseTypeIcons = { 1: '🏃', 2: '💪', 3: '🧘', 4: '⚡', 5: '⚡', 6: '😴' }
+const courseTypeNames = { 1: '跑步', 2: '力量', 3: '拉伸', 4: 'HIIT', 5: '综合', 6: '休息' }
 
-const filterCategories = [
-  { key: 'run',  label: '跑步',  types: ['线下跑步', '室内跑步'] },
-  { key: 'bike', label: '骑行',  types: ['线上骑行', '骑行'] },
-  { key: 'outdoor', label: '户外', types: ['徒步', '健步走', '登山'] },
-  { key: 'swim', label: '水中',  types: ['游泳'] },
+// ---- 小项目设计器 ----
+const dsTab = ref('preset')
+const customActName = ref('')
+const selectedPresets = ref([])
+const presetPickIdx = ref(-1)
+const myActivitiesList = ref([])
+
+const presetExercises = [
+  { icon: '🏃', name: '慢跑热身', meta: '5-10分 · 1-2km', type: 1, duration: 600, distance: 2000 },
+  { icon: '🏃', name: '400米冲刺', meta: '90秒 · 1组', type: 1, duration: 90, distance: 400 },
+  { icon: '🏃', name: '800米间歇', meta: '180秒 · 4组', type: 1, duration: 180, distance: 800, sets: 4 },
+  { icon: '💪', name: '深蹲', meta: '4组×12次', type: 2, sets: 4, reps: 12 },
+  { icon: '💪', name: '俯卧撑', meta: '4组×15次', type: 2, sets: 4, reps: 15 },
+  { icon: '💪', name: '平板支撑', meta: '3组×60秒', type: 2, sets: 3, reps: 60 },
+  { icon: '💪', name: '卷腹', meta: '3组×20次', type: 2, sets: 3, reps: 20 },
+  { icon: '💪', name: '弓步蹲', meta: '3组×12次/腿', type: 2, sets: 3, reps: 12 },
+  { icon: '🧘', name: '全身拉伸', meta: '10分钟', type: 3, duration: 600 },
+  { icon: '🧘', name: '哈他瑜伽', meta: '30分钟', type: 3, duration: 1800 },
+  { icon: '🧘', name: '泡沫轴放松', meta: '15分钟', type: 3, duration: 900 },
+  { icon: '🚶', name: '缓和散步', meta: '5-10分 · 0.5km', type: 1, duration: 300, distance: 500 },
 ]
 
-const filteredActivityTypes = computed(() => {
-  const cat = filterCategories.find(c => c.key === activeFilter.value)
-  return cat ? cat.types : []
-})
+const presetExerciseNames = computed(() => presetExercises.map(e => e.name))
 
-const createdActivities = ref([])
-
-const activityEmojiMap = {
-  '线下跑步': { desc: '户外跑步训练' },
-  '线上骑行': { desc: '室内骑行台训练' },
-  '徒步': { desc: '户外徒步活动' },
-  '室内跑步': { desc: '跑步机训练' },
-  '骑行': { desc: '户外骑行活动' },
-  '健步走': { desc: '日常健步走' },
-  '游泳': { desc: '游泳训练' },
-  '登山': { desc: '登山活动' },
-  '瑜伽': { desc: '瑜伽练习' },
-  '力量训练': { desc: '力量训练课程' },
-  '有氧操': { desc: '有氧操课程' },
-  '拉伸': { desc: '拉伸放松' },
-}
-
-const activityTypes = [
-  '线下跑步', '线上骑行', '徒步',
-  '室内跑步', '骑行', '健步走',
-  '游泳', '登山', '瑜伽',
-  '力量训练', '有氧操', '拉伸'
-]
-
-const hotPlans = ref([
-  { id: 1, name: '晨跑30分钟', tag: '晨跑' },
-  { id: 2, name: '瑜伽入门', tag: '瑜伽' },
-  { id: 3, name: '力量训练', tag: '力量' },
-  { id: 4, name: '户外骑行', tag: '骑行' },
-  { id: 5, name: '间歇冲刺', tag: '跑步' },
-  { id: 6, name: '全身燃脂', tag: '减脂' },
-])
-
-const customWeeks = computed(() => {
-  const w = selectedPlan.value ? selectedPlan.value.totalWeeks : 4
-  return Array.from({ length: w }, (_, i) => i + 1)
-})
-
-const quickActivities = [
-  { type: 1, name: '热身跑', duration: 10, warmUpDuration: 10, exercises: [{ name: '慢跑热身', type: 1, duration: 600 }] },
-  { type: 2, name: '间歇跑', duration: 45, exercises: [{ name: '热身', type: 1, duration: 600 }, { name: '冲刺×8', type: 1, duration: 90, sets: 8, reps: 1, restTime: 90 }, { name: '缓和', type: 3, duration: 600 }] },
-  { type: 2, name: '长距离慢跑', duration: 60, exercises: [{ name: '热身', type: 1, duration: 300 }, { name: '慢跑10km', type: 1, duration: 3000, distance: 10000 }, { name: '缓和', type: 3, duration: 300 }] },
-  { type: 2, name: '节奏跑', duration: 50, exercises: [{ name: '热身2km', type: 1, duration: 600, distance: 2000 }, { name: '节奏5km', type: 1, duration: 1800, distance: 5000 }, { name: '冷身', type: 3, duration: 600 }] },
-  { type: 2, name: '全身力量', duration: 45, exercises: [{ name: '深蹲', type: 2, sets: 4, reps: 12, restTime: 60 }, { name: '俯卧撑', type: 2, sets: 4, reps: 15, restTime: 60 }] },
-  { type: 3, name: '瑜伽拉伸', duration: 30, exercises: [{ name: '全身拉伸', type: 3, duration: 1800 }] },
-  { type: 1, name: '骑行', duration: 60 },
-  { type: 1, name: '游泳', duration: 45 },
-]
-
-// ---- 初始化 ----
-onMounted(() => {
-  const info = uni.getSystemInfoSync()
-  statusBarHeight.value = info.statusBarHeight || 20
-  loadAvatar()
-  loadMyPlans()
-})
-
-onShow(() => {
-  loadAvatar()
-  loadMyPlans()
-  loadCreatedActivities()
-  if (selectedPlan.value && selectedPlan.value.id) {
-    refreshSelectedPlan()
-  }
-})
-
-function loadAvatar() {
-  const saved = uni.getStorageSync('avatarUrl')
-  if (saved) avatarUrl.value = saved
-}
-
-function onRefresh() {
-  refreshing.value = true
-  loadMyPlans()
-}
-
-// ---- 导航 ----
-function goProfile() {
-  uni.switchTab({ url: '/pages/user/profile' })
-}
-
-function goMessages() {
-  uni.showToast({ title: '消息功能开发中', icon: 'none' })
-}
-
-function goCreatePlan() {
-  uni.navigateTo({ url: '/pages/goal/create' })
-}
-
-function goDiscover() {
-  uni.navigateTo({ url: '/pages/goal/community' })
-}
-
-function goCommunity() {
-  uni.navigateTo({ url: '/pages/goal/community' })
-}
-
-function goActivityCreate() {
+function goActivityEditor() {
   uni.navigateTo({ url: '/pages/goal/activity-editor' })
 }
 
-function goPlanDetail(item) {
-  if (item && item.id) {
-    uni.navigateTo({ url: `/pages/goal/detail?id=${item.id}` })
-  }
-}
-
-const swipeOpenIndex = ref(-1)
-const touchData = ref({})
-
-function touchStart(e, idx) {
-  touchData.value = {
-    startX: e.touches[0].clientX,
-    startY: e.touches[0].clientY,
-    idx
-  }
-}
-
-function touchMove(e, idx) {
-  const data = touchData.value
-  if (!data || data.idx !== idx) return
-  data.currentX = e.touches[0].clientX
-  data.currentY = e.touches[0].clientY
-}
-
-function touchEnd(e, idx) {
-  const data = touchData.value
-  if (!data || data.idx !== idx) return
-  const deltaX = data.startX - (data.currentX || data.startX)
-  const deltaY = Math.abs((data.currentY || data.startY) - data.startY)
-
-  if (Math.abs(deltaX) < 10 && deltaY < 10) {
-    if (swipeOpenIndex.value === idx) {
-      swipeOpenIndex.value = -1
-    }
-    return
-  }
-
-  if (deltaX > 50 && deltaX > deltaY) {
-    swipeOpenIndex.value = idx
-  } else if (deltaX < -30) {
-    swipeOpenIndex.value = -1
-  }
-}
-
-function onRowClick(plan) {
-  if (swipeOpenIndex.value !== -1) {
-    swipeOpenIndex.value = -1
-  } else {
-    goPlanDetail(plan)
-  }
-}
-
-function editPlan(plan) {
-  swipeOpenIndex.value = -1
-  uni.navigateTo({ url: `/pages/goal/create?id=${plan.id}` })
-}
-
-function goToTaskDetail(plan) {
-  uni.navigateTo({ url: '/pages/task/task-detail' })
-}
-
-// ---- 热门计划 ----
-function onHotScroll(e) {
-  const width = e.detail.scrollWidth
-  const left = e.detail.scrollLeft
-  const itemWidth = width / hotPlans.value.length
-  if (itemWidth > 0) {
-    hotPage.value = Math.min(2, Math.round(left / itemWidth / 2))
-  }
-}
-
-function toggleActivity(act) {
-  const idx = selectedActivities.value.indexOf(act)
-  if (idx > -1) {
-    selectedActivities.value.splice(idx, 1)
-  } else {
-    selectedActivities.value.push(act)
-  }
-}
-
-function loadCreatedActivities() {
+function loadMyActivities() {
   try {
     const raw = uni.getStorageSync('userActivities')
     if (raw) {
       const list = typeof raw === 'string' ? JSON.parse(raw) : raw
-      const merged = [...createdActivities.value]
-      list.forEach(item => {
-        if (!merged.find(m => m.name === item.title)) {
-          const steps = (item.main || []).length + (item.warmup || []).length + (item.cooldown || []).length
-          merged.push({
-            name: item.title,
-            desc: `${steps}个步骤 · ${item.warmup?.length ? '热身' : ''}${item.main?.length ? '+主项' : ''}${item.cooldown?.length ? '+缓和' : ''}`,
-            time: item.createdAt || ''
-          })
-        }
-      })
-      createdActivities.value = merged
+      myActivitiesList.value = Array.isArray(list) ? list : []
     }
-  } catch (e) { /* ignore */ }
+  } catch (e) { myActivitiesList.value = [] }
 }
 
-function removeCreatedActivity(idx) {
-  const item = createdActivities.value[idx]
-  createdActivities.value.splice(idx, 1)
-  // 同步删除 localStorage 中的活动
-  try {
-    const raw = uni.getStorageSync('userActivities')
-    const list = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : []
-    const filtered = list.filter(a => a.title !== item.name)
-    uni.setStorageSync('userActivities', JSON.stringify(filtered))
-  } catch (e) { /* ignore */ }
+function onPresetPickChange(e) {
+  presetPickIdx.value = e.detail.value
+}
+
+function addPresetToCustom() {
+  if (presetPickIdx.value < 0) { uni.showToast({ title: '请选择一个预设步骤', icon: 'none' }); return }
+  const ex = presetExercises[presetPickIdx.value]
+  if (selectedPresets.value.some(s => s.name === ex.name)) {
+    uni.showToast({ title: '该步骤已添加', icon: 'none' }); return
+  }
+  selectedPresets.value.push({ ...ex })
+  presetPickIdx.value = -1
+}
+
+function removePreset(idx) {
+  selectedPresets.value.splice(idx, 1)
+}
+
+function saveCustomActivity() {
+  if (!customActName.value.trim()) { uni.showToast({ title: '请输入项目名称', icon: 'none' }); return }
+  if (selectedPresets.value.length === 0) { uni.showToast({ title: '请至少添加一个步骤', icon: 'none' }); return }
+
+  const newAct = {
+    id: Date.now(),
+    title: customActName.value.trim(),
+    type: 1,
+    duration: selectedPresets.value.reduce((s, e) => s + (e.duration || 60), 0) / 60,
+    exercises: selectedPresets.value.map(e => ({
+      name: e.name, type: e.type, duration: e.duration || 60,
+      sets: e.sets || null, reps: e.reps || null, distance: e.distance || null
+    }))
+  }
+
+  myActivitiesList.value.push(newAct)
+  uni.setStorageSync('userActivities', JSON.stringify(myActivitiesList.value))
+  customActName.value = ''
+  selectedPresets.value = []
+  uni.showToast({ title: '自定义项目已保存', icon: 'success' })
+}
+
+function quickAddToMyActivities(item) {
+  const newAct = {
+    id: Date.now() + Math.random(),
+    title: item.name,
+    type: item.type || 1,
+    duration: (item.duration || 60) / 60,
+    exercises: [{ name: item.name, type: item.type || 1, duration: item.duration || 60, sets: item.sets || null, reps: item.reps || null }]
+  }
+  myActivitiesList.value.push(newAct)
+  uni.setStorageSync('userActivities', JSON.stringify(myActivitiesList.value))
+  uni.showToast({ title: `已添加「${item.name}」到自定义项目`, icon: 'success' })
+}
+
+function deleteMyActivity(idx) {
+  uni.showModal({
+    title: '删除项目',
+    content: '确定删除该自定义项目？',
+    success: (res) => {
+      if (!res.confirm) return
+      myActivitiesList.value.splice(idx, 1)
+      uni.setStorageSync('userActivities', JSON.stringify(myActivitiesList.value))
+    }
+  })
+}
+
+function courseTypeIcon(type) { return courseTypeIcons[type] || '🏃' }
+function courseTypeName(type) { return courseTypeNames[type] || '运动' }
+
+function toggleDayExpand(planId, day) {
+  const key = planId + '_' + day
+  expandedDays.value[key] = !expandedDays.value[key]
+}
+function isDayExpanded(planId, day) {
+  return !!expandedDays.value[planId + '_' + day]
+}
+
+function getDayCourses(plan, dayOfWeek) {
+  if (!plan.courses) return []
+  return plan.courses.filter(c => c.day === dayOfWeek)
+}
+
+function getDayStatusText(plan, dayOfWeek) {
+  const courses = getDayCourses(plan, dayOfWeek)
+  if (courses.length === 0) return '—'
+  if (courses.some(c => c.type === 6)) return '😴 休息'
+  const names = courses.map(c => courseTypeName(c.type))
+  return [...new Set(names)].join(' · ')
+}
+
+// ---- 本周训练概览数据 ----
+const weekDayPlans = ref(Array(7).fill({ cls: 'dot-none' }))
+const weekDoneDays = ref(0)
+const weekTotalDays = ref(7)
+const weekNum = ref(1)
+const weekProgress = computed(() => weekTotalDays.value > 0 ? Math.round((weekDoneDays.value / weekTotalDays.value) * 100) : 0)
+const weekRemainDays = computed(() => Math.max(0, weekTotalDays.value - weekDoneDays.value))
+
+// 周二到周日的 dayOfWeek 映射 (getDay() 返回 0=周日)
+function getDayOfWeek(date = new Date()) {
+  const d = date.getDay()
+  return d === 0 ? 7 : d
+}
+
+function getWeekNumber() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 1)
+  const diff = now - start
+  return Math.ceil((diff / 86400000 + start.getDay() + 1) / 7)
+}
+
+function loadWeekOverview() {
+  const todayDay = getDayOfWeek()
+  const raw = uni.getStorageSync('weeklyPlan_current')
+  const plans = []
+
+  if (raw) {
+    try {
+      const weekly = JSON.parse(raw)
+      const days = weekly.days || []
+      // 重置一周计划
+      for (let i = 0; i < 7; i++) {
+        const dayPlan = days.find(d => d.dayOfWeek === i + 1)
+        if (dayPlan) {
+          const isRest = dayPlan.type === 'rest'
+          const isDone = dayPlan.isCompleted
+          let cls = 'dot-rest'
+          if (isDone) cls = 'dot-done'
+          else if (!isRest) cls = 'dot-active'
+          plans.push({ cls, plan: dayPlan })
+        } else {
+          plans.push({ cls: 'dot-none', plan: null })
+        }
+      }
+      weekNum.value = getWeekNumber()
+    } catch (e) {
+      for (let i = 0; i < 7; i++) plans.push({ cls: 'dot-none', plan: null })
+    }
+  } else {
+    for (let i = 0; i < 7; i++) plans.push({ cls: 'dot-none', plan: null })
+  }
+  weekDayPlans.value = plans
+
+  // 计算已完成天数：从 checkin_records 获取本周完成情况
+  const now = new Date()
+  const currentDay = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - (currentDay === 0 ? 6 : currentDay - 1))
+  let done = 0
+  const checkinRaw = uni.getStorageSync('checkin_records')
+  if (checkinRaw) {
+    try {
+      const records = JSON.parse(checkinRaw)
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday)
+        d.setDate(monday.getDate() + i)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        if (records[key]) done++
+      }
+    } catch (e) {}
+  }
+  weekDoneDays.value = done
 }
 
 // ---- 计划数据 ----
@@ -409,50 +427,19 @@ function loadMyPlans() {
 function loadLocalPlans() {
   const saved = uni.getStorageSync('myTrainingPlans')
   myPlans.value = saved ? (() => { try { return JSON.parse(saved) } catch (e) { return [] } })() : []
-}
-
-function confirmDeletePlan(plan) {
-  uni.showModal({
-    title: '删除计划',
-    content: `确定删除"${plan.name}"？不可恢复。`,
-    success: res => {
-      if (!res.confirm) return
-      deletePlan(plan.id)
-        .then(() => {
-          myPlans.value = myPlans.value.filter(p => p.id !== plan.id)
-          if (selectedPlan.value && selectedPlan.value.id === plan.id) selectedPlan.value = null
-        })
-        .catch(() => {
-          myPlans.value = myPlans.value.filter(p => p.id !== plan.id)
-          if (selectedPlan.value && selectedPlan.value.id === plan.id) selectedPlan.value = null
-        })
+  // 如果没有任何计划，自动创建默认计划
+  if (myPlans.value.length === 0) {
+    createDefaultWeeklyPlan()
+    const savedAgain = uni.getStorageSync('myTrainingPlans')
+    if (savedAgain) {
+      try { myPlans.value = JSON.parse(savedAgain) } catch (e) {}
     }
-  })
-}
-
-function uploadPlan(plan) {
-  const token = uni.getStorageSync('token')
-  if (!token) {
-    uni.showModal({
-      title: '需要登录',
-      content: '上传计划到社区需要先登录账号',
-      confirmText: '去登录',
-      success: res => {
-        if (res.confirm) uni.navigateTo({ url: '/pages/user/login' })
-      }
-    })
-    return
   }
-  uni.showModal({
-    title: '上传到社区',
-    content: '其他用户可以看到和使用你的计划，确定上传？',
-    success: res => {
-      if (!res.confirm) return
-      uploadPlanToCommunity(plan.id)
-        .then(() => { uni.showToast({ title: '已上传', icon: 'success' }); plan.isOfficial = true })
-        .catch(() => uni.showToast({ title: '上传失败', icon: 'none' }))
-    }
-  })
+}
+
+function isRestDay(plan, dayOfWeek) {
+  if (!plan.courses) return false
+  return plan.courses.some(c => c.day === dayOfWeek && c.type === 6)
 }
 
 function getProgressPct(plan) {
@@ -467,179 +454,73 @@ function getWorkoutsPerWeek(plan) {
   return days.size
 }
 
-// ---- 活动管理 ----
-const selectedPlanCourses = computed(() => {
-  if (!selectedPlan.value || !selectedPlan.value._courses) return []
-  return selectedPlan.value._courses.sort((a, b) => {
-    if (a.week !== b.week) return a.week - b.week
-    if (a.day !== b.day) return a.day - b.day
-    return 0
-  })
-})
-
-function selectPlanForActivity(plan) {
-  if (selectedPlan.value && selectedPlan.value.id === plan.id) {
-    refreshSelectedPlan()
-    return
-  }
-  getPlanDetail(plan.id)
-    .then(res => {
-      if (res.code === 200 && res.data) {
-        selectedPlan.value = { ...plan, _courses: res.data.courses || [] }
-      }
-    })
-    .catch(() => {
-      selectedPlan.value = { ...plan, _courses: plan.courses || [] }
-    })
+function getLevelColor(level) {
+  const c = { 1: '#22c55e', 2: '#3b82f6', 3: '#f59e0b', 4: '#ef4444' }
+  return c[level] || c[1]
 }
 
-function refreshSelectedPlan() {
-  if (!selectedPlan.value) return
-  getPlanDetail(selectedPlan.value.id)
-    .then(res => {
-      if (res.code === 200 && res.data) {
-        selectedPlan.value._courses = res.data.courses || []
-      }
-    })
-    .catch(() => {})
+// ---- 导航 ----
+function goCreatePlan() {
+  uni.navigateTo({ url: '/pages/goal/create' })
 }
 
-function quickAddToPlan(act) {
-  if (!selectedPlan.value) {
-    uni.showToast({ title: '请先选择一个计划', icon: 'none' })
-    return
-  }
-  const course = {
-    week: customWeeks.value[customWeekIdx.value],
-    day: customDayIdx.value + 1,
-    name: act.name,
-    type: act.type,
-    duration: act.duration,
-    warmUpDuration: act.warmUpDuration || 0,
-    coolDownDuration: 0,
-    exercises: (act.exercises || []).map(e => ({ ...e }))
-  }
-  if (!selectedPlan.value._courses) selectedPlan.value._courses = []
-  selectedPlan.value._courses.push(course)
-  uni.showToast({ title: '已添加', icon: 'success' })
-  savePlanCourses()
+function goCommunity() {
+  uni.navigateTo({ url: '/pages/goal/community' })
 }
 
-function addCustomToPlan() {
-  if (!selectedPlan.value) {
-    uni.showToast({ title: '请先选择一个计划', icon: 'none' })
-    return
-  }
-  if (!customCourse.name.trim()) {
-    uni.showToast({ title: '请输入活动名称', icon: 'none' })
-    return
-  }
-  const course = {
-    week: customWeeks.value[customWeekIdx.value],
-    day: customDayIdx.value + 1,
-    name: customCourse.name.trim(),
-    type: customTypeIdx.value + 1,
-    duration: customCourse.duration,
-    warmUpDuration: 0,
-    coolDownDuration: 0,
-    exercises: [{ name: customCourse.name.trim(), type: customTypeIdx.value + 1, duration: customCourse.duration * 60 }]
-  }
-  if (!selectedPlan.value._courses) selectedPlan.value._courses = []
-  selectedPlan.value._courses.push(course)
-  customCourse.name = ''
-  uni.showToast({ title: '已添加', icon: 'success' })
-  savePlanCourses()
+function goTodayPlan() {
+  uni.switchTab({ url: '/pages/index/index' })
 }
 
-function removeCourseFromPlan(idx) {
+function editPlan(plan) {
+  uni.navigateTo({ url: `/pages/goal/create?id=${plan.id}` })
+}
+
+function confirmDeletePlan(plan) {
   uni.showModal({
-    title: '删除活动',
-    content: '确定从计划中删除此活动？',
+    title: '删除计划',
+    content: `确定删除"${plan.name}"？不可恢复。`,
     success: res => {
       if (!res.confirm) return
-      selectedPlan.value._courses.splice(idx, 1)
-      savePlanCourses()
-      uni.showToast({ title: '已删除', icon: 'success' })
+      deletePlan(plan.id)
+        .then(() => { myPlans.value = myPlans.value.filter(p => p.id !== plan.id) })
+        .catch(() => { myPlans.value = myPlans.value.filter(p => p.id !== plan.id) })
     }
   })
 }
 
-function editExerciseInCourse(ci, ei) {
-  const course = selectedPlan.value._courses[ci]
-  uni.showModal({
-    title: `修改步骤: ${course.exercises[ei].name}`,
-    content: '编辑功能在完整编辑器中可用',
-    showCancel: false
-  })
+function onRefresh() {
+  refreshing.value = true
+  loadMyPlans()
 }
 
-function savePlanCourses() {
-  if (!selectedPlan.value || !selectedPlan.value.id) return
-  const data = {
-    name: selectedPlan.value.name,
-    description: selectedPlan.value.description,
-    totalWeeks: selectedPlan.value.totalWeeks,
-    level: selectedPlan.value.level,
-    courses: (selectedPlan.value._courses || []).map(c => ({
-      name: c.name,
-      week: c.week,
-      day: c.day,
-      type: c.type,
-      duration: c.duration,
-      warmUpDuration: c.warmUpDuration,
-      coolDownDuration: c.coolDownDuration,
-      exercises: (c.exercises || []).map(e => ({
-        name: e.name,
-        type: e.type,
-        duration: e.duration,
-        sets: e.sets,
-        reps: e.reps,
-        restTime: e.restTime,
-        distance: e.distance
-      }))
-    }))
-  }
-  updatePlan(selectedPlan.value.id, data)
-    .then(() => {})
-    .catch(() => {
-      const local = uni.getStorageSync('myTrainingPlans')
-      let plans = []
-      try { plans = JSON.parse(local || '[]') } catch (e) {}
-      const idx = plans.findIndex(p => p.id === selectedPlan.value.id)
-      if (idx > -1) plans[idx] = { ...plans[idx], courses: data.courses }
-      uni.setStorageSync('myTrainingPlans', JSON.stringify(plans))
-    })
-}
+// ---- 生命周期 ----
+onMounted(() => {
+  const info = uni.getSystemInfoSync()
+  statusBarHeight.value = info.statusBarHeight || 20
+  loadWeekOverview()
+  loadMyPlans()
+  loadMyActivities()
+})
 
-function onCustomTypeChange(e) { customTypeIdx.value = e.detail.value }
-function onCustomWeekChange(e) { customWeekIdx.value = e.detail.value }
-function onCustomDayChange(e) { customDayIdx.value = e.detail.value }
-
-// ---- 通用工具 ----
-function getCoverBg(level) {
-  const c = { 1: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', 2: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 3: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 4: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' }
-  return c[level] || c[1]
-}
-function getLevelColor(level) {
-  const c = { 1: '#22c55e', 2: '#2563eb', 3: '#f59e0b', 4: '#ef4444' }
-  return c[level] || c[1]
-}
-function getLevelEmoji(level) { return '' }
-function getTypeEmoji(type) { return '' }
+onShow(() => {
+  loadWeekOverview()
+  loadMyPlans()
+  loadMyActivities()
+})
 </script>
-
 
 <style lang="scss" scoped>
 .container {
   min-height: 100vh;
-  background: #FFFFFF;
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
 }
 
-// ========== 顶部抬头 ==========
+// ===== 顶部抬头 =====
 .page-header {
-  background: #fff;
+  background: var(--bg-card);
   padding: 0 28rpx;
 }
 
@@ -650,9 +531,7 @@ function getTypeEmoji(type) { return '' }
   height: 96rpx;
 }
 
-.header-spacer {
-  width: 64rpx;
-}
+.header-spacer { width: 64rpx; }
 
 .header-center {
   display: flex;
@@ -660,43 +539,114 @@ function getTypeEmoji(type) { return '' }
   align-items: center;
 }
 
-.header-title {
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #000000;
-}
-
-.header-sub {
-  font-size: 28rpx;
-  color: #9CA3AF;
-  margin-top: 4rpx;
-}
+.header-title { font-size: 40rpx; font-weight: 700; color: var(--text-primary); }
+.header-sub { font-size: 24rpx; color: var(--text-tertiary); margin-top: 2rpx; }
 
 .header-add {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 64rpx; height: 64rpx;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.add-icon {
-  font-size: 48rpx;
-  color: #2563EB;
-  font-weight: 300;
-  line-height: 1;
-}
+.add-icon { font-size: 48rpx; color: var(--accent-green); font-weight: 300; line-height: 1; }
 
-// ========== 页面滚动区 ==========
+// ===== 页面滚动区 =====
 .page-body {
   flex: 1;
   padding: 0 28rpx;
 }
 
-// ========== 通用 section ==========
-.section {
-  margin-bottom: 32rpx;
+// ===== 本周训练概览 =====
+.week-overview {
+  margin: 28rpx 0;
+  background: var(--bg-card);
+  border-radius: 24rpx;
+  padding: 28rpx;
+  display: flex;
+  gap: 32rpx;
+  align-items: center;
+  transition: background 0.3s;
 }
+
+.wo-left { flex-shrink: 0; }
+
+.wo-ring-box {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wo-ring-svg {
+  width: 160rpx;
+  height: 160rpx;
+  transform: rotate(0deg);
+}
+
+.wo-ring-text-box {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  gap: 2rpx;
+}
+
+.wo-ring-num { font-size: 44rpx; font-weight: 800; color: var(--accent-green); }
+.wo-ring-den { font-size: 24rpx; color: var(--text-tertiary); }
+
+.wo-right { flex: 1; min-width: 0; }
+
+.wo-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.wo-title { font-size: 34rpx; font-weight: 700; color: var(--text-primary); }
+.wo-subtitle { font-size: 24rpx; color: var(--text-tertiary); }
+
+.wo-week-row {
+  display: flex;
+  gap: 8rpx;
+  margin-bottom: 12rpx;
+}
+
+.wo-day-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  flex: 1;
+}
+
+.wo-day-dot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+
+  &.dot-active {
+    background: var(--accent-green);
+    box-shadow: 0 0 0 4rpx rgba(34, 197, 94, 0.2);
+  }
+  &.dot-rest {
+    background: var(--text-tertiary);
+    opacity: 0.5;
+  }
+  &.dot-done {
+    background: var(--accent-blue);
+  }
+  &.dot-none {
+    background: var(--border-color);
+  }
+}
+
+.wo-day-label { font-size: 20rpx; color: var(--text-tertiary); }
+
+.wo-desc { font-size: 24rpx; color: var(--text-tertiary); line-height: 1.4; }
+
+// ===== 通用 section =====
+.section { margin-bottom: 28rpx; }
 
 .section-head {
   display: flex;
@@ -705,471 +655,363 @@ function getTypeEmoji(type) { return '' }
   margin-bottom: 20rpx;
 }
 
-.section-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #000000;
-}
+.section-title { font-size: 34rpx; font-weight: 700; color: var(--text-primary); }
 
-.section-more {
-  font-size: 28rpx;
-  color: #2563EB;
-}
+.section-more { font-size: 24rpx; color: var(--accent-blue); font-weight: 500; }
 
-// ========== 热门计划 ==========
-.hot-scroll {
-  white-space: nowrap;
-}
-
-.hot-track {
-  display: flex;
-  gap: 24rpx;
-}
-
-.hot-card {
-  flex-shrink: 0;
-  width: 240rpx;
-  height: 320rpx;
-  border-radius: 24rpx;
-  overflow: hidden;
-}
-
-.hot-img {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 20rpx;
-
-  &.gradient-0 {
-    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
-  }
-  &.gradient-1 {
-    background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
-  }
-  &.gradient-2 {
-    background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
-  }
-}
-
-.hot-mask {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 80rpx;
-  background: linear-gradient(to top, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 100%);
-}
-
-.hot-name {
-  position: relative;
-  z-index: 1;
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #374151;
-}
-
-.hot-dots {
-  display: flex;
-  justify-content: center;
-  gap: 16rpx;
-  margin-top: 20rpx;
-}
-
-.hot-dot {
-  width: 16rpx;
-  height: 16rpx;
-  border-radius: 50%;
-  background: #D1D5DB;
-
-  &.active {
-    background: #000000;
-  }
-}
-
-// ========== 操作按钮区 ==========
-.action-buttons {
-  display: flex;
-  gap: 2%;
-  margin-top: 24rpx;
-  margin-bottom: 32rpx;
-}
-
-.action-btn {
-  height: 88rpx;
-  border-radius: 24rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.action-btn-primary {
-  width: 65%;
-  background: #3366FF;
-
-  &:active {
-    background: #2952CC;
-  }
-}
-
-.action-btn-secondary {
-  width: 33%;
-  background: #EFF6FF;
-
-  &:active {
-    background: #DBEAFE;
-  }
-}
-
-.action-btn-text-secondary {
-  color: #3366FF;
-}
-
-.action-btn-text {
-  font-size: 30rpx;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.action-btn-text-primary {
-  color: #FFFFFF;
-}
-
-.action-btn-text-secondary {
-  color: #374151;
-}
-
-// ========== 已有计划 ==========
-.plan-list {
+// ===== 我的计划（卡片式） =====
+.plan-cards {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
 }
 
-.plan-swipe-item {
-  position: relative;
-  overflow: hidden;
-  border-radius: 24rpx;
-  background: #fff;
-  border: 2rpx solid #E5E7EB;
-}
-.plan-row {
-  display: flex;
-  align-items: center;
-  background: #FFFFFF;
+.plan-item {
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
-  gap: 20rpx;
-  transition: transform 0.25s ease;
-  position: relative;
-  z-index: 2;
-
-  &:active {
-    opacity: 0.8;
-  }
-
-  &.shifted {
-    transform: translateX(-240rpx);
-  }
+  transition: background 0.3s;
 }
-.plan-actions {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 240rpx;
+
+.pi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.pi-name-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-.plan-action-btn {
-  width: 50%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28rpx;
-  color: #fff;
-  font-weight: 600;
-  background: #3b82f6;
-}
-.plan-action-btn.modify {
-  background: #3b82f6;
-}
-.plan-action-btn.delete {
-  background: #ef4444;
-  border-radius: 0 24rpx 24rpx 0;
+  gap: 12rpx;
 }
 
-.plan-bar {
-  width: 8rpx;
-  height: 64rpx;
-  border-radius: 4rpx;
+.pi-level-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.plan-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
+.pi-name { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
 
-.plan-name {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #000000;
-}
-
-.plan-desc {
-  font-size: 24rpx;
-  color: #9CA3AF;
-}
-
-.plan-right {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.plan-pct {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #10B981;
-}
-
-.plan-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 4rpx;
-  margin-bottom: 4rpx;
-}
-
-.plan-tag {
+.pi-level-tag {
   font-size: 20rpx;
-  padding: 4rpx 14rpx;
-  border-radius: 8rpx;
-  font-weight: 500;
-}
-
-.tag-gray {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.ring-wrap {
-  position: relative;
-  width: 80rpx;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ring-svg {
-  width: 80rpx;
-  height: 80rpx;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.ring-text {
-  font-size: 22rpx;
-  font-weight: 700;
-  color: #22c55e;
-  position: relative;
-  z-index: 1;
-}
-
-.plan-empty {
-  padding: 60rpx 0;
-  text-align: center;
-}
-
-.plan-empty-text {
-  font-size: 28rpx;
-  color: #9CA3AF;
-}
-
-// ========== 创建活动 ==========
-.filter-layout {
-  display: flex;
-  gap: 16rpx;
-  min-height: 360rpx;
-  margin-bottom: 20rpx;
-}
-
-.filter-side {
-  width: 136rpx;
-  flex-shrink: 0;
-  background: #F5F5F7;
-  border-radius: 16rpx;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  &::-webkit-scrollbar { display: none; }
-}
-
-.filter-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80rpx;
-  position: relative;
-  transition: background 0.2s;
-
-  &:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 20rpx;
-    right: 20rpx;
-    height: 1rpx;
-    background: #E5E7EB;
-  }
-
-  &.active {
-    background: #DBEAFE;
-    .fi-text { color: #2563EB; font-weight: 600; }
-  }
-}
-
-.fi-text {
-  font-size: 22rpx;
-  color: #6B7280;
-  font-weight: 500;
-}
-
-.filter-content {
-  flex: 1;
-  background: #F5F5F7;
-  border-radius: 16rpx;
-  padding: 16rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.fc-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64rpx;
-  padding: 0 14rpx;
-  border-radius: 12rpx;
-  background: #fff;
-  transition: all 0.2s;
-
-  &.selected {
-    background: #DBEAFE;
-    border: 2rpx solid #2563EB;
-
-    .fc-text {
-      color: #2563EB;
-      font-weight: 600;
-    }
-  }
-
-  &:active {
-    background: #EFF6FF;
-  }
-}
-
-.fc-text {
-  font-size: 26rpx;
-  color: #374151;
-}
-
-.fc-check {
-  font-size: 22rpx;
-  color: #2563EB;
-  font-weight: 700;
-}
-
-.fc-empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9CA3AF;
-  font-size: 24rpx;
-}
-
-.create-activity-btn {
-  width: 100%;
-  height: 80rpx;
-  border-radius: 16rpx;
-  background: linear-gradient(135deg, #2563EB, #1D4ED8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20rpx;
-}
-
-.cab-text {
-  font-size: 28rpx;
-  color: #fff;
   font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
 }
 
-.created-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.created-item {
+// 进度条
+.pi-progress-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 20rpx;
-  background: #F5F5F7;
-  border-radius: 16rpx;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
 }
 
-.ci-left {
+.pi-bar-track {
   flex: 1;
-  min-width: 0;
+  height: 8rpx;
+  background: var(--border-color);
+  border-radius: 4rpx;
+  overflow: hidden;
 }
 
-.ci-info {
+.pi-bar-fill {
+  height: 100%;
+  border-radius: 4rpx;
+  transition: width 0.5s;
+}
+
+.pi-bar-text { font-size: 24rpx; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+
+// ===== 7天展开式日视图 =====
+.pi-day-list {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
+  margin-bottom: 20rpx;
 }
 
-.ci-name {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #000000;
+.pi-day-item {
+  background: var(--bg-secondary);
+  border-radius: 12rpx;
+  overflow: hidden;
 }
 
-.ci-desc {
-  font-size: 22rpx;
-  color: #9CA3AF;
+.pi-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 20rpx;
+  &:active { opacity: 0.7; }
 }
 
-.ci-delete {
+.pi-day-label {
   font-size: 24rpx;
-  color: #EF4444;
-  padding: 8rpx;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 60rpx;
 }
 
-.empty-hint {
-  text-align: center;
-  padding: 40rpx 0;
-  color: #9CA3AF;
+.pi-day-status {
+  flex: 1;
+  text-align: right;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
+
+.pi-day-detail {
+  padding: 0 20rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.pi-act-card {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx 16rpx;
+  background: var(--bg-card);
+  border-radius: 10rpx;
+
+  &.pi-act-rest {
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%);
+    border: 1rpx dashed var(--border-color);
+  }
+}
+
+.pi-act-icon { font-size: 28rpx; width: 36rpx; text-align: center; }
+
+.pi-act-name {
+  flex: 1;
   font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-// ========== 底部 ==========
-.bottom-spacer {
-  height: 60rpx;
+.pi-act-dur {
+  font-size: 22rpx;
+  color: var(--accent-green);
+  font-weight: 500;
 }
+
+// 底部
+.pi-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20rpx;
+  border-top: 1rpx solid var(--border-color);
+}
+
+.pi-stat { font-size: 24rpx; color: var(--text-tertiary); }
+
+.pi-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.pi-action {
+  font-size: 24rpx;
+  font-weight: 500;
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+
+  &:active { opacity: 0.7; }
+}
+
+.pi-action-edit {
+  color: var(--accent-blue);
+  background: var(--bg-secondary);
+}
+
+.pi-action-del {
+  color: #ef4444;
+  background: var(--bg-secondary);
+}
+
+// 空计划
+.plan-empty {
+  background: var(--bg-card);
+  border-radius: 24rpx;
+  padding: 80rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  transition: background 0.3s;
+}
+
+.plan-empty-icon { font-size: 80rpx; opacity: 0.6; }
+
+.plan-empty-text { font-size: 30rpx; font-weight: 600; color: var(--text-secondary); }
+
+.plan-empty-hint { font-size: 24rpx; color: var(--text-tertiary); }
+
+// ===== 小项目设计器 =====
+.designer-section {
+  background: var(--bg-card);
+  border-radius: 20rpx;
+  padding: 24rpx;
+  transition: background 0.3s;
+}
+
+.ds-tabs {
+  display: flex; gap: 12rpx; margin-bottom: 20rpx;
+}
+
+.ds-tab {
+  flex: 1; text-align: center; padding: 14rpx; border-radius: 12rpx;
+  font-size: 26rpx; font-weight: 500;
+  color: var(--text-tertiary); background: var(--bg-secondary);
+  border: 1rpx solid var(--border-color);
+  transition: all 0.2s;
+
+  &.active {
+    color: var(--accent-green); background: var(--bg-secondary);
+    border-color: var(--accent-green); font-weight: 700;
+  }
+}
+
+// 默认项目网格
+.ds-grid {
+  display: flex; flex-wrap: wrap; gap: 12rpx;
+}
+
+.ds-card {
+  display: flex; align-items: center; gap: 10rpx;
+  padding: 14rpx 16rpx; border-radius: 12rpx;
+  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
+  min-width: calc(50% - 6rpx); box-sizing: border-box;
+  position: relative;
+}
+
+.ds-card-icon { font-size: 32rpx; width: 44rpx; text-align: center; }
+
+.ds-card-info { flex: 1; min-width: 0; }
+
+.ds-card-name {
+  font-size: 26rpx; font-weight: 600; color: var(--text-primary); display: block;
+}
+
+.ds-card-meta {
+  font-size: 20rpx; color: var(--text-tertiary); margin-top: 2rpx; display: block;
+}
+
+.ds-card-add {
+  width: 44rpx; height: 44rpx; border-radius: 50%;
+  background: var(--accent-green); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: bold; flex-shrink: 0;
+  &:active { opacity: 0.7; }
+}
+
+// 自定义项目
+.ds-custom-list {
+  display: flex; flex-direction: column; gap: 10rpx; margin-bottom: 20rpx;
+}
+
+.ds-custom-item {
+  display: flex; align-items: center; gap: 12rpx;
+  padding: 14rpx 16rpx; border-radius: 10rpx;
+  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
+}
+
+.ds-ci-icon { font-size: 28rpx; }
+.ds-ci-info { flex: 1; }
+.ds-ci-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); display: block; }
+.ds-ci-meta { font-size: 20rpx; color: var(--text-tertiary); }
+.ds-ci-del { font-size: 24rpx; color: #ef4444; padding: 8rpx; }
+
+.ds-custom-form {
+  background: var(--bg-secondary); border-radius: 14rpx; padding: 20rpx;
+}
+
+.ds-cf-title { font-size: 24rpx; font-weight: 600; color: var(--text-primary); margin-bottom: 12rpx; }
+
+.ds-cf-input {
+  height: 64rpx; border-radius: 10rpx; padding: 0 16rpx;
+  background: var(--bg-card); font-size: 26rpx; color: var(--text-primary);
+  border: 1rpx solid var(--border-color); width: 100%; box-sizing: border-box;
+  margin-bottom: 12rpx;
+}
+
+.ds-cf-presets {
+  display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 12rpx;
+}
+
+.ds-cf-preset {
+  display: inline-flex; align-items: center; gap: 6rpx;
+  padding: 8rpx 14rpx; border-radius: 8rpx;
+  background: var(--accent-green); color: #fff; font-size: 22rpx; font-weight: 500;
+}
+
+.ds-cf-preset-del { font-size: 18rpx; padding: 2rpx; }
+
+.ds-cf-row {
+  display: flex; gap: 10rpx; margin-bottom: 12rpx;
+}
+
+.ds-cf-picker {
+  flex: 1; height: 64rpx; border-radius: 10rpx; padding: 0 16rpx;
+  background: var(--bg-card); border: 1rpx solid var(--border-color);
+  display: flex; align-items: center; font-size: 24rpx; color: var(--text-primary);
+}
+
+.ds-cf-addstep {
+  height: 64rpx; padding: 0 24rpx; border-radius: 10rpx;
+  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24rpx; color: var(--accent-green); font-weight: 600;
+}
+
+.ds-cf-save {
+  height: 72rpx; border-radius: 12rpx;
+  background: linear-gradient(135deg, var(--accent-green), #16a34a);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 28rpx; font-weight: 700;
+  &:active { opacity: 0.85; }
+}
+
+// ===== 快捷入口 =====
+.quick-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.qa-btn {
+  flex: 1;
+  height: 100rpx;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  transition: all 0.3s;
+
+  &:active { transform: scale(0.96); opacity: 0.85; }
+}
+
+.qa-primary {
+  background: linear-gradient(135deg, var(--accent-green), #16a34a);
+}
+
+.qa-secondary {
+  background: var(--bg-card);
+  border: 2rpx solid var(--border-color);
+}
+
+.qa-btn-icon { font-size: 36rpx; }
+.qa-btn-text { font-size: 30rpx; font-weight: 600; }
+
+.qa-primary .qa-btn-text { color: #fff; }
+.qa-secondary .qa-btn-text { color: var(--text-primary); }
+
+// ===== 底部 =====
+.bottom-spacer { height: 40rpx; }
 </style>

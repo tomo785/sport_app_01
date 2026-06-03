@@ -44,6 +44,10 @@
     <view class="section">
       <view class="section-title">其他</view>
       <view class="menu-list">
+        <view class="menu-item" @click="goToAiSettings">
+          <text class="menu-text">AI 配置</text>
+          <text class="menu-arrow">›</text>
+        </view>
         <view class="menu-item" @click="clearCache">
           <text class="menu-text">清除缓存</text>
           <text class="menu-arrow">›</text>
@@ -120,6 +124,10 @@ const clearCache = () => {
       }
     }
   })
+}
+
+const goToAiSettings = () => {
+  uni.navigateTo({ url: '/pages/user/ai-settings' })
 }
 
 const checkVersion = () => {

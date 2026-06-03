@@ -1,6 +1,6 @@
 // 基础URL配置
-//const BASE_URL = 'http://localhost:8080/api/v1'
-const BASE_URL = 'http://10.97.73.85:8080/api/v1'
+const BASE_URL = 'http://localhost:8080/api/v1'
+// const BASE_URL = 'http://10.106.37.253:8080/api/v1'  // 如需局域网访问请使用此地址
 export const WS_BASE_URL = BASE_URL.replace(/^http/, 'ws') + '/ws/ai'
 
 // 请求拦截器

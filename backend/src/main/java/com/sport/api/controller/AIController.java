@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import org.springframework.http.*;
 
 /**
  * AI 控制器 — 支持多模型提供商
@@ -92,6 +93,51 @@ public class AIController {
                 return Result.fail("AI 认证失败，请检查后端配置的 API Key 是否有效");
             }
             return Result.fail("AI 服务调用失败: " + msg);
+        }
+    }
+
+    /**
+     * 测试 AI 连接（支持自定义 API Key）
+     */
+    @Operation(summary = "测试 AI 连接")
+    @PostMapping("/test-connection")
+    public Result<String> testConnection(@RequestBody Map<String, String> body) {
+        String modelId = body.get("modelId");
+        String customApiKey = body.get("apiKey");
+
+        AIProviderConfig.Provider provider = providerConfig.getProvider(modelId);
+        String apiKey = (customApiKey != null && !customApiKey.isBlank()) ? customApiKey : provider.getApiKey();
+
+        if (apiKey == null || apiKey.isBlank()) {
+            return Result.fail("API Key 未配置");
+        }
+
+        String url = provider.getBaseUrl() + "/chat/completions";
+        Map<String, Object> reqBody = new HashMap<>();
+        reqBody.put("model", provider.getModel());
+        reqBody.put("messages", List.of(Map.of("role", "user", "content", "hi")));
+        reqBody.put("max_tokens", 5);
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(apiKey);
+
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(reqBody, headers);
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return Result.success("连接成功");
+            } else {
+                return Result.fail("连接失败: HTTP " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            log.error("测试 AI 连接失败: provider={}, error={}", provider.getName(), e.getMessage());
+            String msg = e.getMessage();
+            if (msg != null && (msg.contains("401") || msg.contains("Unauthorized"))) {
+                return Result.fail("认证失败，请检查 API Key 是否有效");
+            }
+            return Result.fail("连接失败: " + msg);
         }
     }
 

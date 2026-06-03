@@ -59,8 +59,13 @@
         <view class="steps-info">
           <text class="steps-num">{{ stepsCount }}</text>
           <text class="steps-label">步</text>
-          <text class="steps-target">目标 {{ targetSteps }} 步</text>
           <text class="steps-pct">{{ stepsProgress }}%</text>
+          <text class="steps-yesterday">昨日 {{ yesterdaySteps }} 步</text>
+          <text class="steps-checkin">已打卡 {{ checkinDays }} 天</text>
+        </view>
+        <view class="checkin-btn" :class="{ 'checkin-done': checkedIn }" @click="handleCheckin">
+          <text class="checkin-icon">{{ checkedIn ? '✓' : '✓' }}</text>
+          <text class="checkin-text">{{ checkedIn ? '已打卡' : '打卡' }}</text>
         </view>
       </view>
       <view class="ac-stats">
@@ -93,38 +98,30 @@
       <template v-if="todayPlan && todayPlan.hasPlan">
         <view class="plan-head">
           <text class="plan-title">今日目标</text>
-          <text class="plan-action">去执行 ›</text>
+          <text class="plan-action" @click.stop="goToPlanDetail">去执行 ›</text>
         </view>
-        <view class="plan-body">
-          <view class="plan-tag" :style="{ background: todayPlan.typeBg, color: todayPlan.typeColor }">
-            {{ todayPlan.type }}
-          </view>
-          <text class="plan-name">{{ todayPlan.name }}</text>
-          <text class="plan-duration" v-if="todayPlan.duration > 0">{{ todayPlan.duration }}分钟</text>
-        </view>
-        <view class="plan-meta" v-if="todayPlan.distanceKm > 0">
-          <text>{{ todayPlan.type }} · {{ todayPlan.distanceKm }}公里</text>
-        </view>
-        <!-- 训练活动列表（紧凑行布局） -->
-        <view class="activity-list" v-if="todayPlan.activities && todayPlan.activities.length > 0">
-          <view class="activity-row" v-for="(act, idx) in todayPlan.activities" :key="idx">
-            <view class="activity-left">
-              <view class="activity-dot" :style="{ background: getActivityColor(act).color }"></view>
-              <text class="activity-name">{{ act.name }}</text>
+        <!-- 标准化活动卡片列表 -->
+        <view class="act-card-list" v-if="todayPlan.activities && todayPlan.activities.length > 0">
+          <view
+            class="act-card"
+            v-for="(act, idx) in todayPlan.activities"
+            :key="idx"
+            :class="{ 'act-card-rest': act.type === 'rest' }"
+          >
+            <view class="act-card-row1">
+              <text class="act-icon">{{ act.icon }}</text>
+              <text class="act-name">{{ act.name }}</text>
+              <text class="act-duration" v-if="act.duration > 0">{{ act.duration }}分钟</text>
             </view>
-            <view class="activity-tags" v-if="act.tags && act.tags.length > 0">
-              <view
-                class="activity-tag"
-                v-for="(tag, tIdx) in act.tags"
-                :key="tIdx"
-                :style="{ background: tag.bg, color: tag.color }"
-              >
-                {{ tag.text }}
-              </view>
+            <view class="act-card-row2" v-if="act.summary">
+              <text class="act-summary">{{ act.summary }}</text>
+            </view>
+            <view class="act-card-row3" v-if="act.tags && act.tags.length > 0">
+              <text class="act-tag" v-for="(tag, tIdx) in act.tags" :key="tIdx">{{ tag }}</text>
             </view>
           </view>
         </view>
-        <!-- 训练描述 -->
+        <!-- 训练描述（当没有活动列表时） -->
         <view class="plan-description" v-if="todayPlan.description && !todayPlan.activities?.length">
           <text class="plan-desc-text">{{ todayPlan.description }}</text>
         </view>
@@ -201,21 +198,152 @@
       </view>
     </view>
 
-    <view class="bottom-safe"></view>
+    <!-- ===== AI 教练卡片 ===== -->
+    <view class="ai-coach-card">
+      <view class="ai-coach-header">
+        <view class="ai-coach-title-row">
+          <text class="ai-coach-icon">🤖</text>
+          <text class="ai-coach-title">AI 教练</text>
+        </view>
+        <view class="ai-model-selector" @click="toggleModelPicker">
+          <text class="ai-model-name">{{ currentModelName }}</text>
+          <text class="ai-model-arrow" :class="{ 'ai-model-arrow-up': showModelPicker }">▼</text>
+        </view>
+      </view>
 
-    <AiPlanDialog ref="aiDialogRef" :statsData="aiStatsData" @usePlan="onUsePlan" />
+      <!-- 模型设置面板 -->
+      <view class="ai-settings-panel" v-if="showModelPicker">
+        <view class="ai-settings-section">
+          <text class="ai-settings-label">选择模型</text>
+          <view class="ai-provider-list">
+            <view
+              v-for="model in modelList"
+              :key="model.id"
+              class="ai-provider-card"
+              :class="{ 'ai-provider-active': model.id === selectedModelId }"
+              @click="selectModel(model)"
+            >
+              <view class="ai-provider-info">
+                <text class="ai-provider-name">{{ model.name }}</text>
+                <text class="ai-provider-id">{{ model.model }}</text>
+              </view>
+              <text v-if="model.id === selectedModelId" class="ai-provider-check">✓</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="ai-settings-section">
+          <text class="ai-settings-label">API Key</text>
+          <input
+            class="ai-settings-input"
+            :value="customApiKey"
+            @input="updateApiKey($event.detail.value)"
+            placeholder="输入自定义 API Key（留空使用后端配置）"
+            password
+          />
+        </view>
+
+        <view class="ai-settings-section">
+          <text class="ai-settings-label">连接测试</text>
+          <view class="ai-test-row">
+            <view
+              class="ai-test-btn"
+              :class="{ 'ai-test-running': testingConnection }"
+              @click="testConnection"
+            >
+              <text>{{ testingConnection ? '测试中...' : '测试连接' }}</text>
+            </view>
+            <view class="ai-test-result" v-if="testResult">
+              <text :class="testResult.ok ? 'ai-test-success' : 'ai-test-fail'">
+                {{ testResult.message }}
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 消息区域 -->
+      <scroll-view class="ai-messages" scroll-y :scroll-top="aiScrollTop" :scroll-with-animation="true">
+        <view class="ai-message ai-message-system" v-if="aiMessages.length === 0">
+          <view class="ai-avatar">🤖</view>
+          <view class="ai-bubble">
+            <text class="ai-text">你好！我是 AI 教练。我可以根据你的运动数据生成个性化的训练方案。请告诉我你的需求，比如：
+
+• "生成下周训练计划"
+• "帮我制定减脂方案"
+• "根据数据给些建议"</text>
+          </view>
+        </view>
+
+        <view v-for="msg in aiMessages" :key="msg.id" :class="['ai-message', msg.role === 'user' ? 'ai-message-user' : 'ai-message-assistant']">
+          <view class="ai-avatar">{{ msg.role === 'user' ? '😊' : '🤖' }}</view>
+          <view class="ai-bubble">
+            <text class="ai-text">{{ msg.displayContent || msg.content }}</text>
+            <view v-if="msg.role === 'assistant' && msg.isPlan" class="ai-action-bar">
+              <view class="ai-action-btn" @click="copyPlan(msg.displayContent || msg.content)">
+                <text>📋 复制</text>
+              </view>
+              <view class="ai-action-btn ai-action-primary" @click="usePlan(msg.planData || msg.content)">
+                <text>✓ 使用此方案</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- AI 思考中状态条 -->
+      <view class="ai-thinking-bar" v-if="aiLoading">
+        <view class="ai-thinking-dots">
+          <view class="ai-dot"></view>
+          <view class="ai-dot"></view>
+          <view class="ai-dot"></view>
+        </view>
+        <text class="ai-thinking-text">AI 思考中...</text>
+      </view>
+
+      <!-- 快捷标签 -->
+      <view class="ai-quick-tags" v-if="aiMessages.length === 0">
+        <text class="ai-tag" v-for="tag in aiQuickTags" :key="tag" @click="sendQuick(tag)">{{ tag }}</text>
+      </view>
+
+      <!-- 输入区域 -->
+      <view class="ai-input-area">
+        <input
+          class="ai-input"
+          v-model="aiInputText"
+          placeholder="输入你的需求..."
+          confirm-type="send"
+          @confirm="sendAiMessage"
+          :disabled="aiLoading"
+        />
+        <view class="ai-send-btn" :class="{ 'ai-send-disabled': !aiInputText.trim() || aiLoading }" @click="sendAiMessage">
+          <text>发送</text>
+        </view>
+      </view>
+
+      <!-- WebSocket 状态提示 -->
+      <view class="ai-ws-status" v-if="!aiWsConnected && aiMessages.length > 0">
+        <text class="ai-ws-text" v-if="!aiWsError">连接中...</text>
+        <text class="ai-ws-error" v-else>{{ aiWsError }}</text>
+        <text class="ai-ws-retry" v-if="aiWsError" @click="retryAiConnect">点击重试</text>
+      </view>
+    </view>
+
+    <view class="bottom-safe"></view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getNowWeather } from '@/api/weather'
 import { fetchTodaySteps } from '@/utils/steps'
-import { reportTodaySteps, reportWeRunData, getTodayStats } from '@/api/stats'
+import { reportTodaySteps, getTodayStats, getDailyStats } from '@/api/stats'
 import { getWorkoutList } from '@/api/workout'
+import { createDefaultWeeklyPlan, normalizeDayPlan } from '@/api/plan'
 import { formatDate } from '@/utils'
-import AiPlanDialog from '@/components/AiPlanDialog.vue'
+import { WS_BASE_URL } from '@/utils/request.js'
+import { get, post } from '@/utils/request.js'
 
 const statusBarHeight = ref(20)
 
@@ -257,13 +385,47 @@ const todayDate = computed(() => {
 
 // ---- 步数数据（真实数据） ----
 const stepsCount = ref(0)
-const targetSteps = ref(8000)
-const stepsProgress = computed(() => Math.min(100, Math.round((stepsCount.value / targetSteps.value) * 100)))
+const yesterdaySteps = ref(0)
+const stepsProgress = computed(() => Math.min(100, Math.round((stepsCount.value / 8000) * 100)))
 const circumference = 2 * Math.PI * 52 // ≈ 326.7
 
 const calories = ref(0)
 const distance = ref(0)
 const duration = ref(0)
+
+// ---- 打卡系统 ----
+const checkedIn = ref(false)
+const checkinDays = ref(0)
+
+function loadCheckinData() {
+  const records = uni.getStorageSync('checkin_records')
+  const today = formatDate(new Date(), 'YYYY-MM-DD')
+  if (records) {
+    try {
+      const data = JSON.parse(records)
+      checkedIn.value = !!data[today]
+      checkinDays.value = Object.keys(data).length
+    } catch (e) {
+      checkedIn.value = false
+      checkinDays.value = 0
+    }
+  }
+}
+
+function handleCheckin() {
+  if (checkedIn.value) {
+    uni.showToast({ title: '今天已打卡', icon: 'none' })
+    return
+  }
+  const today = formatDate(new Date(), 'YYYY-MM-DD')
+  const raw = uni.getStorageSync('checkin_records')
+  const records = raw ? JSON.parse(raw) : {}
+  records[today] = true
+  uni.setStorageSync('checkin_records', JSON.stringify(records))
+  checkedIn.value = true
+  checkinDays.value = Object.keys(records).length
+  uni.showToast({ title: '打卡成功！继续加油', icon: 'none' })
+}
 
 // ---- 今日运动数据 ----
 const todayStats = ref({})
@@ -362,15 +524,8 @@ const typeLabelMap = {
   2: { label: '力量', color: '#3b82f6', bg: '#eff6ff' },
   3: { label: '拉伸', color: '#a855f7', bg: '#fdf4ff' },
   4: { label: 'HIIT', color: '#f97316', bg: '#fff7ed' },
-  5: { label: '综合', color: '#64748b', bg: '#f8fafc' }
-}
-
-const weeklyTypeMap = {
-  run: { label: '跑步', color: '#22c55e', bg: '#ecfdf5' },
-  strength: { label: '力量', color: '#3b82f6', bg: '#eff6ff' },
-  yoga: { label: '瑜伽', color: '#a855f7', bg: '#fdf4ff' },
-  rest: { label: '休息', color: '#94a3b8', bg: '#f1f5f9' },
-  custom: { label: '自定义', color: '#f97316', bg: '#fff7ed' }
+  5: { label: '综合', color: '#64748b', bg: '#f8fafc' },
+  6: { label: '休息', color: '#94a3b8', bg: '#f1f5f9' }
 }
 
 function getDayOfWeek(date = new Date()) {
@@ -384,195 +539,109 @@ function getWeeksDiff(startMs, endMs) {
   return Math.max(1, Math.floor(diff / oneWeek) + 1)
 }
 
-function makeTag(type, text) {
-  const styleMap = {
-    distance: { color: '#22c55e', bg: '#ecfdf5' },
-    time: { color: '#3b82f6', bg: '#eff6ff' },
-    sets: { color: '#f59e0b', bg: '#fff7ed' }
-  }
-  return { type, text, ...(styleMap[type] || styleMap.time) }
-}
-
-function buildActivities(dayPlan) {
-  const activities = []
-  const type = dayPlan.type
-  const details = dayPlan.details || {}
-
-  if (type === 'run') {
-    const rp = details.runParams || {}
-    const subTypeMap = {
-      interval: '间歇跑', long: '长距离慢跑', tempo: '节奏跑',
-      easy: '轻松跑', recovery: '恢复跑'
-    }
-    const subLabel = subTypeMap[rp.subType] || '跑步'
-    const tags = []
-    if (rp.distance) tags.push(makeTag('distance', `${rp.distance}km`))
-    if (rp.sets) tags.push(makeTag('sets', `${rp.sets}组`))
-    if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
-    if (tags.length === 0) tags.push({ type: 'run', text: subLabel, color: '#22c55e', bg: '#ecfdf5' })
-    activities.push({
-      icon: '🏃',
-      name: subLabel,
-      desc: rp.pace ? `配速 ${rp.pace}` : '',
-      tags
-    })
-  } else if (type === 'strength') {
-    const bodyPart = details.bodyPart
-    const exercises = details.exercises || []
-    if (bodyPart) {
-      const tags = []
-      if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
-      if (tags.length === 0) tags.push({ type: 'strength', text: `${bodyPart}训练`, color: '#3b82f6', bg: '#eff6ff' })
-      activities.push({ icon: '💪', name: `${bodyPart}训练`, desc: '', tags })
-    }
-    exercises.forEach(ex => {
-      if (ex.name) {
-        const tags = []
-        const sets = ex.sets != null ? String(ex.sets) : ''
-        const reps = ex.reps != null ? String(ex.reps) : ''
-        if (sets && reps) {
-          tags.push(makeTag('sets', `${sets}×${reps}`))
-        } else if (sets) {
-          tags.push(makeTag('sets', `${sets}组`))
-        }
-        if (ex.distance) tags.push(makeTag('distance', `${ex.distance}km`))
-        if (ex.duration) tags.push(makeTag('time', `${ex.duration}min`))
-        if (tags.length === 0) tags.push({ type: 'strength', text: ex.name, color: '#3b82f6', bg: '#eff6ff' })
-        activities.push({ icon: '🏋️', name: ex.name, desc: '', tags })
-      }
-    })
-    if (!bodyPart && exercises.length === 0) {
-      const tags = []
-      if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
-      if (tags.length === 0) tags.push({ type: 'strength', text: '力量训练', color: '#3b82f6', bg: '#eff6ff' })
-      activities.push({ icon: '💪', name: '力量训练', desc: '', tags })
-    }
-  } else if (type === 'yoga') {
-    const styleMap = {
-      hatha: '哈他瑜伽', vinyasa: '流瑜伽', yin: '阴瑜伽',
-      power: '力量瑜伽', restorative: '修复瑜伽'
-    }
-    const styleLabel = styleMap[details.yogaStyle] || '瑜伽'
-    const tags = []
-    if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
-    if (tags.length === 0) tags.push({ type: 'yoga', text: styleLabel, color: '#a855f7', bg: '#fdf4ff' })
-    activities.push({ icon: '🧘', name: styleLabel, desc: '', tags })
-  } else if (type === 'rest') {
-    const restMap = { full: '完全休息', active: '主动恢复', stretch: '拉伸放松', massage: '按摩放松' }
-    const restLabel = restMap[details.restType] || '休息'
-    const restTagMap = { full: '完全休息', active: '主动恢复', stretch: '拉伸放松', massage: '按摩放松' }
-    activities.push({ icon: '😴', name: restLabel, desc: '今日安排休息恢复', tags: [{ type: 'rest', text: restTagMap[details.restType] || '休息恢复', color: '#94a3b8', bg: '#f1f5f9' }] })
-  } else if (type === 'custom') {
-    const tags = []
-    if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
-    if (tags.length === 0) tags.push({ type: 'custom', text: '自定义训练', color: '#f97316', bg: '#fff7ed' })
-    activities.push({ icon: '⚡', name: dayPlan.title || '自定义训练', desc: '', tags })
-  }
-
-  return activities
+/** 从 activities 数组计算总时长 */
+function calcTotalDuration(activities) {
+  if (!activities || !activities.length) return 0
+  return activities.reduce((sum, a) => sum + (a.duration || 0), 0)
 }
 
 function loadTodayPlan() {
   try {
-    console.log('[今日目标] 开始加载今日计划')
     const now = new Date()
     const todayDay = getDayOfWeek(now)
 
+    // 第1层：从 weeklyPlan_current 读取当天计划
     const weeklyRaw = uni.getStorageSync('weeklyPlan_current')
     if (weeklyRaw) {
       const weekly = JSON.parse(weeklyRaw)
-      console.log('[今日目标] 读取到 weeklyPlan_current，days长度:', (weekly.days || []).length, 'weekStartDate:', weekly.weekStartDate)
       const dayPlan = (weekly.days || []).find(d => d.dayOfWeek === todayDay)
       if (dayPlan) {
-        console.log('[今日目标] 匹配到今日计划 dayPlan:', { title: dayPlan.title, type: dayPlan.type, dayOfWeek: dayPlan.dayOfWeek })
-        const typeInfo = weeklyTypeMap[dayPlan.type] || weeklyTypeMap.custom
-        const duration = parseInt(dayPlan.details?.duration) || 0
-        const distance = parseFloat(dayPlan.details?.runParams?.distance) || 0
-        const activities = buildActivities(dayPlan)
+        const normalized = normalizeDayPlan(dayPlan)
+        const acts = normalized.activities || []
+        const totalDur = calcTotalDuration(acts)
+        const isRest = acts.some(a => a.type === 'rest')
         todayPlan.value = {
-          name: dayPlan.title || '今日训练',
-          type: typeInfo.label,
-          typeColor: typeInfo.color,
-          typeBg: typeInfo.bg,
-          duration,
-          distanceKm: distance > 0 ? distance.toFixed(1) : 0,
-          description: dayPlan.details?.description || '',
-          activities,
+          name: isRest ? '休息自由活动' : (acts[0]?.name || '今日训练'),
+          type: isRest ? '休息' : '运动',
+          typeColor: isRest ? '#94a3b8' : '#22c55e',
+          typeBg: isRest ? '#f1f5f9' : '#ecfdf5',
+          duration: totalDur,
+          distanceKm: 0,
+          description: '',
+          activities: acts,
           hasPlan: true,
-          planType: dayPlan.type
+          planType: isRest ? 'rest' : (dayPlan.type || 'custom')
         }
         return
-      } else {
-        console.log('[今日目标] weeklyPlan_current 中未匹配到 dayOfWeek ===', todayDay, '的计划')
       }
-    } else {
-      console.log('[今日目标] 未读取到 weeklyPlan_current')
     }
 
+    // 第2层：从 myTrainingPlans 查找课程
     const savedPlans = uni.getStorageSync('myTrainingPlans')
     let plans = []
     if (savedPlans) {
       try { plans = JSON.parse(savedPlans) } catch (e) { plans = [] }
     }
-
     if (plans.length > 0) {
       const plan = plans[0]
-      let startMs
-      if (plan.startDate) {
-        startMs = new Date(plan.startDate).getTime()
-      } else if (plan.createdAt) {
-        startMs = new Date(plan.createdAt).getTime()
-      } else if (typeof plan.id === 'number' && plan.id > 1000000000000) {
-        startMs = plan.id
-      } else {
-        startMs = Date.now()
-      }
+      let startMs = plan.startDate ? new Date(plan.startDate).getTime() : (plan.createdAt ? new Date(plan.createdAt).getTime() : Date.now())
       const currentWeek = Math.min(plan.totalWeeks || 1, getWeeksDiff(startMs, now.getTime()))
-      const course = (plan.courses || []).find(c => c.week === currentWeek && c.day === todayDay)
-
-      if (course) {
-        console.log('[今日目标] savedPlans 匹配到课程:', { name: course.name, type: course.type, week: course.week, day: course.day })
-        const typeInfo = typeLabelMap[course.type] || typeLabelMap[5]
-        const totalDistance = (course.exercises || []).reduce((sum, ex) => sum + (ex.distance || 0), 0)
-        const activities = (course.exercises || []).map(ex => {
-          const tags = []
-          const sets = ex.sets != null ? String(ex.sets) : ''
-          const reps = ex.reps != null ? String(ex.reps) : ''
-          if (sets && reps) tags.push(makeTag('sets', `${sets}×${reps}`))
-          else if (sets) tags.push(makeTag('sets', `${sets}组`))
-          if (ex.distance) tags.push(makeTag('distance', `${(ex.distance / 1000).toFixed(1)}km`))
-          if (ex.duration) tags.push(makeTag('time', `${ex.duration}min`))
-          if (tags.length === 0) tags.push({ type: 'default', text: ex.name || '训练', color: '#64748b', bg: '#f8fafc' })
-
-          const typeIconMap = { 1: '🏃', 2: '🏋️', 3: '🧘', 4: '⚡', 5: '💪', 6: '😴' }
-          return {
-            icon: typeIconMap[ex.type] || typeIconMap[course.type] || '🏃',
-            name: ex.name || course.name,
-            desc: ex.description || '',
-            tags
-          }
-        })
+      // 找到当天所有课程（支持同一天多课程）
+      const dayCourses = (plan.courses || []).filter(c => c.week === currentWeek && c.day === todayDay)
+      if (dayCourses.length > 0) {
+        const typeIconMap = { 1: '🏃', 2: '💪', 3: '🧘', 4: '⚡', 5: '⚡', 6: '😴' }
+        const typeNameMap = { 1: '跑步', 2: '力量', 3: '瑜伽', 4: 'HIIT', 5: '综合', 6: '休息' }
+        const rTypeMap = { 1: 'run', 2: 'strength', 3: 'yoga', 4: 'custom', 5: 'custom', 6: 'rest' }
+        const activities = dayCourses.map(c => ({
+          icon: typeIconMap[c.type] || '🏃',
+          type: rTypeMap[c.type] || 'custom',
+          name: c.name || '训练',
+          duration: c.duration || 0,
+          tags: [typeNameMap[c.type] || '运动'],
+          summary: '',
+          details: c
+        }))
+        const totalDur = calcTotalDuration(activities)
+        const isRest = activities.some(a => a.type === 'rest')
         todayPlan.value = {
-          name: course.name,
-          type: typeInfo.label,
-          typeColor: typeInfo.color,
-          typeBg: typeInfo.bg,
-          duration: course.duration || 0,
-          distanceKm: totalDistance > 0 ? (totalDistance / 1000).toFixed(1) : 0,
-          description: course.description || '',
-          activities: activities.length > 0 ? activities : [],
+          name: isRest ? '休息自由活动' : (dayCourses[0].name || '今日训练'),
+          type: isRest ? '休息' : '运动',
+          typeColor: isRest ? '#94a3b8' : '#22c55e',
+          typeBg: isRest ? '#f1f5f9' : '#ecfdf5',
+          duration: totalDur,
+          distanceKm: 0,
+          description: '',
+          activities,
           hasPlan: true,
-          planType: course.type === 1 ? 'run' : (course.type === 2 ? 'strength' : 'custom')
+          planType: isRest ? 'rest' : 'custom'
         }
         return
-      } else {
-        console.log('[今日目标] savedPlans 中未匹配到 week ===', currentWeek, '且 day ===', todayDay, '的课程')
       }
-    } else {
-      console.log('[今日目标] 未读取到 savedPlans 或 plans 为空')
     }
 
-    console.log('[今日目标] 所有分支均未匹配到计划，设置 todayPlan 为 null')
+    // 第3层：创建默认计划
+    const defaultPlan = createDefaultWeeklyPlan()
+    const defaultDayPlan = (defaultPlan.days || []).find(d => d.dayOfWeek === todayDay)
+    if (defaultDayPlan) {
+      const normalized = normalizeDayPlan(defaultDayPlan)
+      const acts = normalized.activities || []
+      const totalDur = calcTotalDuration(acts)
+      const isRest = acts.some(a => a.type === 'rest')
+      todayPlan.value = {
+        name: isRest ? '休息自由活动' : (acts[0]?.name || '今日训练'),
+        type: isRest ? '休息' : '运动',
+        typeColor: isRest ? '#94a3b8' : '#22c55e',
+        typeBg: isRest ? '#f1f5f9' : '#ecfdf5',
+        duration: totalDur,
+        distanceKm: 0,
+        description: '',
+        activities: acts,
+        hasPlan: true,
+        planType: isRest ? 'rest' : (defaultDayPlan.type || 'custom')
+      }
+      return
+    }
+
     todayPlan.value = null
   } catch (e) {
     console.error('[今日目标] 加载失败:', e)
@@ -585,6 +654,8 @@ onMounted(() => {
   const info = uni.getSystemInfoSync()
   statusBarHeight.value = info.statusBarHeight || 20
   loadTodayData()
+  fetchModels()
+  connectWebSocket()
 })
 
 onShow(() => {
@@ -606,8 +677,9 @@ function getLocation() {
 
 async function loadTodayData() {
   // 并行加载天气、步数、今日运动统计和今日目标
-  await Promise.all([loadWeatherData(), loadStepsData(), loadTodayWorkout(), loadTodayWorkouts()])
+  await Promise.all([loadWeatherData(), loadStepsData(), loadTodayWorkout(), loadTodayWorkouts(), loadYesterdaySteps()])
   loadTodayPlan()
+  loadCheckinData()
 }
 
 async function loadTodayWorkout() {
@@ -656,40 +728,9 @@ async function loadStepsData() {
     const result = await fetchTodaySteps()
     console.log('[步数] 获取结果:', result)
 
-    // 处理微信运动加密数据（需要后端解密）
-    if (result.source === 'werun_encrypted' && result.needDecrypt) {
-      try {
-        const decryptRes = await reportWeRunData({
-          encryptedData: result.encryptedData,
-          iv: result.iv
-        })
-        if (decryptRes.code === 200 && decryptRes.data) {
-          stepsCount.value = decryptRes.data.steps || 0
-          calories.value = decryptRes.data.calories || 0
-          distance.value = decryptRes.data.distance || 0
-          duration.value = decryptRes.data.duration || 0
-          return
-        }
-      } catch (err) {
-        console.warn('[步数] 微信运动解密失败:', err)
-      }
-      // 微信解密失败（如未绑定账号），降级到后端 API
-      try {
-        const backendRes = await getTodayStats()
-        if (backendRes.code === 200 && backendRes.data) {
-          stepsCount.value = backendRes.data.steps || backendRes.data.stepCount || 0
-          calories.value = backendRes.data.calories || 0
-          distance.value = backendRes.data.distance || 0
-          duration.value = backendRes.data.duration || 0
-          console.log('[步数] 微信解密失败后降级到后端 API:', stepsCount.value)
-        }
-      } catch (backendErr) {
-        console.warn('[步数] 后端 API 也失败了:', backendErr)
-      }
-      return
-    }
-
-    // 普通数据直接展示
+    // 直接使用返回的步数数据
+    // （微信小程序端：内部已通过 tryWeRunWithAuth 完成解密；
+    //  H5/App 端：来自后端 API 或原生 API）
     stepsCount.value = result.steps || 0
     if (result.calories !== undefined) calories.value = result.calories
     if (result.distance !== undefined) distance.value = result.distance
@@ -708,6 +749,20 @@ async function loadStepsData() {
   } catch (e) {
     console.error('[步数] 加载失败:', e.message || e)
     // 保持默认值 0，不展示错误提示
+  }
+}
+
+async function loadYesterdaySteps() {
+  try {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    const yStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const res = await getDailyStats(yStr)
+    if (res.code === 200 && res.data) {
+      yesterdaySteps.value = res.data.steps || res.data.stepCount || 0
+    }
+  } catch (e) {
+    console.warn('[昨日步数] 加载失败:', e.message || e)
   }
 }
 
@@ -751,7 +806,469 @@ function goToCreatePlan() {
   uni.switchTab({ url: '/pages/goal/goal' })
 }
 
-const aiDialogRef = ref(null)
+// ---- AI 教练 ----
+const modelList = ref([])
+const selectedModelId = ref(uni.getStorageSync('ai_selected_model') || '')
+const showModelPicker = ref(false)
+
+const apiKeyMap = ref(JSON.parse(uni.getStorageSync('ai_api_key_map') || '{}'))
+const customApiKey = computed(() => apiKeyMap.value[selectedModelId.value] || '')
+
+const testingConnection = ref(false)
+const testResult = ref(null)
+
+const testConnection = async () => {
+  if (testingConnection.value) return
+  testingConnection.value = true
+  testResult.value = null
+  try {
+    const res = await post('/ai/test-connection', {
+      modelId: selectedModelId.value,
+      apiKey: customApiKey.value || undefined
+    })
+    if (res && res.code === 200) {
+      testResult.value = { ok: true, message: '连接成功！' }
+    } else {
+      testResult.value = { ok: false, message: res?.message || '连接失败' }
+    }
+  } catch (e) {
+    testResult.value = { ok: false, message: '网络请求失败，请检查后端服务' }
+  } finally {
+    testingConnection.value = false
+  }
+}
+
+const updateApiKey = (val) => {
+  apiKeyMap.value[selectedModelId.value] = val
+  uni.setStorageSync('ai_api_key_map', JSON.stringify(apiKeyMap.value))
+}
+
+const fetchModels = async () => {
+  try {
+    const res = await get('/ai/models')
+    const list = res?.data || res
+    if (Array.isArray(list)) {
+      modelList.value = list
+      if (!selectedModelId.value) {
+        const active = list.find(m => m.active)
+        if (active) selectedModelId.value = active.id
+      }
+    }
+  } catch (e) {
+    console.warn('获取模型列表失败:', e)
+  }
+}
+
+const selectModel = async (model) => {
+  selectedModelId.value = model.id
+  uni.setStorageSync('ai_selected_model', model.id)
+  showModelPicker.value = false
+
+  try {
+    await post('/ai/switch-model', { modelId: model.id })
+    uni.showToast({ title: `已切换为 ${model.name}`, icon: 'none', duration: 1500 })
+  } catch (e) {
+    console.error('切换模型失败:', e)
+    uni.showToast({ title: '切换失败', icon: 'none', duration: 1500 })
+  }
+}
+
+const currentModelName = computed(() => {
+  const m = modelList.value.find(m => m.id === selectedModelId.value)
+  return m ? m.name : 'AI 教练'
+})
+
+const toggleModelPicker = () => {
+  showModelPicker.value = !showModelPicker.value
+}
+
+const aiInputText = ref('')
+const aiMessages = ref([])
+const aiLoading = ref(false)
+const aiScrollTop = ref(0)
+const aiWsConnected = ref(false)
+const aiWsError = ref('')
+const aiWsConnecting = ref(false)
+const aiCurrentAssistantIndex = ref(-1)
+let aiConnectTimer = null
+let aiWsSessionId = 0
+let aiInJsonBlock = false
+let aiJsonBuffer = ''
+
+const aiQuickTags = [
+  '生成下周训练计划',
+  '制定减脂方案',
+  '增肌训练建议',
+  '分析运动数据'
+]
+
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const exp = payload.exp * 1000
+    return Date.now() >= exp
+  } catch {
+    return false
+  }
+}
+
+const connectWebSocket = () => {
+  if (aiWsConnecting.value || aiWsConnected.value) return
+
+  const token = uni.getStorageSync('token')
+  if (!token) {
+    aiWsError.value = '请先登录后再使用 AI 功能'
+    return
+  }
+
+  if (isTokenExpired(token)) {
+    aiWsError.value = '登录已过期，请重新登录'
+    return
+  }
+
+  aiWsConnecting.value = true
+  const sessionId = ++aiWsSessionId
+
+  const url = `${WS_BASE_URL}?token=${token}`
+  console.log('正在连接 WebSocket:', url)
+
+  uni.onSocketOpen(() => {
+    if (sessionId !== aiWsSessionId) return
+    clearTimeout(aiConnectTimer)
+    aiConnectTimer = null
+    aiWsConnecting.value = false
+    aiWsConnected.value = true
+    aiWsError.value = ''
+    console.log('WebSocket 连接成功')
+  })
+
+  uni.onSocketMessage((res) => {
+    if (sessionId !== aiWsSessionId) return
+    try {
+      const data = JSON.parse(res.data)
+      handleWsMessage(data)
+    } catch (e) {
+      console.error('WebSocket 消息解析失败:', res.data)
+    }
+  })
+
+  uni.onSocketError((err) => {
+    if (sessionId !== aiWsSessionId) return
+    clearTimeout(aiConnectTimer)
+    aiConnectTimer = null
+    aiWsConnecting.value = false
+    aiWsConnected.value = false
+    aiWsError.value = 'AI 连接失败，请检查网络或后端服务是否启动'
+    console.error('WebSocket 错误:', err)
+  })
+
+  uni.onSocketClose(() => {
+    if (sessionId !== aiWsSessionId) return
+    clearTimeout(aiConnectTimer)
+    aiConnectTimer = null
+    aiWsConnecting.value = false
+    aiWsConnected.value = false
+    console.log('WebSocket 关闭')
+  })
+
+  uni.connectSocket({ url })
+
+  aiConnectTimer = setTimeout(() => {
+    if (sessionId !== aiWsSessionId) return
+    if (!aiWsConnected.value) {
+      aiWsSessionId++
+      uni.closeSocket()
+      aiWsConnecting.value = false
+      aiWsConnected.value = false
+      aiWsError.value = 'AI 连接超时，请检查网络或尝试重新登录'
+    }
+  }, 10000)
+}
+
+const disconnectWebSocket = () => {
+  clearTimeout(aiConnectTimer)
+  aiConnectTimer = null
+  aiWsSessionId++
+  aiInJsonBlock = false
+  aiJsonBuffer = ''
+  uni.closeSocket()
+  aiWsConnecting.value = false
+  aiWsConnected.value = false
+  aiWsError.value = ''
+}
+
+const retryAiConnect = () => {
+  disconnectWebSocket()
+  connectWebSocket()
+}
+
+const cleanAiText = (text) => {
+  if (!text) return ''
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g, '$1')
+    .replace(/`{3}[\s\S]*?`{3}/g, '')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/^###\s*/gm, '▶ ')
+    .replace(/^##\s*/gm, '▶▶ ')
+    .replace(/^#\s*/gm, '▶▶▶ ')
+    .replace(/^[-*]\s/gm, '• ')
+}
+
+const parsePlanJson = (text) => {
+  if (!text) return null
+  const startMarker = '<<<PLAN_JSON>>>'
+  const endMarker = '<<<PLAN_JSON_END>>>'
+  const startIdx = text.indexOf(startMarker)
+  const endIdx = text.indexOf(endMarker)
+  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return null
+
+  const jsonStr = text.substring(startIdx + startMarker.length, endIdx).trim()
+  try {
+    const plan = JSON.parse(jsonStr)
+    if (plan.name && plan.courses && Array.isArray(plan.courses)) {
+      return plan
+    }
+  } catch (e) {
+    console.error('[AI] JSON 解析失败:', e)
+  }
+  return null
+}
+
+const stripPlanJson = (text) => {
+  if (!text) return ''
+  return text.replace(/<<<PLAN_JSON>>>[\s\S]*?<<<PLAN_JSON_END>>>/g, '').trim()
+}
+
+let aiScrollTimer = null
+const throttledScroll = () => {
+  if (aiScrollTimer) return
+  aiScrollTimer = setTimeout(() => {
+    scrollToBottom()
+    aiScrollTimer = null
+  }, 300)
+}
+
+const handleWsMessage = (data) => {
+  switch (data.type) {
+    case 'start':
+      aiLoading.value = true
+      aiCurrentAssistantIndex.value = aiMessages.value.length
+      aiMessages.value.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), role: 'assistant', content: '', displayContent: '', isPlan: false })
+      scrollToBottom()
+      break
+
+    case 'delta':
+      if (aiCurrentAssistantIndex.value >= 0) {
+        const msg = aiMessages.value[aiCurrentAssistantIndex.value]
+        const chunk = data.content
+
+        if (!aiInJsonBlock) {
+          msg.content += chunk
+          if (msg.content.includes('<<<PLAN_JSON>>>')) {
+            aiInJsonBlock = true
+            const idx = msg.content.indexOf('<<<PLAN_JSON>>>')
+            aiJsonBuffer = msg.content.substring(idx)
+            msg.content = msg.content.substring(0, idx)
+            msg.displayContent = cleanAiText(msg.content)
+          } else {
+            msg.displayContent = cleanAiText(msg.content)
+          }
+        } else {
+          aiJsonBuffer += chunk
+          if (aiJsonBuffer.includes('<<<PLAN_JSON_END>>>')) {
+            aiInJsonBlock = false
+            aiJsonBuffer = ''
+          }
+        }
+        throttledScroll()
+      }
+      break
+
+    case 'done':
+      aiLoading.value = false
+      if (aiCurrentAssistantIndex.value >= 0) {
+        const msg = aiMessages.value[aiCurrentAssistantIndex.value]
+        aiInJsonBlock = false
+        const rawContent = msg.content + aiJsonBuffer
+        aiJsonBuffer = ''
+        const planData = parsePlanJson(rawContent)
+        msg.displayContent = cleanAiText(msg.content)
+        msg.isPlan = !!planData || msg.displayContent.includes('计划') || msg.displayContent.includes('方案') || msg.displayContent.includes('训练')
+        msg.planData = planData
+      }
+      aiCurrentAssistantIndex.value = -1
+      scrollToBottom()
+      break
+
+    case 'error':
+      aiLoading.value = false
+      aiCurrentAssistantIndex.value = -1
+      let errMsg = data.message || '请求失败'
+      if (errMsg.includes('401') || errMsg.includes('Unauthorized')) {
+        errMsg = 'AI 认证失败，请检查后端配置的 API Key 是否有效或已过期。'
+      }
+      aiMessages.value.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), role: 'assistant', content: `错误: ${errMsg}` })
+      scrollToBottom()
+      break
+  }
+}
+
+const sendQuick = (text) => {
+  aiInputText.value = text
+  sendAiMessage()
+}
+
+const buildSystemPrompt = () => {
+  const s = aiStatsData.value || {}
+  const summary = s.summary || {}
+  const today = s.todayStats || {}
+  const trend = s.trendData || {}
+  const recordSummary = s.recordSummary || null
+
+  const totalDist = trend.dates?.length
+    ? (trend.distances || []).reduce((a, b) => a + b, 0)
+    : 0
+  const totalDur = trend.dates?.length
+    ? (trend.durations || []).reduce((a, b) => a + b, 0)
+    : 0
+  const totalCal = trend.dates?.length
+    ? (trend.calories || []).reduce((a, b) => a + b, 0)
+    : 0
+
+  const typeMap = { 1: '跑步', 2: '健走', 3: '骑行' }
+  const typeLines = recordSummary
+    ? Object.entries(recordSummary.typeCount || {})
+        .map(([type, count]) => `${typeMap[type] || '运动'}：${count} 次`)
+        .join('\n')
+    : ''
+
+  return `你是一位专业的运动健身 AI 教练，擅长根据用户的运动数据制定个性化的训练方案。请用中文回复，语气亲切专业。
+
+【用户运动数据】
+总运动次数：${summary.totalWorkouts || 0} 次
+总距离：${summary.totalDistanceStr || '0km'}
+总消耗：${summary.totalCaloriesStr || '0千卡'}
+连续运动天数：${summary.streakDays || 0} 天
+本周运动：${summary.weeklyWorkouts || 0} 次
+本月运动：${summary.monthlyWorkouts || 0} 次
+
+${today.statDate ? `【今日运动】
+距离：${today.distanceStr || '0m'}
+时长：${today.durationStr || '0分'}
+消耗：${today.caloriesStr || '0千卡'}
+次数：${today.recordCount || 0} 次
+
+` : ''}${trend.dates?.length ? `【近期趋势】
+统计周期：${trend.dates.length} 个数据点
+周期总距离：${totalDist} 米
+周期总时长：${totalDur} 秒
+周期总消耗：${totalCal} 千卡
+
+` : ''}${recordSummary ? `【记录详情】
+总距离：${(recordSummary.totalDistance / 1000).toFixed(2)} km
+总时长：${Math.floor(recordSummary.totalDuration / 60)} 分钟
+总消耗：${recordSummary.totalCalories} 千卡
+${typeLines}
+
+` : ''}请根据以上数据，为用户提供专业、可行的运动方案或建议。
+
+【输出格式要求 — 双模式】
+你的回复必须包含两部分：
+
+第一部分：可读文本
+- 用中文序号（一、二、三 或 1. 2. 3.）做层级分隔
+- 用空行分隔不同段落，保持排版整洁
+- 禁止使用 Markdown 语法（如 **加粗**、- 列表、# 标题）
+- 禁止使用 emoji
+- 禁止使用代码块（除了下面的 JSON 块）
+
+第二部分：结构化数据（仅当用户要求生成训练计划时输出）
+- 在文本末尾另起一行，输出 <<<PLAN_JSON>>> 标记
+- 然后输出一个 JSON 对象，严格遵循下面的格式
+- JSON 结束后另起一行输出 <<<PLAN_JSON_END>>> 标记
+- 如果用户只是咨询建议而非生成计划，则不需要输出 JSON 部分
+
+JSON 格式如下：
+{
+  "name": "计划名称",
+  "description": "计划简介",
+  "totalWeeks": 4,
+  "level": 2,
+  "courses": [
+    {
+      "week": 1,
+      "day": 1,
+      "name": "课程名称",
+      "type": 1,
+      "duration": 45,
+      "description": "课程描述",
+      "exercises": [
+        {
+          "name": "动作名称",
+          "type": 1,
+          "sets": 3,
+          "reps": 12,
+          "duration": 0,
+          "distance": 0,
+          "restTime": 60,
+          "description": "动作说明"
+        }
+      ]
+    }
+  ]
+}
+
+字段说明：
+- type: 1=有氧(跑步), 2=力量, 3=拉伸, 4=HIIT, 5=综合, 6=休息
+- level: 1=入门, 2=初级, 3=中级, 4=高级, 5=精英
+- duration: 分钟
+- distance: 米
+- restTime: 秒
+- day: 1=周一, 2=周二, ..., 7=周日
+- 休息日的 exercises 为空数组，type 为 6`
+}
+
+const sendAiMessage = () => {
+  const text = aiInputText.value.trim()
+  if (!text || aiLoading.value) return
+  if (!aiWsConnected.value) {
+    uni.showToast({ title: 'AI 连接中，请稍候', icon: 'none' })
+    return
+  }
+
+  aiMessages.value.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), role: 'user', content: text })
+  aiInputText.value = ''
+  scrollToBottom()
+
+  const systemPrompt = buildSystemPrompt()
+  const chatMessages = [
+    { role: 'system', content: systemPrompt },
+    ...aiMessages.value.map(m => ({ role: m.role, content: m.content }))
+  ]
+
+  const payload = JSON.stringify({ type: 'chat', messages: chatMessages, modelId: selectedModelId.value || undefined })
+  uni.sendSocketMessage({ data: payload })
+}
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    aiScrollTop.value = aiMessages.value.length * 9999
+  })
+}
+
+const copyPlan = (content) => {
+  uni.setClipboardData({
+    data: content,
+    success: () => uni.showToast({ title: '已复制', icon: 'success' })
+  })
+}
+
+const usePlan = (planData) => {
+  uni.setStorageSync('ai_generated_plan', typeof planData === 'object' ? planData : { rawText: planData })
+  uni.showToast({ title: '已应用方案', icon: 'success' })
+  uni.navigateTo({ url: '/pages/goal/create' })
+}
 
 const aiStatsData = computed(() => {
   const list = todayWorkouts.value || []
@@ -791,18 +1308,14 @@ const aiStatsData = computed(() => {
   }
 })
 
-function onUsePlan(planData) {
-  // planData 可能是结构化 JSON 对象或纯文本字符串
-  uni.setStorageSync('ai_generated_plan', typeof planData === 'object' ? planData : { rawText: planData })
-  uni.navigateTo({ url: '/pages/goal/create' })
-}
 </script>
 
 <style lang="scss" scoped>
 .home {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: var(--bg-primary);
   padding: 0 28rpx;
+  transition: background 0.3s;
 }
 
 .status-bar {
@@ -826,13 +1339,13 @@ function onUsePlan(planData) {
 .greeting-hi {
   font-size: 44rpx;
   font-weight: 800;
-  color: #1c1c1e;
+  color: var(--text-primary);
   letter-spacing: -1rpx;
 }
 
 .greeting-sub {
   font-size: 26rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .greeting-emoji {
@@ -841,14 +1354,14 @@ function onUsePlan(planData) {
 
 // ===== 天气卡片 =====
 .weather-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 24rpx 28rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 .weather-left {
@@ -860,13 +1373,13 @@ function onUsePlan(planData) {
 .weather-temp {
   font-size: 56rpx;
   font-weight: 700;
-  color: #1c1c1e;
+  color: var(--text-primary);
   line-height: 1;
 }
 
 .weather-desc {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .weather-right {
@@ -912,7 +1425,7 @@ function onUsePlan(planData) {
 
 .weather-loc {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .weather-sport {
@@ -922,7 +1435,7 @@ function onUsePlan(planData) {
 
 .sport-index-text {
   font-size: 20rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -932,11 +1445,11 @@ function onUsePlan(planData) {
 
 // ===== 今日活动卡片 =====
 .activity-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 .ac-top {
@@ -949,12 +1462,12 @@ function onUsePlan(planData) {
 .ac-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1c1c1e;
+  color: var(--text-primary);
 }
 
 .ac-date {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .ac-main {
@@ -1005,21 +1518,33 @@ function onUsePlan(planData) {
 .steps-num {
   font-size: 64rpx;
   font-weight: 800;
-  color: #1c1c1e;
+  color: var(--text-primary);
   line-height: 1;
   letter-spacing: -2rpx;
 }
 
 .steps-label {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 4rpx;
 }
 
-.steps-target {
-  font-size: 24rpx;
-  color: #94a3b8;
-  margin-top: 8rpx;
+.steps-yesterday {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  margin-top: 6rpx;
+}
+
+.steps-checkin {
+  font-size: 22rpx;
+  color: #f59e0b;
+  margin-top: 4rpx;
+}
+
+// 已打卡状态
+.checkin-done {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  box-shadow: 0 4rpx 16rpx rgba(245, 158, 11, 0.3) !important;
 }
 
 .steps-pct {
@@ -1029,10 +1554,43 @@ function onUsePlan(planData) {
   margin-top: 6rpx;
 }
 
+// 打卡按钮
+.checkin-btn {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 16rpx rgba(34, 197, 94, 0.3);
+  margin-left: auto;
+
+  &:active {
+    transform: scale(0.92);
+    opacity: 0.85;
+  }
+}
+
+.checkin-icon {
+  font-size: 32rpx;
+  color: #fff;
+  font-weight: bold;
+}
+
+.checkin-text {
+  font-size: 20rpx;
+  color: #fff;
+  font-weight: 600;
+  margin-top: 2rpx;
+}
+
 // 底部三列数据
 .ac-stats {
   display: flex;
-  border-top: 1rpx solid #f1f5f9;
+  border-top: 1rpx solid var(--border-color);
   padding-top: 20rpx;
 }
 
@@ -1055,13 +1613,13 @@ function onUsePlan(planData) {
 .acs-val {
   font-size: 34rpx;
   font-weight: 700;
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .acs-unit {
   font-size: 22rpx;
   font-weight: 400;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-left: 4rpx;
 }
 
@@ -1102,8 +1660,8 @@ function onUsePlan(planData) {
 
 .action-secondary {
   flex: 3;
-  background: #f5f5f7;
-  border: 1rpx solid #e5e5e7;
+  background: var(--bg-secondary);
+  border: 1rpx solid var(--border-color);
 }
 
 .action-secondary .action-text {
@@ -1114,11 +1672,11 @@ function onUsePlan(planData) {
 
 // ===== 今日训练卡片 =====
 .session-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 .sc-head {
@@ -1144,7 +1702,7 @@ function onUsePlan(planData) {
 .sc-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1c1c1e;
+  color: var(--text-primary);
 }
 
 .sc-type {
@@ -1176,12 +1734,12 @@ function onUsePlan(planData) {
 .scs-val {
   font-size: 36rpx;
   font-weight: 700;
-  color: #1c1c1e;
+  color: var(--text-primary);
 }
 
 .scs-label {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 // 今日训练记录卡片列表
@@ -1192,7 +1750,7 @@ function onUsePlan(planData) {
 }
 
 .workout-card {
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 20rpx;
   padding: 24rpx;
   display: flex;
@@ -1238,12 +1796,12 @@ function onUsePlan(planData) {
 .wc-name {
   font-size: 28rpx;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-secondary);
 }
 
 .wc-time {
   font-size: 22rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .wc-tags {
@@ -1264,7 +1822,7 @@ function onUsePlan(planData) {
 .sc-map {
   width: 240rpx;
   height: 140rpx;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 16rpx;
   overflow: hidden;
   display: flex;
@@ -1279,11 +1837,11 @@ function onUsePlan(planData) {
 
 // ===== 今日目标卡片 =====
 .plan-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 24rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
 }
 
 .plan-head {
@@ -1296,7 +1854,7 @@ function onUsePlan(planData) {
 .plan-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1c1c1e;
+  color: var(--text-primary);
 }
 
 .plan-action {
@@ -1324,7 +1882,7 @@ function onUsePlan(planData) {
   flex: 1;
   font-size: 30rpx;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-secondary);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1333,74 +1891,98 @@ function onUsePlan(planData) {
 
 .plan-duration {
   font-size: 26rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-weight: 500;
   flex-shrink: 0;
 }
 
 .plan-meta {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   padding-left: 2rpx;
 }
 
-// 活动列表（紧凑行布局）
-.activity-list {
+// ===== 标准化活动卡片 =====
+.act-card-list {
   margin-top: 20rpx;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
 }
 
-.activity-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18rpx 20rpx;
-  background: #f8fafc;
+.act-card {
+  background: var(--bg-secondary);
   border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  min-height: 120rpx;
+
+  &.act-card-rest {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--border-color) 100%);
+    border: 1rpx dashed var(--text-tertiary);
+  }
 }
 
-.activity-left {
+.act-card-row1 {
   display: flex;
   align-items: center;
   gap: 14rpx;
+}
+
+.act-icon {
+  font-size: 36rpx;
+  width: 48rpx;
+  text-align: center;
   flex-shrink: 0;
 }
 
-.activity-dot {
-  width: 10rpx;
-  height: 10rpx;
-  border-radius: 50%;
-  flex-shrink: 0;
+.act-name {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.activity-name {
-  font-size: 28rpx;
+.act-duration {
+  font-size: 26rpx;
+  color: var(--accent-green);
   font-weight: 600;
-  color: #334155;
+  flex-shrink: 0;
 }
 
-.activity-tags {
+.act-card-row2 {
+  padding-left: 62rpx;
+}
+
+.act-summary {
+  font-size: 24rpx;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.act-card-row3 {
+  padding-left: 62rpx;
   display: flex;
   flex-wrap: wrap;
   gap: 10rpx;
-  justify-content: flex-end;
 }
 
-.activity-tag {
-  font-size: 22rpx;
-  font-weight: 600;
-  padding: 6rpx 14rpx;
-  border-radius: 10rpx;
-  line-height: 1;
-  white-space: nowrap;
+.act-tag {
+  font-size: 20rpx;
+  font-weight: 500;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  background: var(--bg-card);
+  color: var(--text-tertiary);
+  border: 1rpx solid var(--border-color);
 }
 
 .plan-description {
   margin-top: 12rpx;
   padding: 12rpx 16rpx;
-  background: #f8fafc;
+  background: var(--bg-secondary);
   border-radius: 12rpx;
 }
 
@@ -1426,7 +2008,7 @@ function onUsePlan(planData) {
 
 .plan-empty-hint {
   font-size: 24rpx;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin-top: 8rpx;
 }
 
@@ -1438,6 +2020,430 @@ function onUsePlan(planData) {
   font-size: 26rpx;
   font-weight: 600;
   border-radius: 12rpx;
+}
+
+// ===== 底部安全区 =====
+// ===== AI 教练卡片 =====
+.ai-coach-card {
+  background: var(--bg-card);
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx var(--shadow-color);
+  display: flex;
+  flex-direction: column;
+  height: 720rpx;
+  overflow: hidden;
+  position: relative;
+}
+
+.ai-coach-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  flex-shrink: 0;
+}
+
+.ai-coach-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.ai-coach-icon {
+  font-size: 40rpx;
+}
+
+.ai-coach-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+// 模型选择器
+.ai-model-selector {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  background: var(--bg-secondary);
+
+  &:active {
+    background: var(--bg-secondary);
+  }
+}
+
+.ai-model-name {
+  font-size: 24rpx;
+  color: var(--accent-purple);
+  font-weight: 500;
+}
+
+.ai-model-arrow {
+  font-size: 18rpx;
+  color: #999;
+  transition: transform 0.2s;
+}
+
+.ai-model-arrow-up {
+  transform: rotate(180deg);
+}
+
+// 模型设置面板
+.ai-settings-panel {
+  position: absolute;
+  top: 90rpx;
+  left: 20rpx;
+  right: 20rpx;
+  background: var(--bg-card);
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 32rpx var(--shadow-color);
+  z-index: 20;
+  overflow: hidden;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.ai-settings-section {
+  padding: 24rpx 30rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.ai-settings-label {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+}
+
+.ai-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.ai-provider-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  background: var(--bg-secondary);
+  border: 2rpx solid transparent;
+
+  &:active {
+    background: var(--bg-secondary);
+  }
+}
+
+.ai-provider-active {
+  border-color: var(--accent-purple);
+  background: var(--bg-secondary);
+}
+
+.ai-provider-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.ai-provider-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.ai-provider-id {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.ai-provider-check {
+  color: #667eea;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.ai-settings-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  background: var(--bg-secondary);
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: var(--text-primary);
+  border: 2rpx solid var(--border-color);
+  box-sizing: border-box;
+}
+
+.ai-test-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  flex-wrap: wrap;
+}
+
+.ai-test-btn {
+  padding: 16rpx 32rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-size: 26rpx;
+  color: #fff;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.ai-test-running {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.ai-test-result {
+  font-size: 26rpx;
+}
+
+.ai-test-success {
+  color: #10b981;
+}
+
+.ai-test-fail {
+  color: #e74c3c;
+}
+
+// 消息区域
+.ai-messages {
+  flex: 1;
+  min-height: 0;
+  height: 0;
+  padding: 20rpx 0;
+}
+
+.ai-message {
+  display: flex;
+  margin-bottom: 24rpx;
+  align-items: flex-start;
+}
+
+.ai-message-user {
+  flex-direction: row-reverse;
+}
+
+.ai-message-system {
+  .ai-bubble {
+    background: var(--bg-secondary);
+    border: 1rpx solid var(--border-color);
+  }
+}
+
+.ai-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.ai-bubble {
+  max-width: 70%;
+  padding: 20rpx 24rpx;
+  border-radius: 20rpx;
+  margin: 0 16rpx;
+  background: var(--bg-secondary);
+}
+
+.ai-message-user .ai-bubble {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ai-text {
+  font-size: 28rpx;
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-message-user .ai-text {
+  color: #fff;
+}
+
+// AI 思考中状态条
+.ai-thinking-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 16rpx 0;
+  background: var(--bg-secondary);
+  border-top: 1rpx solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.ai-thinking-dots {
+  display: flex;
+  gap: 8rpx;
+}
+
+.ai-thinking-text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.ai-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #999;
+  animation: ai-dot-bounce 1.4s infinite ease-in-out both;
+
+  &:nth-child(1) { animation-delay: -0.32s; }
+  &:nth-child(2) { animation-delay: -0.16s; }
+}
+
+@keyframes ai-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+// 操作栏
+.ai-action-bar {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
+}
+
+.ai-action-btn {
+  padding: 10rpx 20rpx;
+  border-radius: 28rpx;
+  background: var(--bg-card);
+  border: 1rpx solid var(--border-color);
+  font-size: 24rpx;
+  color: var(--text-secondary);
+
+  &:active {
+    background: var(--bg-secondary);
+  }
+}
+
+.ai-action-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: #fff;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+// 快捷标签
+.ai-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  padding: 0 0 16rpx;
+  flex-shrink: 0;
+}
+
+.ai-tag {
+  padding: 12rpx 24rpx;
+  border-radius: 32rpx;
+  background: var(--bg-secondary);
+  font-size: 26rpx;
+  color: var(--accent-purple);
+  border: 1rpx solid var(--border-color);
+
+  &:active {
+    background: var(--bg-secondary);
+  }
+}
+
+// 输入区域
+.ai-input-area {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 0 0;
+  border-top: 1rpx solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.ai-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 24rpx;
+  background: var(--bg-card);
+  border-radius: 36rpx;
+  font-size: 28rpx;
+  color: var(--text-primary);
+  border: 1rpx solid var(--border-color);
+}
+
+.ai-send-btn {
+  padding: 16rpx 32rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 500;
+
+  &:active {
+    opacity: 0.85;
+  }
+}
+
+.ai-send-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+// WebSocket 状态
+.ai-ws-status {
+  text-align: center;
+  padding: 12rpx 0;
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  border-top: 1rpx solid var(--border-color);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.ai-ws-text {
+  color: #999;
+}
+
+.ai-ws-error {
+  color: #e74c3c;
+  font-size: 22rpx;
+}
+
+.ai-ws-retry {
+  color: #667eea;
+  font-size: 22rpx;
+  text-decoration: underline;
+  padding: 4rpx 8rpx;
+
+  &:active {
+    opacity: 0.7;
+  }
 }
 
 // ===== 底部安全区 =====
