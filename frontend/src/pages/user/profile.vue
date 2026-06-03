@@ -89,6 +89,11 @@
           <text class="menu-text">账号设置</text>
           <text class="menu-arrow">›</text>
         </view>
+        <view class="menu-item" @click="goToDesign">
+          <text class="menu-icon">🎨</text>
+          <text class="menu-text">设计</text>
+          <text class="menu-arrow">›</text>
+        </view>
         <view class="menu-item" @click="showAbout">
           <text class="menu-icon">ℹ️</text>
           <text class="menu-text">关于我们</text>
@@ -164,12 +169,12 @@ const editProfile = () => {
 
 // 跳转运动记录
 const goToWorkoutHistory = () => {
-  uni.switchTab({ url: '/pages/stats/stats' })
+  uni.navigateTo({ url: '/pages/stats/stats' })
 }
 
 // 跳转数据统计
 const goToStats = () => {
-  uni.switchTab({ url: '/pages/stats/stats' })
+  uni.navigateTo({ url: '/pages/stats/stats' })
 }
 
 // 跳转目标设置
@@ -180,6 +185,11 @@ const goToGoals = () => {
 // 账号设置
 const goToSettings = () => {
   uni.navigateTo({ url: '/pages/user/settings' })
+}
+
+// 设计页面
+const goToDesign = () => {
+  uni.navigateTo({ url: '/pages/design/design' })
 }
 
 // 关于我们

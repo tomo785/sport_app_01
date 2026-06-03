@@ -105,18 +105,22 @@
         <view class="plan-meta" v-if="todayPlan.distanceKm > 0">
           <text>{{ todayPlan.type }} · {{ todayPlan.distanceKm }}公里</text>
         </view>
-        <!-- 训练活动详情 -->
-        <view class="plan-activities" v-if="todayPlan.activities && todayPlan.activities.length > 0">
-          <view class="plan-activity-item" v-for="(act, idx) in todayPlan.activities" :key="idx">
-            <view class="pa-left">
-              <text class="pa-icon">{{ act.icon }}</text>
+        <!-- 训练活动列表（紧凑行布局） -->
+        <view class="activity-list" v-if="todayPlan.activities && todayPlan.activities.length > 0">
+          <view class="activity-row" v-for="(act, idx) in todayPlan.activities" :key="idx">
+            <view class="activity-left">
+              <view class="activity-dot" :style="{ background: getActivityColor(act).color }"></view>
+              <text class="activity-name">{{ act.name }}</text>
             </view>
-            <view class="pa-content">
-              <text class="pa-name">{{ act.name }}</text>
-              <text class="pa-desc" v-if="act.desc">{{ act.desc }}</text>
-            </view>
-            <view class="pa-right" v-if="act.metric">
-              <text class="pa-metric">{{ act.metric }}</text>
+            <view class="activity-tags" v-if="act.tags && act.tags.length > 0">
+              <view
+                class="activity-tag"
+                v-for="(tag, tIdx) in act.tags"
+                :key="tIdx"
+                :style="{ background: tag.bg, color: tag.color }"
+              >
+                {{ tag.text }}
+              </view>
             </view>
           </view>
         </view>
@@ -139,15 +143,47 @@
     </view>
 
     <!-- ===== 今日训练卡片 ===== -->
-    <view class="session-card" @click="goToTodayTask">
+    <view class="session-card">
       <view class="sc-head">
         <view class="sc-title-row">
           <view class="sc-dot"></view>
           <text class="sc-title">今日训练</text>
         </view>
-        <text class="sc-type">{{ todayStats.recordCount || 0 }} 次运动 ›</text>
+        <text class="sc-type" @click="goToTodayTask">{{ todayStats.recordCount || 0 }} 次运动 ›</text>
       </view>
-      <view class="sc-body">
+
+      <!-- 有今日运动记录：卡片列表 -->
+      <view class="workout-cards" v-if="todayWorkouts.length > 0">
+        <view
+          class="workout-card"
+          v-for="(item, idx) in todayWorkouts"
+          :key="idx"
+          @click="goToWorkoutDetail(item.id)"
+        >
+          <view class="wc-main">
+            <view class="wc-icon" :style="{ background: getWorkoutTypeInfo(item.type).bg }">
+              <view class="wc-dot" :style="{ background: getWorkoutTypeInfo(item.type).color }"></view>
+            </view>
+            <view class="wc-info">
+              <text class="wc-name">{{ item.typeName || getWorkoutTypeInfo(item.type).name }}</text>
+              <text class="wc-time">{{ formatWorkoutTime(item.startTime) }}</text>
+            </view>
+          </view>
+          <view class="wc-tags">
+            <view
+              class="wc-tag"
+              v-for="(tag, tIdx) in buildWorkoutTags(item)"
+              :key="tIdx"
+              :style="{ background: tag.bg, color: tag.color }"
+            >
+              {{ tag.text }}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 无记录：统计概览 -->
+      <view class="sc-body" v-else>
         <view class="sc-stats">
           <view class="sc-stat">
             <text class="scs-val">{{ todayDurationStr }}</text>
@@ -166,6 +202,8 @@
     </view>
 
     <view class="bottom-safe"></view>
+
+    <AiPlanDialog ref="aiDialogRef" :statsData="aiStatsData" @usePlan="onUsePlan" />
   </view>
 </template>
 
@@ -175,6 +213,9 @@ import { onShow } from '@dcloudio/uni-app'
 import { getNowWeather } from '@/api/weather'
 import { fetchTodaySteps } from '@/utils/steps'
 import { reportTodaySteps, reportWeRunData, getTodayStats } from '@/api/stats'
+import { getWorkoutList } from '@/api/workout'
+import { formatDate } from '@/utils'
+import AiPlanDialog from '@/components/AiPlanDialog.vue'
 
 const statusBarHeight = ref(20)
 
@@ -226,6 +267,7 @@ const duration = ref(0)
 
 // ---- 今日运动数据 ----
 const todayStats = ref({})
+const todayWorkouts = ref([])
 const hasTodayWorkout = computed(() => todayStats.value.statDate && (todayStats.value.recordCount || 0) > 0)
 const todayDurationStr = computed(() => {
   const d = todayStats.value.duration || 0
@@ -247,6 +289,70 @@ const todayDistanceStr = computed(() => {
   const dist = (todayStats.value.distance || 0) / 1000
   return dist > 0 ? dist.toFixed(1) : '0.0'
 })
+
+const workoutTypeMap = {
+  1: { name: '跑步', color: '#22c55e', bg: '#ecfdf5' },
+  2: { name: '健走', color: '#3b82f6', bg: '#eff6ff' },
+  3: { name: '骑行', color: '#f97316', bg: '#fff7ed' }
+}
+
+function getWorkoutTypeInfo(type) {
+  return workoutTypeMap[type] || { name: '运动', color: '#64748b', bg: '#f8fafc' }
+}
+
+const activityColorMap = {
+  run: { color: '#22c55e' },
+  strength: { color: '#3b82f6' },
+  yoga: { color: '#a855f7' },
+  rest: { color: '#94a3b8' },
+  custom: { color: '#f97316' }
+}
+
+function getActivityColor(act) {
+  if (act.tags && act.tags.length > 0) {
+    const firstTag = act.tags[0]
+    if (firstTag.type === 'run') return activityColorMap.run
+    if (firstTag.type === 'strength') return activityColorMap.strength
+    if (firstTag.type === 'yoga') return activityColorMap.yoga
+    if (firstTag.type === 'rest') return activityColorMap.rest
+    if (firstTag.type === 'custom') return activityColorMap.custom
+  }
+  const name = (act.name || '').toLowerCase()
+  if (name.includes('跑')) return activityColorMap.run
+  if (name.includes('力量') || name.includes('训练')) return activityColorMap.strength
+  if (name.includes('瑜伽')) return activityColorMap.yoga
+  if (name.includes('休息')) return activityColorMap.rest
+  return activityColorMap.custom
+}
+
+function formatWorkoutTime(time) {
+  if (!time) return ''
+  const str = typeof time === 'string' ? time : ''
+  return str.substring(0, 16).replace('T', ' ')
+}
+
+function formatWorkoutDuration(seconds) {
+  if (!seconds || seconds <= 0) return '0分钟'
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  if (s === 0) return `${m}分钟`
+  return `${m}分${s}秒`
+}
+
+function formatWorkoutDistance(meters) {
+  if (!meters || meters <= 0) return ''
+  if (meters < 1000) return `${Math.round(meters)}米`
+  return `${(meters / 1000).toFixed(1)}公里`
+}
+
+function buildWorkoutTags(item) {
+  const tags = []
+  if (item.duration) tags.push({ text: formatWorkoutDuration(item.duration), color: '#3b82f6', bg: '#eff6ff' })
+  if (item.distance) tags.push({ text: formatWorkoutDistance(item.distance), color: '#22c55e', bg: '#ecfdf5' })
+  if (item.calories) tags.push({ text: `${item.calories}千卡`, color: '#f97316', bg: '#fff7ed' })
+  if (tags.length === 0) tags.push({ text: '运动记录', color: '#64748b', bg: '#f8fafc' })
+  return tags
+}
 
 // ---- 今日目标 ----
 const todayPlan = ref(null)
@@ -278,6 +384,15 @@ function getWeeksDiff(startMs, endMs) {
   return Math.max(1, Math.floor(diff / oneWeek) + 1)
 }
 
+function makeTag(type, text) {
+  const styleMap = {
+    distance: { color: '#22c55e', bg: '#ecfdf5' },
+    time: { color: '#3b82f6', bg: '#eff6ff' },
+    sets: { color: '#f59e0b', bg: '#fff7ed' }
+  }
+  return { type, text, ...(styleMap[type] || styleMap.time) }
+}
+
 function buildActivities(dayPlan) {
   const activities = []
   const type = dayPlan.type
@@ -290,34 +405,47 @@ function buildActivities(dayPlan) {
       easy: '轻松跑', recovery: '恢复跑'
     }
     const subLabel = subTypeMap[rp.subType] || '跑步'
-    let metric = ''
-    if (rp.distance) metric = `${rp.distance}km`
-    if (rp.sets) metric += metric ? ` · ${rp.sets}组` : `${rp.sets}组`
+    const tags = []
+    if (rp.distance) tags.push(makeTag('distance', `${rp.distance}km`))
+    if (rp.sets) tags.push(makeTag('sets', `${rp.sets}组`))
+    if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
+    if (tags.length === 0) tags.push({ type: 'run', text: subLabel, color: '#22c55e', bg: '#ecfdf5' })
     activities.push({
       icon: '🏃',
       name: subLabel,
       desc: rp.pace ? `配速 ${rp.pace}` : '',
-      metric
+      tags
     })
   } else if (type === 'strength') {
     const bodyPart = details.bodyPart
-    if (bodyPart) {
-      activities.push({ icon: '💪', name: `${bodyPart}训练`, metric: details.duration ? `${details.duration}min` : '' })
-    }
     const exercises = details.exercises || []
+    if (bodyPart) {
+      const tags = []
+      if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
+      if (tags.length === 0) tags.push({ type: 'strength', text: `${bodyPart}训练`, color: '#3b82f6', bg: '#eff6ff' })
+      activities.push({ icon: '💪', name: `${bodyPart}训练`, desc: '', tags })
+    }
     exercises.forEach(ex => {
       if (ex.name) {
+        const tags = []
         const sets = ex.sets != null ? String(ex.sets) : ''
         const reps = ex.reps != null ? String(ex.reps) : ''
-        activities.push({
-          icon: '🏋️',
-          name: ex.name,
-          metric: (sets && reps) ? `${sets}×${reps}` : (sets || reps)
-        })
+        if (sets && reps) {
+          tags.push(makeTag('sets', `${sets}×${reps}`))
+        } else if (sets) {
+          tags.push(makeTag('sets', `${sets}组`))
+        }
+        if (ex.distance) tags.push(makeTag('distance', `${ex.distance}km`))
+        if (ex.duration) tags.push(makeTag('time', `${ex.duration}min`))
+        if (tags.length === 0) tags.push({ type: 'strength', text: ex.name, color: '#3b82f6', bg: '#eff6ff' })
+        activities.push({ icon: '🏋️', name: ex.name, desc: '', tags })
       }
     })
     if (!bodyPart && exercises.length === 0) {
-      activities.push({ icon: '💪', name: '力量训练', metric: details.duration ? `${details.duration}min` : '' })
+      const tags = []
+      if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
+      if (tags.length === 0) tags.push({ type: 'strength', text: '力量训练', color: '#3b82f6', bg: '#eff6ff' })
+      activities.push({ icon: '💪', name: '力量训练', desc: '', tags })
     }
   } else if (type === 'yoga') {
     const styleMap = {
@@ -325,13 +453,20 @@ function buildActivities(dayPlan) {
       power: '力量瑜伽', restorative: '修复瑜伽'
     }
     const styleLabel = styleMap[details.yogaStyle] || '瑜伽'
-    activities.push({ icon: '🧘', name: styleLabel, metric: details.duration ? `${details.duration}min` : '' })
+    const tags = []
+    if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
+    if (tags.length === 0) tags.push({ type: 'yoga', text: styleLabel, color: '#a855f7', bg: '#fdf4ff' })
+    activities.push({ icon: '🧘', name: styleLabel, desc: '', tags })
   } else if (type === 'rest') {
     const restMap = { full: '完全休息', active: '主动恢复', stretch: '拉伸放松', massage: '按摩放松' }
     const restLabel = restMap[details.restType] || '休息'
-    activities.push({ icon: '😴', name: restLabel, desc: '今日安排休息恢复' })
+    const restTagMap = { full: '完全休息', active: '主动恢复', stretch: '拉伸放松', massage: '按摩放松' }
+    activities.push({ icon: '😴', name: restLabel, desc: '今日安排休息恢复', tags: [{ type: 'rest', text: restTagMap[details.restType] || '休息恢复', color: '#94a3b8', bg: '#f1f5f9' }] })
   } else if (type === 'custom') {
-    activities.push({ icon: '⚡', name: dayPlan.title || '自定义训练', metric: details.duration ? `${details.duration}min` : '' })
+    const tags = []
+    if (details.duration) tags.push(makeTag('time', `${details.duration}min`))
+    if (tags.length === 0) tags.push({ type: 'custom', text: '自定义训练', color: '#f97316', bg: '#fff7ed' })
+    activities.push({ icon: '⚡', name: dayPlan.title || '自定义训练', desc: '', tags })
   }
 
   return activities
@@ -339,14 +474,17 @@ function buildActivities(dayPlan) {
 
 function loadTodayPlan() {
   try {
+    console.log('[今日目标] 开始加载今日计划')
     const now = new Date()
     const todayDay = getDayOfWeek(now)
 
     const weeklyRaw = uni.getStorageSync('weeklyPlan_current')
     if (weeklyRaw) {
       const weekly = JSON.parse(weeklyRaw)
+      console.log('[今日目标] 读取到 weeklyPlan_current，days长度:', (weekly.days || []).length, 'weekStartDate:', weekly.weekStartDate)
       const dayPlan = (weekly.days || []).find(d => d.dayOfWeek === todayDay)
       if (dayPlan) {
+        console.log('[今日目标] 匹配到今日计划 dayPlan:', { title: dayPlan.title, type: dayPlan.type, dayOfWeek: dayPlan.dayOfWeek })
         const typeInfo = weeklyTypeMap[dayPlan.type] || weeklyTypeMap.custom
         const duration = parseInt(dayPlan.details?.duration) || 0
         const distance = parseFloat(dayPlan.details?.runParams?.distance) || 0
@@ -364,7 +502,11 @@ function loadTodayPlan() {
           planType: dayPlan.type
         }
         return
+      } else {
+        console.log('[今日目标] weeklyPlan_current 中未匹配到 dayOfWeek ===', todayDay, '的计划')
       }
+    } else {
+      console.log('[今日目标] 未读取到 weeklyPlan_current')
     }
 
     const savedPlans = uni.getStorageSync('myTrainingPlans')
@@ -389,14 +531,27 @@ function loadTodayPlan() {
       const course = (plan.courses || []).find(c => c.week === currentWeek && c.day === todayDay)
 
       if (course) {
+        console.log('[今日目标] savedPlans 匹配到课程:', { name: course.name, type: course.type, week: course.week, day: course.day })
         const typeInfo = typeLabelMap[course.type] || typeLabelMap[5]
         const totalDistance = (course.exercises || []).reduce((sum, ex) => sum + (ex.distance || 0), 0)
-        const activities = (course.exercises || []).map(ex => ({
-          icon: '🏃',
-          name: ex.name || course.name,
-          desc: ex.description || '',
-          metric: ex.distance ? `${(ex.distance / 1000).toFixed(1)}km` : (ex.duration ? `${ex.duration}min` : '')
-        }))
+        const activities = (course.exercises || []).map(ex => {
+          const tags = []
+          const sets = ex.sets != null ? String(ex.sets) : ''
+          const reps = ex.reps != null ? String(ex.reps) : ''
+          if (sets && reps) tags.push(makeTag('sets', `${sets}×${reps}`))
+          else if (sets) tags.push(makeTag('sets', `${sets}组`))
+          if (ex.distance) tags.push(makeTag('distance', `${(ex.distance / 1000).toFixed(1)}km`))
+          if (ex.duration) tags.push(makeTag('time', `${ex.duration}min`))
+          if (tags.length === 0) tags.push({ type: 'default', text: ex.name || '训练', color: '#64748b', bg: '#f8fafc' })
+
+          const typeIconMap = { 1: '🏃', 2: '🏋️', 3: '🧘', 4: '⚡', 5: '💪', 6: '😴' }
+          return {
+            icon: typeIconMap[ex.type] || typeIconMap[course.type] || '🏃',
+            name: ex.name || course.name,
+            desc: ex.description || '',
+            tags
+          }
+        })
         todayPlan.value = {
           name: course.name,
           type: typeInfo.label,
@@ -410,9 +565,14 @@ function loadTodayPlan() {
           planType: course.type === 1 ? 'run' : (course.type === 2 ? 'strength' : 'custom')
         }
         return
+      } else {
+        console.log('[今日目标] savedPlans 中未匹配到 week ===', currentWeek, '且 day ===', todayDay, '的课程')
       }
+    } else {
+      console.log('[今日目标] 未读取到 savedPlans 或 plans 为空')
     }
 
+    console.log('[今日目标] 所有分支均未匹配到计划，设置 todayPlan 为 null')
     todayPlan.value = null
   } catch (e) {
     console.error('[今日目标] 加载失败:', e)
@@ -446,7 +606,7 @@ function getLocation() {
 
 async function loadTodayData() {
   // 并行加载天气、步数、今日运动统计和今日目标
-  await Promise.all([loadWeatherData(), loadStepsData(), loadTodayWorkout()])
+  await Promise.all([loadWeatherData(), loadStepsData(), loadTodayWorkout(), loadTodayWorkouts()])
   loadTodayPlan()
 }
 
@@ -458,6 +618,19 @@ async function loadTodayWorkout() {
     }
   } catch (e) {
     console.error('[今日运动] 加载失败:', e)
+  }
+}
+
+async function loadTodayWorkouts() {
+  try {
+    const now = new Date()
+    const todayStr = formatDate(now, 'YYYY-MM-DD')
+    const res = await getWorkoutList({ page: 1, size: 10, startDate: todayStr, endDate: todayStr })
+    if (res.code === 200 && res.data) {
+      todayWorkouts.value = res.data.list || []
+    }
+  } catch (e) {
+    console.error('[今日运动记录] 加载失败:', e)
   }
 }
 
@@ -543,11 +716,17 @@ function goRunning() {
 }
 
 function goPlan() {
-  uni.navigateTo({ url: '/pages/goal/goal' })
+  uni.switchTab({ url: '/pages/goal/goal' })
 }
 
 function goToTodayTask() {
   uni.navigateTo({ url: '/pages/task/task-detail' })
+}
+
+function goToWorkoutDetail(id) {
+  if (id) {
+    uni.navigateTo({ url: `/pages/workout/detail?id=${id}` })
+  }
 }
 
 function goToPlanDetail() {
@@ -560,7 +739,7 @@ function goToPlanDetail() {
   }
 
   if (pType === 'run') {
-    uni.navigateTo({ url: '/pages/running/running' })
+    uni.switchTab({ url: '/pages/running/running' })
     return
   }
 
@@ -569,7 +748,53 @@ function goToPlanDetail() {
 }
 
 function goToCreatePlan() {
-  uni.navigateTo({ url: '/pages/goal/goal' })
+  uni.switchTab({ url: '/pages/goal/goal' })
+}
+
+const aiDialogRef = ref(null)
+
+const aiStatsData = computed(() => {
+  const list = todayWorkouts.value || []
+  const totalWorkouts = list.length
+  const totalDistance = list.reduce((sum, r) => sum + (r.distance || 0), 0)
+  const totalDuration = list.reduce((sum, r) => sum + (r.duration || 0), 0)
+  const totalCalories = list.reduce((sum, r) => sum + (r.calories || 0), 0)
+
+  const typeCount = {}
+  list.forEach(r => {
+    typeCount[r.type] = (typeCount[r.type] || 0) + 1
+  })
+
+  return {
+    summary: {
+      totalWorkouts,
+      totalDistanceStr: totalDistance >= 1000 ? (totalDistance / 1000).toFixed(2) + 'km' : totalDistance + 'm',
+      totalCaloriesStr: totalCalories + '千卡',
+      streakDays: 0,
+      weeklyWorkouts: 0,
+      monthlyWorkouts: 0
+    },
+    todayStats: todayStats.value || {},
+    trendData: {
+      dates: list.slice(0, 7).map(r => (r.startTime || '').substring(5, 10)),
+      distances: list.slice(0, 7).map(r => r.distance || 0),
+      durations: list.slice(0, 7).map(r => r.duration || 0),
+      calories: list.slice(0, 7).map(r => r.calories || 0)
+    },
+    recordSummary: {
+      totalWorkouts,
+      totalDistance,
+      totalDuration,
+      totalCalories,
+      typeCount
+    }
+  }
+})
+
+function onUsePlan(planData) {
+  // planData 可能是结构化 JSON 对象或纯文本字符串
+  uni.setStorageSync('ai_generated_plan', typeof planData === 'object' ? planData : { rawText: planData })
+  uni.navigateTo({ url: '/pages/goal/create' })
 }
 </script>
 
@@ -959,6 +1184,83 @@ function goToCreatePlan() {
   color: #94a3b8;
 }
 
+// 今日训练记录卡片列表
+.workout-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.workout-card {
+  background: #f8fafc;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+
+  &:active {
+    background: #f1f5f9;
+  }
+}
+
+.wc-main {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.wc-icon {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.wc-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+}
+
+.wc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.wc-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #334155;
+}
+
+.wc-time {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+.wc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  padding-left: 88rpx;
+}
+
+.wc-tag {
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 10rpx;
+  line-height: 1;
+}
+
 .sc-map {
   width: 240rpx;
   height: 140rpx;
@@ -1042,66 +1344,57 @@ function goToCreatePlan() {
   padding-left: 2rpx;
 }
 
-.plan-activities {
-  margin-top: 16rpx;
-  background: #f8fafc;
-  border-radius: 16rpx;
-  padding: 12rpx 16rpx;
+// 活动列表（紧凑行布局）
+.activity-list {
+  margin-top: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 
-.plan-activity-item {
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18rpx 20rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+}
+
+.activity-left {
   display: flex;
   align-items: center;
   gap: 14rpx;
-  padding: 10rpx 0;
-}
-
-.plan-activity-item:not(:last-child) {
-  border-bottom: 1rpx solid #f1f5f9;
-}
-
-.pa-left {
-  width: 44rpx;
-  height: 44rpx;
-  border-radius: 12rpx;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
 }
 
-.pa-icon {
-  font-size: 24rpx;
+.activity-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.pa-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2rpx;
-}
-
-.pa-name {
-  font-size: 26rpx;
+.activity-name {
+  font-size: 28rpx;
   font-weight: 600;
   color: #334155;
 }
 
-.pa-desc {
+.activity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  justify-content: flex-end;
+}
+
+.activity-tag {
   font-size: 22rpx;
-  color: #94a3b8;
-}
-
-.pa-right {
-  flex-shrink: 0;
-}
-
-.pa-metric {
-  font-size: 24rpx;
   font-weight: 600;
-  color: #22c55e;
+  padding: 6rpx 14rpx;
+  border-radius: 10rpx;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .plan-description {

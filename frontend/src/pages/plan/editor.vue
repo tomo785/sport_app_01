@@ -352,6 +352,9 @@ function getMeta(plan) {
 .row-remove {
   color: #dc2626;
   font-size: 23rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 8rpx;
+  background: rgba(220, 38, 38, 0.08);
 }
 
 .publish-input,

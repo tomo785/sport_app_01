@@ -1,5 +1,6 @@
 <template>
   <view class="container">
+    <view class="status-bar-placeholder" :style="{ height: statusBarHeight + 'px' }"></view>
     <!-- 训练状态卡片 -->
     <TrainingStatusCard />
 
@@ -89,6 +90,7 @@ import { formatDate, formatDuration, formatDistance } from '@/utils'
 import TrainingStatusCard from '@/components/TrainingStatusCard.vue'
 
 // ===================== State =====================
+const statusBarHeight = ref(20)
 const todayStats = ref({})
 const workoutRecords = ref([])
 const recordDates = ref(new Set())
@@ -318,11 +320,13 @@ const goToWorkoutDetail = (id) => {
 }
 
 const goToWorkoutList = () => {
-  uni.switchTab({ url: '/pages/workout/workout' })
+  uni.navigateTo({ url: '/pages/workout/workout' })
 }
 
 // ===================== 生命周期 =====================
 onMounted(() => {
+  const info = uni.getSystemInfoSync()
+  statusBarHeight.value = info.statusBarHeight || 20
   selectedDate.value = formatDate(new Date(), 'YYYY-MM-DD')
   loadTodayStats()
   loadWorkoutRecords()
@@ -340,6 +344,11 @@ onShow(() => {
   background: #f5f5f5;
   padding-top: 20rpx;
   padding-bottom: 40rpx;
+}
+
+.status-bar-placeholder {
+  width: 100%;
+  flex-shrink: 0;
 }
 
 /* ===================== 日历卡片 ===================== */

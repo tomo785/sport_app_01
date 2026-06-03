@@ -129,14 +129,18 @@
         <text class="loading-text">加载中...</text>
       </view>
     </scroll-view>
+
+    <!-- AI 方案生成对话框 -->
+    <AiPlanDialog ref="aiDialogRef" :statsData="aiStatsData" @usePlan="onUsePlan" />
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useWorkoutStore } from '@/stores/workout'
 import { formatDate, formatDuration, formatPace, formatDistance } from '@/utils'
+import AiPlanDialog from '@/components/AiPlanDialog.vue'
 
 const workoutStore = useWorkoutStore()
 const isRefreshing = ref(false)
@@ -202,6 +206,54 @@ const goToDetail = (id) => {
 
 const goToRunning = () => {
   uni.switchTab({ url: '/pages/running/running' })
+}
+
+// ===================== AI 对话框 =====================
+const aiDialogRef = ref(null)
+
+// 从运动记录计算统计数据，传递给 AI 组件
+const aiStatsData = computed(() => {
+  const records = workoutStore.records || []
+  const totalWorkouts = records.length
+  const totalDistance = records.reduce((sum, r) => sum + (r.distance || 0), 0)
+  const totalDuration = records.reduce((sum, r) => sum + (r.duration || 0), 0)
+  const totalCalories = records.reduce((sum, r) => sum + (r.calories || 0), 0)
+
+  const typeCount = {}
+  records.forEach(r => {
+    typeCount[r.type] = (typeCount[r.type] || 0) + 1
+  })
+
+  return {
+    summary: {
+      totalWorkouts,
+      totalDistanceStr: totalDistance >= 1000 ? (totalDistance / 1000).toFixed(2) + 'km' : totalDistance + 'm',
+      totalCaloriesStr: totalCalories + '千卡',
+      streakDays: 0,
+      weeklyWorkouts: 0,
+      monthlyWorkouts: 0
+    },
+    todayStats: {},
+    trendData: {
+      dates: records.slice(0, 7).map(r => (r.startTime || '').substring(5, 10)),
+      distances: records.slice(0, 7).map(r => r.distance || 0),
+      durations: records.slice(0, 7).map(r => r.duration || 0),
+      calories: records.slice(0, 7).map(r => r.calories || 0)
+    },
+    recordSummary: {
+      totalWorkouts,
+      totalDistance,
+      totalDuration,
+      totalCalories,
+      typeCount
+    }
+  }
+})
+
+// 使用 AI 生成的方案
+const onUsePlan = (planData) => {
+  uni.setStorageSync('ai_generated_plan', typeof planData === 'object' ? planData : { rawText: planData })
+  uni.navigateTo({ url: '/pages/goal/create' })
 }
 
 // ===================== 生命周期 =====================

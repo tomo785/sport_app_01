@@ -94,6 +94,21 @@ sms:
   sign-name: 运动App
   template-code: SMS_TEMPLATE_CODE
 
+# AI 模型配置（支持多提供商）
+ai:
+  default-provider: kimi
+  providers:
+    kimi:
+      name: Kimi K2.6
+      api-key: sk-kimi-STHKGcC0rD0ld4OTRnT0YBE3rMjR6CmzuZ7FXwfbbPW3905ANL1WBQLzT61sF7xg
+      base-url: https://api.moonshot.cn/v1
+      model: kimi-k2.6
+    deepseek:
+      name: DeepSeek V3
+      api-key: sk-deepseek-placeholder
+      base-url: https://api.deepseek.com/v1
+      model: deepseek-chat
+
 # 天气API配置（X-QW-Api-Key 鉴权）
 weather:
   api-key: f6adb8cb9a4a4039a7dde3282309d6b7

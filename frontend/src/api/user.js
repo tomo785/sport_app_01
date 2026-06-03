@@ -75,7 +75,7 @@ export function updatePassword(data) {
  */
 export function uploadAvatar(file) {
   return uni.uploadFile({
-    url: 'http://localhost:8080/api/v1/user/avatar',
+    url: 'http://10.97.73.85:8080/api/v1/user/avatar',
     filePath: file,
     name: 'file',
     header: {

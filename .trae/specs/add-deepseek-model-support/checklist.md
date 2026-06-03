@@ -1,0 +1,9 @@
+- [x] application.yml 包含 kimi 和 deepseek 两个提供商配置
+- [x] AIProviderConfig 正确绑定配置，getActiveProvider/switchProvider/getAllProviders 可用
+- [x] AIService.chatCompletionStream 支持 modelId 参数，未指定时使用默认激活模型
+- [x] GET /ai/models 返回可用模型列表（api-key 脱敏）
+- [x] POST /ai/switch-model 可切换激活模型
+- [x] WebSocket 消息支持 modelId 字段
+- [x] 前端 AI 对话框顶部有模型切换选择器
+- [x] 模型选择持久化到 localStorage
+- [x] 默认仍使用 Kimi 模型，不影响现有功能

@@ -142,6 +142,7 @@
         <text>暂无运动打卡记录</text>
       </view>
     </view>
+
   </view>
 </template>
 
@@ -277,7 +278,7 @@ const goToWorkoutDetail = (id) => {
 }
 
 const goToWorkoutList = () => {
-  uni.switchTab({ url: '/pages/workout/workout' })
+  uni.navigateTo({ url: '/pages/workout/workout' })
 }
 
 onMounted(() => {

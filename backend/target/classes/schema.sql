@@ -107,51 +107,6 @@ CREATE TABLE IF NOT EXISTS t_user_daily_stats (
     INDEX idx_stat_date (stat_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户每日统计表';
 
--- 用户每周统计表
-CREATE TABLE IF NOT EXISTS t_user_weekly_stats (
-    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '统计ID',
-    user_id         BIGINT NOT NULL COMMENT '用户ID',
-    week_start      DATE NOT NULL COMMENT '周开始日期(周一)',
-    week_end        DATE NOT NULL COMMENT '周结束日期(周日)',
-    total_distance  INT DEFAULT 0 COMMENT '总距离(米)',
-    total_duration  INT DEFAULT 0 COMMENT '总时长(秒)',
-    total_calories  INT DEFAULT 0 COMMENT '总卡路里(千卡)',
-    record_count    INT DEFAULT 0 COMMENT '运动次数',
-    create_time     DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    UNIQUE KEY uk_user_week (user_id, week_start),
-    INDEX idx_user_id (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户每周统计表';
-
--- 用户每月统计表
-CREATE TABLE IF NOT EXISTS t_user_monthly_stats (
-    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '统计ID',
-    user_id         BIGINT NOT NULL COMMENT '用户ID',
-    stat_year       INT NOT NULL COMMENT '统计年份',
-    stat_month      TINYINT NOT NULL COMMENT '统计月份 1-12',
-    total_distance  INT DEFAULT 0 COMMENT '总距离(米)',
-    total_duration  INT DEFAULT 0 COMMENT '总时长(秒)',
-    total_calories  INT DEFAULT 0 COMMENT '总卡路里(千卡)',
-    record_count    INT DEFAULT 0 COMMENT '运动次数',
-    create_time     DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    UNIQUE KEY uk_user_month (user_id, stat_year, stat_month),
-    INDEX idx_user_id (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户每月统计表';
-
--- 短信验证码表
-CREATE TABLE IF NOT EXISTS t_sms_code (
-    id              BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'ID',
-    phone           VARCHAR(20) NOT NULL COMMENT '手机号',
-    code            VARCHAR(6) NOT NULL COMMENT '验证码',
-    type            TINYINT NOT NULL COMMENT '类型 1注册 2登录 3找回密码',
-    expire_time     DATETIME NOT NULL COMMENT '过期时间',
-    used            TINYINT DEFAULT 0 COMMENT '是否已使用 0否 1是',
-    create_time     DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    INDEX idx_phone_type (phone, type),
-    INDEX idx_expire_time (expire_time)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='短信验证码表';
-
 -- 训练动作表（课程下的具体动作）
 CREATE TABLE IF NOT EXISTS t_training_exercise (
     id                  BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '动作ID',
@@ -304,19 +259,3 @@ CREATE TABLE IF NOT EXISTS t_user_training_plan (
     INDEX idx_user_id (user_id),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户训练计划关联表';
-
--- 任务进度表（任务卡片进度追踪）
-CREATE TABLE IF NOT EXISTS t_task_progress (
-    id                  BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '进度ID',
-    user_id             BIGINT NOT NULL COMMENT '用户ID',
-    task_id             BIGINT NOT NULL COMMENT '任务ID',
-    current_progress    INT DEFAULT 0 COMMENT '当前进度',
-    target_progress     INT DEFAULT 0 COMMENT '目标进度',
-    status              TINYINT DEFAULT 0 COMMENT '状态',
-    complete_time       DATETIME COMMENT '完成时间',
-    claim_time          DATETIME COMMENT '领取时间',
-    create_time         DATETIME DEFAULT CURRENT_TIMESTAMP,
-    update_time         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_id),
-    INDEX idx_task_id (task_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务进度表';

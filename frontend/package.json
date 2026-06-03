@@ -33,10 +33,12 @@
     "@dcloudio/uni-mp-xhs": "3.0.0-alpha-5000720260327001",
     "@dcloudio/uni-quickapp-webview": "3.0.0-alpha-5000720260327001",
     "echarts": "^5.4.3",
+    "lottie-miniprogram": "^1.0.12",
     "pinia": "^2.1.6",
     "uview-plus": "^3.1.43",
     "vue": "^3.3.4",
-    "vue-i18n": "^9.2.2"
+    "vue-i18n": "^9.2.2",
+    "vue3-lottie": "^3.3.1"
   },
   "devDependencies": {
     "@dcloudio/types": "^3.3.3",

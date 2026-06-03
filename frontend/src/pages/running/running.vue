@@ -2143,7 +2143,7 @@ onUnmounted(() => {
 
 .panel-btn-label {
   font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 /* 非GPS活动的浅色面板 */
@@ -2185,7 +2185,7 @@ onUnmounted(() => {
 }
 
 .indoor-panel .panel-btn-label {
-  color: #666;
+  color: #333;
 }
 
 .indoor-panel .panel-btn-row {

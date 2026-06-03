@@ -28,6 +28,7 @@
             @touchstart="touchStart($event, idx)" @touchmove="touchMove($event, idx)" @touchend="touchEnd($event, idx)">
             <view class="plan-actions">
               <view class="plan-action-btn modify" @click.stop="editPlan(plan)">修改</view>
+              <view class="plan-action-btn delete" @click.stop="confirmDeletePlan(plan)">删除</view>
             </view>
             <view class="plan-row" :class="{ shifted: swipeOpenIndex === idx }" @click="onRowClick(plan)">
               <view class="plan-bar" :style="{ background: getLevelColor(plan.level) }"></view>
@@ -870,7 +871,7 @@ function getTypeEmoji(type) { return '' }
   }
 
   &.shifted {
-    transform: translateX(-120rpx);
+    transform: translateX(-240rpx);
   }
 }
 .plan-actions {
@@ -878,14 +879,14 @@ function getTypeEmoji(type) { return '' }
   right: 0;
   top: 0;
   bottom: 0;
-  width: 120rpx;
+  width: 240rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
 }
 .plan-action-btn {
-  width: 100%;
+  width: 50%;
   height: 100%;
   display: flex;
   align-items: center;
@@ -894,6 +895,12 @@ function getTypeEmoji(type) { return '' }
   color: #fff;
   font-weight: 600;
   background: #3b82f6;
+}
+.plan-action-btn.modify {
+  background: #3b82f6;
+}
+.plan-action-btn.delete {
+  background: #ef4444;
   border-radius: 0 24rpx 24rpx 0;
 }
 

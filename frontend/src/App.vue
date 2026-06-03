@@ -47,6 +47,9 @@ page {
   background-color: #f5f5f5;
   font-size: 28rpx;
   color: #333;
+
+  /* 为 TaskFlow 等组件提供状态栏高度 CSS 变量 */
+  --status-bar-height: 44rpx;
 }
 
 /* 全局重置 */

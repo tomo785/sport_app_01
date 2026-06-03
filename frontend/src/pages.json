@@ -51,6 +51,15 @@
       }
     },
     {
+      "path": "pages/design/design",
+      "style": {
+        "navigationBarTitleText": "设计",
+        "navigationBarBackgroundColor": "#FDF6F0",
+        "navigationBarTextStyle": "black",
+        "backgroundColor": "#FDF6F0"
+      }
+    },
+    {
       "path": "pages/workout/workout",
       "style": {
         "navigationBarTitleText": "开始运动",

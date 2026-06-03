@@ -47,6 +47,30 @@
               <text v-if="item.durationPlanned">{{ item.durationPlanned }}秒</text>
               <text class="rest-time" v-if="item.restTime">休息{{ item.restTime }}秒</text>
             </view>
+            <view class="exercise-tags" v-if="item.tags && item.tags.length > 0">
+              <view
+                class="exercise-tag"
+                v-for="(tag, tIdx) in item.tags"
+                :key="tIdx"
+                :style="{ background: tag.bg, color: tag.color }"
+              >
+                {{ tag.text }}
+              </view>
+            </view>
+            <view class="exercise-tags" v-else>
+              <view class="exercise-tag" v-if="item.setsPlanned && item.repsPlanned" style="background:#fff7ed;color:#f59e0b">
+                {{ item.setsPlanned }}×{{ item.repsPlanned }}
+              </view>
+              <view class="exercise-tag" v-else-if="item.setsPlanned" style="background:#fff7ed;color:#f59e0b">
+                {{ item.setsPlanned }}组
+              </view>
+              <view class="exercise-tag" v-if="item.durationPlanned" style="background:#eff6ff;color:#3b82f6">
+                {{ item.durationPlanned }}秒
+              </view>
+              <view class="exercise-tag" v-if="item.restTime" style="background:#fff7ed;color:#f97316">
+                休息{{ item.restTime }}秒
+              </view>
+            </view>
           </view>
           <view class="exercise-status">
             <text class="status-icon" v-if="item.status === 2">✓</text>
@@ -265,6 +289,20 @@ function viewSummary() {
             padding: 4rpx 12rpx;
             border-radius: 8rpx;
             font-size: 22rpx;
+          }
+        }
+
+        .exercise-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8rpx;
+          margin-top: 12rpx;
+
+          .exercise-tag {
+            font-size: 20rpx;
+            font-weight: 500;
+            padding: 4rpx 12rpx;
+            border-radius: 8rpx;
           }
         }
       }

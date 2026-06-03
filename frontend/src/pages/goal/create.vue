@@ -347,7 +347,51 @@ onMounted(() => {
   } else {
     planData.startDate = formatDate(new Date())
   }
+
+  // 检查是否有 AI 生成的计划需要导入
+  loadAiPlan()
 })
+
+function loadAiPlan() {
+  const stored = uni.getStorageSync('ai_generated_plan')
+  if (!stored) return
+
+  // 读取后立即清除，防止重复导入
+  uni.removeStorageSync('ai_generated_plan')
+
+  // 结构化 JSON 计划数据
+  if (stored.name && stored.courses) {
+    planData.name = stored.name || ''
+    planData.description = stored.description || ''
+    planData.totalWeeks = stored.totalWeeks || 4
+    planData.level = stored.level || 1
+    planData.courses = (stored.courses || []).map(c => ({
+      week: c.week,
+      day: c.day,
+      name: c.name,
+      type: c.type,
+      duration: c.duration,
+      warmUpDuration: 0,
+      coolDownDuration: 0,
+      description: c.description || '',
+      exercises: (c.exercises || []).map(e => ({
+        name: e.name,
+        type: e.type,
+        duration: e.duration || 0,
+        sets: e.sets || null,
+        reps: e.reps || null,
+        restTime: e.restTime || null,
+        distance: e.distance || null,
+        description: e.description || ''
+      }))
+    }))
+    uni.showToast({ title: '已导入 AI 训练方案', icon: 'success' })
+  } else if (stored.rawText) {
+    // 纯文本降级：仅填充名称
+    planData.name = 'AI 训练方案'
+    planData.description = stored.rawText.substring(0, 200)
+  }
+}
 
 function loadPlan(id) {
   getPlanDetail(id).then(res => {
