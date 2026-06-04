@@ -115,78 +115,70 @@
         </view>
       </view>
 
-      <!-- ===== 小项目设计器 ===== -->
+      <!-- ===== 热门计划 ===== -->
       <view class="section">
         <view class="section-head">
-          <text class="section-title">小项目设计器</text>
-          <text class="section-more" @click="goActivityEditor">创建完整活动 ›</text>
+          <text class="section-title">热门计划</text>
         </view>
-
-        <view class="designer-section">
-          <!-- tabs -->
-          <view class="ds-tabs">
-            <text class="ds-tab" :class="{ active: dsTab === 'preset' }" @click="dsTab = 'preset'">默认项目</text>
-            <text class="ds-tab" :class="{ active: dsTab === 'custom' }" @click="dsTab = 'custom'">自定义项目</text>
-          </view>
-
-          <!-- 默认项目列表 -->
-          <view class="ds-grid" v-if="dsTab === 'preset'">
-            <view class="ds-card" v-for="(item, idx) in presetExercises" :key="idx">
-              <text class="ds-card-icon">{{ item.icon }}</text>
-              <view class="ds-card-info">
-                <text class="ds-card-name">{{ item.name }}</text>
-                <text class="ds-card-meta">{{ item.meta }}</text>
+        <view class="hot-carousel">
+          <swiper class="hot-swiper" :autoplay="false" :duration="400"
+            previous-margin="160rpx" next-margin="160rpx"
+            :current="hotCurrent"
+            @change="onHotChange">
+            <swiper-item class="hot-slide" v-for="(item, idx) in hotPlans" :key="idx" @click="goPlanDetail(item)">
+              <view class="hot-slide-inner" :class="'gradient-' + (idx % 3)">
+                <text class="hot-slide-name">{{ item.name }}</text>
+                <text class="hot-slide-tag">{{ item.tag }}</text>
               </view>
-              <text class="ds-card-add" @click="quickAddToMyActivities(item)">+</text>
-            </view>
-          </view>
-
-          <!-- 自定义项目列表 -->
-          <view class="ds-custom" v-if="dsTab === 'custom'">
-            <!-- 已有自定义活动 -->
-            <view class="ds-custom-list" v-if="myActivitiesList.length > 0">
-              <view class="ds-custom-item" v-for="(act, idx) in myActivitiesList" :key="act.id || idx">
-                <text class="ds-ci-icon">⚡</text>
-                <view class="ds-ci-info">
-                  <text class="ds-ci-name">{{ act.title || act.name }}</text>
-                  <text class="ds-ci-meta">{{ (act.exercises || []).length }} 个步骤</text>
-                </view>
-                <text class="ds-ci-del" @click="deleteMyActivity(idx)">✕</text>
-              </view>
-            </view>
-
-            <!-- 新建自定义活动表单 -->
-            <view class="ds-custom-form">
-              <text class="ds-cf-title">新建自定义项目</text>
-              <input class="ds-cf-input" v-model="customActName" placeholder="项目名称（如：晨间唤醒组合）" />
-              <view class="ds-cf-presets">
-                <text class="ds-cf-preset" v-for="(ex, i) in selectedPresets" :key="i">
-                  {{ ex.name }}
-                  <text class="ds-cf-preset-del" @click="removePreset(i)">✕</text>
-                </text>
-              </view>
-              <view class="ds-cf-row">
-                <picker class="ds-cf-picker" :range="presetExerciseNames" :value="presetPickIdx"
-                  @change="onPresetPickChange">
-                  <text>{{ presetPickIdx >= 0 ? presetExerciseNames[presetPickIdx] : '选择预设步骤' }}</text>
-                </picker>
-                <view class="ds-cf-addstep" @click="addPresetToCustom">添加步骤</view>
-              </view>
-              <view class="ds-cf-save" @click="saveCustomActivity">保存自定义项目</view>
-            </view>
+            </swiper-item>
+          </swiper>
+          <view class="hot-dots">
+            <view class="hot-dot" :class="{ active: hotPage + 1 === i }" v-for="i in hotPlans.length" :key="i" @click="goToHotSlide(i - 1)"></view>
           </view>
         </view>
       </view>
 
-      <!-- ===== 快捷入口 ===== -->
-      <view class="quick-actions">
-        <view class="qa-btn qa-primary" @click="goCreatePlan">
-          <text class="qa-btn-icon">+</text>
-          <text class="qa-btn-text">创建新计划</text>
+      <!-- ===== 创建活动 ===== -->
+      <view class="section">
+        <view class="section-head">
+          <text class="section-title">创建活动</text>
         </view>
-        <view class="qa-btn qa-secondary" @click="goCommunity">
-          <text class="qa-btn-icon">🌐</text>
-          <text class="qa-btn-text">探索社区</text>
+        <view class="filter-layout">
+          <view class="filter-side">
+            <view class="filter-item" v-for="cat in filterCategories" :key="cat.key"
+              :class="{ active: activeFilter === cat.key }" @click="activeFilter = cat.key">
+              <text class="fi-text">{{ cat.label }}</text>
+            </view>
+          </view>
+          <view class="filter-content">
+            <view class="fc-chip" v-for="act in filteredActivityTypes" :key="act"
+              :class="{ selected: selectedActivities.includes(act) }" @click="toggleActivity(act)">
+              <text class="fc-text">{{ act }}</text>
+              <text class="fc-check" v-if="selectedActivities.includes(act)">✓</text>
+            </view>
+            <view class="fc-empty" v-if="filteredActivityTypes.length === 0">
+              <text>暂无匹配活动</text>
+            </view>
+          </view>
+        </view>
+        <view class="create-activity-btn" @click="goActivityCreate">
+          <text class="cab-text">创建活动</text>
+        </view>
+        <view class="created-list" v-if="createdActivities.length > 0">
+          <view class="created-item" v-for="(item, idx) in createdActivities" :key="idx">
+            <view class="ci-left">
+              <view class="ci-info">
+                <text class="ci-name">{{ item.name }}</text>
+                <text class="ci-desc">{{ item.desc }}</text>
+              </view>
+            </view>
+            <view class="ci-right">
+              <text class="ci-delete" @click="removeCreatedActivity(idx)">✕</text>
+            </view>
+          </view>
+        </view>
+        <view class="empty-hint" v-else>
+          <text>选择上方活动类型，点击「创建活动」开始</text>
         </view>
       </view>
 
@@ -215,109 +207,6 @@ const ringCircumference = 2 * Math.PI * 50
 const courseTypeIcons = { 1: '🏃', 2: '💪', 3: '🧘', 4: '⚡', 5: '⚡', 6: '😴' }
 const courseTypeNames = { 1: '跑步', 2: '力量', 3: '拉伸', 4: 'HIIT', 5: '综合', 6: '休息' }
 
-// ---- 小项目设计器 ----
-const dsTab = ref('preset')
-const customActName = ref('')
-const selectedPresets = ref([])
-const presetPickIdx = ref(-1)
-const myActivitiesList = ref([])
-
-const presetExercises = [
-  { icon: '🏃', name: '慢跑热身', meta: '5-10分 · 1-2km', type: 1, duration: 600, distance: 2000 },
-  { icon: '🏃', name: '400米冲刺', meta: '90秒 · 1组', type: 1, duration: 90, distance: 400 },
-  { icon: '🏃', name: '800米间歇', meta: '180秒 · 4组', type: 1, duration: 180, distance: 800, sets: 4 },
-  { icon: '💪', name: '深蹲', meta: '4组×12次', type: 2, sets: 4, reps: 12 },
-  { icon: '💪', name: '俯卧撑', meta: '4组×15次', type: 2, sets: 4, reps: 15 },
-  { icon: '💪', name: '平板支撑', meta: '3组×60秒', type: 2, sets: 3, reps: 60 },
-  { icon: '💪', name: '卷腹', meta: '3组×20次', type: 2, sets: 3, reps: 20 },
-  { icon: '💪', name: '弓步蹲', meta: '3组×12次/腿', type: 2, sets: 3, reps: 12 },
-  { icon: '🧘', name: '全身拉伸', meta: '10分钟', type: 3, duration: 600 },
-  { icon: '🧘', name: '哈他瑜伽', meta: '30分钟', type: 3, duration: 1800 },
-  { icon: '🧘', name: '泡沫轴放松', meta: '15分钟', type: 3, duration: 900 },
-  { icon: '🚶', name: '缓和散步', meta: '5-10分 · 0.5km', type: 1, duration: 300, distance: 500 },
-]
-
-const presetExerciseNames = computed(() => presetExercises.map(e => e.name))
-
-function goActivityEditor() {
-  uni.navigateTo({ url: '/pages/goal/activity-editor' })
-}
-
-function loadMyActivities() {
-  try {
-    const raw = uni.getStorageSync('userActivities')
-    if (raw) {
-      const list = typeof raw === 'string' ? JSON.parse(raw) : raw
-      myActivitiesList.value = Array.isArray(list) ? list : []
-    }
-  } catch (e) { myActivitiesList.value = [] }
-}
-
-function onPresetPickChange(e) {
-  presetPickIdx.value = e.detail.value
-}
-
-function addPresetToCustom() {
-  if (presetPickIdx.value < 0) { uni.showToast({ title: '请选择一个预设步骤', icon: 'none' }); return }
-  const ex = presetExercises[presetPickIdx.value]
-  if (selectedPresets.value.some(s => s.name === ex.name)) {
-    uni.showToast({ title: '该步骤已添加', icon: 'none' }); return
-  }
-  selectedPresets.value.push({ ...ex })
-  presetPickIdx.value = -1
-}
-
-function removePreset(idx) {
-  selectedPresets.value.splice(idx, 1)
-}
-
-function saveCustomActivity() {
-  if (!customActName.value.trim()) { uni.showToast({ title: '请输入项目名称', icon: 'none' }); return }
-  if (selectedPresets.value.length === 0) { uni.showToast({ title: '请至少添加一个步骤', icon: 'none' }); return }
-
-  const newAct = {
-    id: Date.now(),
-    title: customActName.value.trim(),
-    type: 1,
-    duration: selectedPresets.value.reduce((s, e) => s + (e.duration || 60), 0) / 60,
-    exercises: selectedPresets.value.map(e => ({
-      name: e.name, type: e.type, duration: e.duration || 60,
-      sets: e.sets || null, reps: e.reps || null, distance: e.distance || null
-    }))
-  }
-
-  myActivitiesList.value.push(newAct)
-  uni.setStorageSync('userActivities', JSON.stringify(myActivitiesList.value))
-  customActName.value = ''
-  selectedPresets.value = []
-  uni.showToast({ title: '自定义项目已保存', icon: 'success' })
-}
-
-function quickAddToMyActivities(item) {
-  const newAct = {
-    id: Date.now() + Math.random(),
-    title: item.name,
-    type: item.type || 1,
-    duration: (item.duration || 60) / 60,
-    exercises: [{ name: item.name, type: item.type || 1, duration: item.duration || 60, sets: item.sets || null, reps: item.reps || null }]
-  }
-  myActivitiesList.value.push(newAct)
-  uni.setStorageSync('userActivities', JSON.stringify(myActivitiesList.value))
-  uni.showToast({ title: `已添加「${item.name}」到自定义项目`, icon: 'success' })
-}
-
-function deleteMyActivity(idx) {
-  uni.showModal({
-    title: '删除项目',
-    content: '确定删除该自定义项目？',
-    success: (res) => {
-      if (!res.confirm) return
-      myActivitiesList.value.splice(idx, 1)
-      uni.setStorageSync('userActivities', JSON.stringify(myActivitiesList.value))
-    }
-  })
-}
-
 function courseTypeIcon(type) { return courseTypeIcons[type] || '🏃' }
 function courseTypeName(type) { return courseTypeNames[type] || '运动' }
 
@@ -330,15 +219,31 @@ function isDayExpanded(planId, day) {
 }
 
 function getDayCourses(plan, dayOfWeek) {
-  if (!plan.courses) return []
-  return plan.courses.filter(c => c.day === dayOfWeek)
+  if (plan.courses) {
+    return plan.courses.filter(c => c.day === dayOfWeek)
+  }
+  if (plan.days) {
+    const dayPlan = plan.days.find(d => d.dayOfWeek === dayOfWeek)
+    if (!dayPlan) return []
+    const acts = dayPlan.activities || []
+    return acts.map(act => ({
+      name: act.name,
+      type: act.type,
+      duration: act.duration || 0
+    }))
+  }
+  return []
 }
 
 function getDayStatusText(plan, dayOfWeek) {
   const courses = getDayCourses(plan, dayOfWeek)
-  if (courses.length === 0) return '—'
-  if (courses.some(c => c.type === 6)) return '😴 休息'
-  const names = courses.map(c => courseTypeName(c.type))
+  if (courses.length === 0) return '无安排'
+  if (courses.some(c => c.type === 6 || c.type === 'rest')) return '😴 休息'
+  const names = courses.map(c => {
+    if (typeof c.type === 'number') return courseTypeName(c.type)
+    const map = { run: '跑步', strength: '力量', yoga: '拉伸', rest: '休息', custom: '综合' }
+    return map[c.type] || '运动'
+  })
   return [...new Set(names)].join(' · ')
 }
 
@@ -419,7 +324,22 @@ function loadWeekOverview() {
 // ---- 计划数据 ----
 function loadMyPlans() {
   getMyPlans()
-    .then(res => { if (res.code === 200 && res.data) myPlans.value = res.data })
+    .then(res => {
+      if (res.code === 200 && res.data) {
+        const backendPlans = res.data
+        // 读取本地完整数据做兜底补充
+        const saved = uni.getStorageSync('myTrainingPlans')
+        const localPlans = saved ? (() => { try { return JSON.parse(saved) } catch (e) { return [] } })() : []
+        myPlans.value = backendPlans.map(bp => {
+          const localPlan = localPlans.find(lp => String(lp.id) === String(bp.id))
+          // 后端若无 courses，优先用本地 courses；若有则直接用后端的
+          if ((!bp.courses || bp.courses.length === 0) && localPlan && localPlan.courses) {
+            return { ...bp, courses: localPlan.courses }
+          }
+          return bp
+        })
+      }
+    })
     .catch(() => loadLocalPlans())
     .finally(() => { refreshing.value = false })
 }
@@ -438,8 +358,8 @@ function loadLocalPlans() {
 }
 
 function isRestDay(plan, dayOfWeek) {
-  if (!plan.courses) return false
-  return plan.courses.some(c => c.day === dayOfWeek && c.type === 6)
+  const courses = getDayCourses(plan, dayOfWeek)
+  return courses.some(c => c.type === 6 || c.type === 'rest')
 }
 
 function getProgressPct(plan) {
@@ -449,14 +369,102 @@ function getProgressPct(plan) {
 }
 
 function getWorkoutsPerWeek(plan) {
-  if (!plan.courses || !plan.courses.length) return 0
-  const days = new Set(plan.courses.map(c => c.day))
-  return days.size
+  if (plan.courses && plan.courses.length > 0) {
+    const days = new Set(plan.courses.map(c => c.day))
+    return days.size
+  }
+  if (plan.days && plan.days.length > 0) {
+    return plan.days.filter(d => {
+      const acts = d.activities || []
+      return acts.length > 0 && !acts.every(a => a.type === 'rest')
+    }).length
+  }
+  return 0
 }
 
 function getLevelColor(level) {
   const c = { 1: '#22c55e', 2: '#3b82f6', 3: '#f59e0b', 4: '#ef4444' }
   return c[level] || c[1]
+}
+
+// ---- 热门计划和创建活动 ----
+const hotPlans = ref([
+  { id: 1, name: '晨跑30分钟', emoji: '🏃', tag: '有氧 · 初级', desc: '慢跑30分钟，开启活力一天' },
+  { id: 2, name: '瑜伽入门', emoji: '🧘', tag: '柔韧 · 初级', desc: '基础体式练习，改善体态' },
+  { id: 3, name: '力量训练', emoji: '💪', tag: '增肌 · 中级', desc: '全身肌肉群均衡训练' },
+  { id: 4, name: '户外骑行', emoji: '🚴', tag: '有氧 · 中级', desc: '城市绿道骑行，畅快体验' },
+  { id: 5, name: '间歇冲刺', emoji: '⚡', tag: '燃脂 · 高级', desc: '高强度间歇，快速燃脂' },
+  { id: 6, name: '全身燃脂', emoji: '🔥', tag: '减脂 · 中级', desc: 'HIIT组合，高效燃脂' },
+])
+const hotPage = ref(0)
+const hotCurrent = ref(0)
+const selectedActivities = ref([])
+const activeFilter = ref('run')
+const createdActivities = ref([])
+
+const filterCategories = [
+  { key: 'run',  label: '跑步',  types: ['线下跑步', '室内跑步'] },
+  { key: 'bike', label: '骑行',  types: ['线上骑行', '骑行'] },
+  { key: 'outdoor', label: '户外', types: ['徒步', '健步走', '登山'] },
+  { key: 'swim', label: '水中',  types: ['游泳'] },
+]
+
+const filteredActivityTypes = computed(() => {
+  const cat = filterCategories.find(c => c.key === activeFilter.value)
+  return cat ? cat.types : []
+})
+
+function onHotChange(e) {
+  hotPage.value = e.detail.current
+  hotCurrent.value = e.detail.current
+}
+
+function goToHotSlide(index) {
+  hotCurrent.value = index
+  hotPage.value = index
+}
+
+function toggleActivity(act) {
+  const idx = selectedActivities.value.indexOf(act)
+  if (idx > -1) selectedActivities.value.splice(idx, 1)
+  else selectedActivities.value.push(act)
+}
+
+function goPlanDetail(item) {
+  if (item && item.id) uni.navigateTo({ url: `/pages/goal/detail?id=${item.id}` })
+}
+
+function goActivityCreate() {
+  uni.navigateTo({ url: '/pages/goal/activity-editor' })
+}
+
+function loadCreatedActivities() {
+  try {
+    const raw = uni.getStorageSync('userActivities')
+    if (raw) {
+      const list = typeof raw === 'string' ? JSON.parse(raw) : raw
+      const merged = [...createdActivities.value]
+      list.forEach(item => {
+        if (!merged.find(m => m.name === item.title)) {
+          const steps = (item.main || []).length + (item.warmup || []).length + (item.cooldown || []).length
+          merged.push({
+            name: item.title, desc: `${steps}个步骤 · ${item.warmup?.length ? '热身' : ''}${item.main?.length ? '+主项' : ''}${item.cooldown?.length ? '+缓和' : ''}`, time: item.createdAt || ''
+          })
+        }
+      })
+      createdActivities.value = merged
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function removeCreatedActivity(idx) {
+  const item = createdActivities.value[idx]
+  createdActivities.value.splice(idx, 1)
+  try {
+    const raw = uni.getStorageSync('userActivities')
+    const list = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : []
+    uni.setStorageSync('userActivities', JSON.stringify(list.filter(a => a.title !== item.name)))
+  } catch (e) { /* ignore */ }
 }
 
 // ---- 导航 ----
@@ -500,13 +508,13 @@ onMounted(() => {
   statusBarHeight.value = info.statusBarHeight || 20
   loadWeekOverview()
   loadMyPlans()
-  loadMyActivities()
+  loadCreatedActivities()
 })
 
 onShow(() => {
   loadWeekOverview()
   loadMyPlans()
-  loadMyActivities()
+  loadCreatedActivities()
 })
 </script>
 
@@ -656,8 +664,6 @@ onShow(() => {
 }
 
 .section-title { font-size: 34rpx; font-weight: 700; color: var(--text-primary); }
-
-.section-more { font-size: 24rpx; color: var(--accent-blue); font-weight: 500; }
 
 // ===== 我的计划（卡片式） =====
 .plan-cards {
@@ -852,166 +858,86 @@ onShow(() => {
 
 .plan-empty-hint { font-size: 24rpx; color: var(--text-tertiary); }
 
-// ===== 小项目设计器 =====
-.designer-section {
-  background: var(--bg-card);
-  border-radius: 20rpx;
-  padding: 24rpx;
-  transition: background 0.3s;
+// ===== 热门计划（轮播） =====
+.hot-carousel { margin-bottom: 28rpx; }
+
+.hot-swiper {
+  height: 260rpx;
 }
 
-.ds-tabs {
-  display: flex; gap: 12rpx; margin-bottom: 20rpx;
+.hot-slide { display: flex; align-items: center; justify-content: center; }
+
+.hot-slide-inner {
+  width: 100%; height: 200rpx; border-radius: 24rpx;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8rpx; transition: all 0.3s; transform: scale(0.88); opacity: 0.7;
+
+  &.gradient-0 { background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); }
+  &.gradient-1 { background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); }
+  &.gradient-2 { background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%); }
 }
 
-.ds-tab {
-  flex: 1; text-align: center; padding: 14rpx; border-radius: 12rpx;
-  font-size: 26rpx; font-weight: 500;
-  color: var(--text-tertiary); background: var(--bg-secondary);
-  border: 1rpx solid var(--border-color);
-  transition: all 0.2s;
+.uni-swiper-slide-active .hot-slide-inner {
+  transform: scale(1); opacity: 1;
+}
 
-  &.active {
-    color: var(--accent-green); background: var(--bg-secondary);
-    border-color: var(--accent-green); font-weight: 700;
+.hot-slide-name { font-size: 32rpx; font-weight: 700; color: #1c1c1e; }
+.hot-slide-tag { font-size: 22rpx; color: #6b7280; }
+
+.hot-dots { display: flex; justify-content: center; gap: 16rpx; margin-top: 12rpx; }
+.hot-dot {
+  width: 16rpx; height: 16rpx; border-radius: 50%; background: #D1D5DB;
+  &.active { background: var(--accent-green); }
+}
+
+// ===== 创建活动 =====
+.filter-layout { display: flex; gap: 16rpx; min-height: 360rpx; margin-bottom: 20rpx; }
+.filter-side {
+  width: 136rpx; flex-shrink: 0; background: var(--bg-secondary);
+  border-radius: 16rpx; display: flex; flex-direction: column; overflow-y: auto;
+  &::-webkit-scrollbar { display: none; }
+}
+.filter-item {
+  display: flex; align-items: center; justify-content: center;
+  height: 80rpx; position: relative; transition: background 0.2s;
+  &:not(:last-child)::after {
+    content: ''; position: absolute; bottom: 0; left: 20rpx; right: 20rpx;
+    height: 1rpx; background: var(--border-color);
   }
+  &.active { background: var(--bg-secondary); .fi-text { color: var(--accent-green); font-weight: 600; } }
 }
-
-// 默认项目网格
-.ds-grid {
-  display: flex; flex-wrap: wrap; gap: 12rpx;
+.fi-text { font-size: 22rpx; color: var(--text-tertiary); font-weight: 500; }
+.filter-content {
+  flex: 1; background: var(--bg-secondary); border-radius: 16rpx;
+  padding: 16rpx; display: flex; flex-direction: column; gap: 12rpx;
 }
-
-.ds-card {
-  display: flex; align-items: center; gap: 10rpx;
-  padding: 14rpx 16rpx; border-radius: 12rpx;
-  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
-  min-width: calc(50% - 6rpx); box-sizing: border-box;
-  position: relative;
+.fc-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64rpx; padding: 0 14rpx; border-radius: 12rpx; background: var(--bg-card);
+  transition: all 0.2s;
+  &.selected { background: var(--bg-card); border: 2rpx solid var(--accent-green); .fc-text { color: var(--accent-green); font-weight: 600; } }
+  &:active { background: var(--bg-secondary); }
 }
-
-.ds-card-icon { font-size: 32rpx; width: 44rpx; text-align: center; }
-
-.ds-card-info { flex: 1; min-width: 0; }
-
-.ds-card-name {
-  font-size: 26rpx; font-weight: 600; color: var(--text-primary); display: block;
-}
-
-.ds-card-meta {
-  font-size: 20rpx; color: var(--text-tertiary); margin-top: 2rpx; display: block;
-}
-
-.ds-card-add {
-  width: 44rpx; height: 44rpx; border-radius: 50%;
-  background: var(--accent-green); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28rpx; font-weight: bold; flex-shrink: 0;
-  &:active { opacity: 0.7; }
-}
-
-// 自定义项目
-.ds-custom-list {
-  display: flex; flex-direction: column; gap: 10rpx; margin-bottom: 20rpx;
-}
-
-.ds-custom-item {
-  display: flex; align-items: center; gap: 12rpx;
-  padding: 14rpx 16rpx; border-radius: 10rpx;
-  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
-}
-
-.ds-ci-icon { font-size: 28rpx; }
-.ds-ci-info { flex: 1; }
-.ds-ci-name { font-size: 26rpx; font-weight: 600; color: var(--text-primary); display: block; }
-.ds-ci-meta { font-size: 20rpx; color: var(--text-tertiary); }
-.ds-ci-del { font-size: 24rpx; color: #ef4444; padding: 8rpx; }
-
-.ds-custom-form {
-  background: var(--bg-secondary); border-radius: 14rpx; padding: 20rpx;
-}
-
-.ds-cf-title { font-size: 24rpx; font-weight: 600; color: var(--text-primary); margin-bottom: 12rpx; }
-
-.ds-cf-input {
-  height: 64rpx; border-radius: 10rpx; padding: 0 16rpx;
-  background: var(--bg-card); font-size: 26rpx; color: var(--text-primary);
-  border: 1rpx solid var(--border-color); width: 100%; box-sizing: border-box;
-  margin-bottom: 12rpx;
-}
-
-.ds-cf-presets {
-  display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 12rpx;
-}
-
-.ds-cf-preset {
-  display: inline-flex; align-items: center; gap: 6rpx;
-  padding: 8rpx 14rpx; border-radius: 8rpx;
-  background: var(--accent-green); color: #fff; font-size: 22rpx; font-weight: 500;
-}
-
-.ds-cf-preset-del { font-size: 18rpx; padding: 2rpx; }
-
-.ds-cf-row {
-  display: flex; gap: 10rpx; margin-bottom: 12rpx;
-}
-
-.ds-cf-picker {
-  flex: 1; height: 64rpx; border-radius: 10rpx; padding: 0 16rpx;
-  background: var(--bg-card); border: 1rpx solid var(--border-color);
-  display: flex; align-items: center; font-size: 24rpx; color: var(--text-primary);
-}
-
-.ds-cf-addstep {
-  height: 64rpx; padding: 0 24rpx; border-radius: 10rpx;
-  background: var(--bg-secondary); border: 1rpx solid var(--border-color);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24rpx; color: var(--accent-green); font-weight: 600;
-}
-
-.ds-cf-save {
-  height: 72rpx; border-radius: 12rpx;
+.fc-text { font-size: 26rpx; color: var(--text-primary); }
+.fc-check { font-size: 22rpx; color: var(--accent-green); font-weight: 700; }
+.fc-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 24rpx; }
+.create-activity-btn {
+  width: 100%; height: 80rpx; border-radius: 16rpx;
   background: linear-gradient(135deg, var(--accent-green), #16a34a);
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 28rpx; font-weight: 700;
-  &:active { opacity: 0.85; }
+  display: flex; align-items: center; justify-content: center; margin-bottom: 20rpx;
 }
-
-// ===== 快捷入口 =====
-.quick-actions {
-  display: flex;
-  gap: 20rpx;
-  margin-bottom: 40rpx;
+.cab-text { font-size: 28rpx; color: #fff; font-weight: 600; }
+.created-list { display: flex; flex-direction: column; gap: 12rpx; }
+.created-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20rpx; background: var(--bg-secondary); border-radius: 16rpx;
 }
+.ci-left { flex: 1; min-width: 0; }
+.ci-info { display: flex; flex-direction: column; gap: 6rpx; }
+.ci-name { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
+.ci-desc { font-size: 22rpx; color: var(--text-tertiary); }
+.ci-delete { font-size: 24rpx; color: #EF4444; padding: 8rpx; }
+.empty-hint { text-align: center; padding: 40rpx 0; color: var(--text-tertiary); font-size: 26rpx; }
 
-.qa-btn {
-  flex: 1;
-  height: 100rpx;
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10rpx;
-  transition: all 0.3s;
-
-  &:active { transform: scale(0.96); opacity: 0.85; }
-}
-
-.qa-primary {
-  background: linear-gradient(135deg, var(--accent-green), #16a34a);
-}
-
-.qa-secondary {
-  background: var(--bg-card);
-  border: 2rpx solid var(--border-color);
-}
-
-.qa-btn-icon { font-size: 36rpx; }
-.qa-btn-text { font-size: 30rpx; font-weight: 600; }
-
-.qa-primary .qa-btn-text { color: #fff; }
-.qa-secondary .qa-btn-text { color: var(--text-primary); }
-
-// ===== 底部 =====
 .bottom-spacer { height: 40rpx; }
 </style>

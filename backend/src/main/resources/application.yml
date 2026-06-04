@@ -100,12 +100,12 @@ ai:
   providers:
     kimi:
       name: Kimi K2.6
-      api-key: sk-kimi-vzatpEC3SjUsW46LzwOWM7BVcyWevbKygJegyju5tm3FezHuoBpyJUiO2sAUbctg
+      api-key: your-kimi-api-key
       base-url: https://api.moonshot.cn/v1
       model: kimi-k2.6
     deepseek:
       name: DeepSeek V4 Flash
-      api-key: sk-da89d0b2b4fe42a29ba71d0e0e93b264
+      api-key: your-deepseek-api-key
       base-url: https://api.deepseek.com/v1
       model: deepseek-v4-flash
 

@@ -56,4 +56,7 @@ public class PlanVO implements Serializable {
     private Integer totalCourses;
 
     private LocalDateTime createTime;
+
+    /** 课程列表 */
+    private List<CourseVO> courses;
 }

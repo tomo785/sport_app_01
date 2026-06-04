@@ -14,7 +14,7 @@
 
     <groupId>com.sport</groupId>
     <artifactId>sport-app-backend</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
     <name>sport-app-backend</name>
     <description>运动健身App后端服务 - 支持AI对话和任务卡片</description>
 

@@ -157,10 +157,29 @@ public class PlanServiceImpl implements PlanService {
         Map<Long, TrainingPlan> planMap = plans.stream()
                 .collect(Collectors.toMap(TrainingPlan::getId, p -> p));
 
+        // 批量查询所有课程
+        LambdaQueryWrapper<TrainingCourse> courseWrapper = new LambdaQueryWrapper<>();
+        courseWrapper.in(TrainingCourse::getPlanId, planIds)
+                .orderByAsc(TrainingCourse::getWeek)
+                .orderByAsc(TrainingCourse::getDay)
+                .orderByAsc(TrainingCourse::getSortOrder);
+        List<TrainingCourse> allCourses = trainingCourseMapper.selectList(courseWrapper);
+        Map<Long, List<TrainingCourse>> courseMap = allCourses.stream()
+                .collect(Collectors.groupingBy(TrainingCourse::getPlanId));
+
         return utps.stream().map(utp -> {
             TrainingPlan plan = planMap.get(utp.getPlanId());
             if (plan == null) return null;
-            return convertToPlanVO(plan, utp);
+            PlanVO vo = convertToPlanVO(plan, utp);
+            List<TrainingCourse> courses = courseMap.getOrDefault(plan.getId(), Collections.emptyList());
+            List<CourseVO> courseVOs = courses.stream().map(course -> {
+                CourseVO cvo = new CourseVO();
+                BeanUtils.copyProperties(course, cvo);
+                cvo.setTypeName(getCourseTypeName(course.getType()));
+                return cvo;
+            }).collect(Collectors.toList());
+            vo.setCourses(courseVOs);
+            return vo;
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
