@@ -1,16 +1,14 @@
 /**
  * 普通用户账号初始化脚本 (Node.js)
  * 用于创建测试用户账号
- * 
+ *
  * 使用方法:
  * 1. 确保已安装依赖: npm install bcryptjs mysql2
  * 2. 修改数据库配置
  * 3. 运行: node scripts/init-user.js
  */
-
 const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
-
 // 数据库配置 - 请根据实际情况修改
 const dbConfig = {
   host: 'localhost',
@@ -19,7 +17,6 @@ const dbConfig = {
   password: 'your_password',
   database: 'sport_app'
 };
-
 // 测试用户账号配置
 const TEST_USERS = [
   {
@@ -41,7 +38,6 @@ const TEST_USERS = [
     weight: 55
   }
 ];
-
 // 创建用户表的 SQL
 const CREATE_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS user (
@@ -60,34 +56,29 @@ CREATE TABLE IF NOT EXISTS user (
   INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 `;
-
 async function initUsers() {
   let connection;
-  
   try {
     // 连接数据库
     console.log('正在连接数据库...');
     connection = await mysql.createConnection(dbConfig);
-    console.log('✅ 数据库连接成功\n');
-    
+    console.log('[OK] 数据库连接成功\n');
     // 创建表
     console.log('正在创建用户表...');
     await connection.execute(CREATE_TABLE_SQL);
-    console.log('✅ 用户表创建/检查完成\n');
-    
+    console.log('[OK] 用户表创建/检查完成\n');
     // 加密密码
     console.log('正在加密密码...');
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(TEST_USERS[0].password, salt);
-    console.log('✅ 密码加密完成\n');
-    
+    console.log('[OK] 密码加密完成\n');
     // 插入测试用户
     console.log('正在创建测试用户...\n');
     for (const user of TEST_USERS) {
       const [result] = await connection.execute(
-        `INSERT INTO user (phone, password, nickname, gender, age, height, weight, status, create_time) 
+        `INSERT INTO user (phone, password, nickname, gender, age, height, weight, status, create_time)
          VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())
-         ON DUPLICATE KEY UPDATE 
+         ON DUPLICATE KEY UPDATE
            nickname = VALUES(nickname),
            gender = VALUES(gender),
            age = VALUES(age),
@@ -105,23 +96,19 @@ async function initUsers() {
           user.weight
         ]
       );
-      
       if (result.insertId) {
-        console.log(`✅ 用户创建成功: ${user.nickname} (${user.phone})`);
+        console.log(`[OK] 用户创建成功: ${user.nickname} (${user.phone})`);
       } else {
-        console.log(`✅ 用户已更新: ${user.nickname} (${user.phone})`);
+        console.log(`[OK] 用户已更新: ${user.nickname} (${user.phone})`);
       }
     }
-    
     // 显示所有测试账号
-    console.log('\n📋 测试账号列表:');
+    console.log('\n 测试账号列表:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    
     const [rows] = await connection.execute(
       'SELECT id, phone, nickname, gender, age, height, weight, status, create_time FROM user WHERE phone IN (?, ?)',
       [TEST_USERS[0].phone, TEST_USERS[1].phone]
     );
-    
     rows.forEach((row, index) => {
       console.log(`\n账号 ${index + 1}:`);
       console.log(`  手机号: ${row.phone}`);
@@ -130,19 +117,17 @@ async function initUsers() {
       console.log(`  年龄: ${row.age}岁`);
       console.log(`  身高: ${row.height}cm`);
       console.log(`  体重: ${row.weight}kg`);
-      console.log(`  状态: ${row.status === 1 ? '✅ 启用' : '❌ 禁用'}`);
+      console.log(`  状态: ${row.status === 1 ? '[OK] 启用' : '[ERROR] 禁用'}`);
     });
-    
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('\n🎉 普通用户账号初始化完成！');
-    console.log('\n📱 登录信息:');
+    console.log('\nDone 普通用户账号初始化完成！');
+    console.log('\n 登录信息:');
     console.log('  手机号: 13800138000');
     console.log('  密码: 123456');
     console.log('\n  手机号: 13800138111');
     console.log('  密码: 123456');
-    
   } catch (error) {
-    console.error('\n❌ 初始化失败:', error.message);
+    console.error('\n[ERROR] 初始化失败:', error.message);
     process.exit(1);
   } finally {
     if (connection) {
@@ -151,6 +136,5 @@ async function initUsers() {
     }
   }
 }
-
 // 运行初始化
 initUsers();

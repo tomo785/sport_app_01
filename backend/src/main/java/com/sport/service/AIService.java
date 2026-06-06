@@ -51,24 +51,37 @@ public class AIService {
                                      Consumer<String> onDelta,
                                      Consumer<Throwable> onError,
                                      Runnable onComplete) {
-        AIProviderConfig.Provider provider = providerConfig.getProvider(modelId);
+        chatCompletionStream(modelId, null, messages, onDelta, onError, onComplete);
+    }
 
-        if (provider.getApiKey() == null || provider.getApiKey().isBlank()) {
+    /**
+     * 流式调用 AI（指定模型，可临时覆盖 API Key）
+     */
+    public void chatCompletionStream(String modelId,
+                                     String customApiKey,
+                                     List<Map<String, String>> messages,
+                                     Consumer<String> onDelta,
+                                     Consumer<Throwable> onError,
+                                     Runnable onComplete) {
+        AIProviderConfig.Provider provider = providerConfig.getProvider(modelId);
+        String apiKey = (customApiKey != null && !customApiKey.isBlank()) ? customApiKey : provider.getApiKey();
+
+        if (apiKey == null || apiKey.isBlank()) {
             onError.accept(new IllegalStateException("AI API Key 未配置: " + provider.getName()));
             return;
         }
 
-        String keyMask = maskKey(provider.getApiKey());
+        String keyMask = maskKey(apiKey);
         try {
             log.info(">>> 流式请求 AI: provider={}, model={}, keyMask={}", provider.getName(), provider.getModel(), keyMask);
-            executeStream(provider, messages, onDelta, onError, onComplete);
+            executeStream(provider, apiKey, messages, onDelta, onError, onComplete);
         } catch (Exception e) {
             log.error("AI 流式调用失败: provider={}, error={}", provider.getName(), e.getMessage());
             onError.accept(new RuntimeException("AI 服务调用失败: " + e.getMessage(), e));
         }
     }
 
-    private void executeStream(AIProviderConfig.Provider provider, List<Map<String, String>> messages,
+    private void executeStream(AIProviderConfig.Provider provider, String apiKey, List<Map<String, String>> messages,
                                Consumer<String> onDelta, Consumer<Throwable> onError, Runnable onComplete) throws IOException {
         Map<String, Object> body = Map.of(
                 "model", provider.getModel(),
@@ -79,7 +92,7 @@ public class AIService {
 
         Request request = new Request.Builder()
                 .url(provider.getBaseUrl() + "/chat/completions")
-                .header("Authorization", "Bearer " + provider.getApiKey())
+                .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
                 .post(RequestBody.create(JSON.toJSONBytes(body), MediaType.parse("application/json")))
                 .build();

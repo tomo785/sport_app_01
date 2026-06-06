@@ -69,6 +69,21 @@ public class WorkoutDetailVO implements Serializable {
     private Integer calories;
 
     /**
+     * 步数
+     */
+    private Integer steps;
+
+    /**
+     * 平均配速(秒/公里)
+     */
+    private Integer avgPace;
+
+    /**
+     * 最佳配速(秒/公里)
+     */
+    private Integer bestPace;
+
+    /**
      * 平均速度(米/秒)
      */
     private BigDecimal avgSpeed;

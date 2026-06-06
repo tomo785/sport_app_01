@@ -15,33 +15,30 @@
         </view>
       </view>
     </view>
-
     <!-- 日历式日期选择器（默认只显示一周） -->
     <view class="calendar-header">
       <view class="calendar-title">
         <text class="current-month">{{ isCalendarExpanded ? currentYearMonth : currentWeekRange }}</text>
         <view class="expand-btn" @click="toggleCalendarExpand">
-          <text class="expand-icon" :class="{ 'expanded': isCalendarExpanded }">▼</text>
+          <AppIcon class="expand-icon" :class="{ 'expanded': isCalendarExpanded }" name="arrowDown" size="28" bold />
         </view>
       </view>
-      
       <!-- 星期标题 -->
       <view class="week-header">
-        <text 
-          class="week-day-title" 
-          v-for="(day, index) in weekDays" 
+        <text
+          class="week-day-title"
+          v-for="(day, index) in weekDays"
           :key="index"
           :class="{ 'weekend': index === 0 || index === 6 }"
         >{{ day }}</text>
       </view>
-      
       <!-- 默认只显示本周（7天） -->
       <view class="week-grid" v-if="!isCalendarExpanded">
-        <view 
-          class="week-day" 
-          v-for="(day, index) in currentWeekDays" 
+        <view
+          class="week-day"
+          v-for="(day, index) in currentWeekDays"
           :key="index"
-          :class="{ 
+          :class="{
             'active': isSelectedDay(day),
             'today': day.isToday,
             'has-task': day.hasTask,
@@ -53,14 +50,13 @@
           <view class="day-dot" v-if="day.hasTask"></view>
         </view>
       </view>
-      
       <!-- 展开后显示完整月历 -->
       <view class="calendar-grid" v-else>
-        <view 
-          class="calendar-day" 
-          v-for="(day, index) in calendarDays" 
+        <view
+          class="calendar-day"
+          v-for="(day, index) in calendarDays"
           :key="index"
-          :class="{ 
+          :class="{
             'active': isSelectedDay(day),
             'today': day.isToday,
             'other-month': !day.isCurrentMonth,
@@ -73,20 +69,23 @@
           <view class="day-dot" v-if="day.hasTask"></view>
         </view>
       </view>
-      
       <!-- 展开的月份选择器 -->
       <view class="month-picker" v-if="isCalendarExpanded">
         <view class="month-picker-header">
-          <text class="year-nav" @click="changeYear(-1)">‹</text>
+          <view class="year-nav" @click="changeYear(-1)">
+            <AppIcon name="arrowLeft" size="28" bold />
+          </view>
           <text class="picker-year">{{ pickerYear }}年</text>
-          <text class="year-nav" @click="changeYear(1)">›</text>
+          <view class="year-nav" @click="changeYear(1)">
+            <AppIcon name="arrowRight" size="28" bold />
+          </view>
         </view>
         <view class="month-grid">
-          <view 
-            class="month-item" 
-            v-for="month in 12" 
+          <view
+            class="month-item"
+            v-for="month in 12"
             :key="month"
-            :class="{ 
+            :class="{
               'active': isPickerMonthActive(month),
               'current': isCurrentMonth(month)
             }"
@@ -97,11 +96,10 @@
         </view>
       </view>
     </view>
-
     <!-- 流程图区域 -->
-    <scroll-view 
-      class="flow-content" 
-      scroll-y 
+    <scroll-view
+      class="flow-content"
+      scroll-y
       :scroll-top="scrollTop"
       @scroll="onScroll"
     >
@@ -109,7 +107,7 @@
         <!-- 目标卡片 -->
         <view class="goal-node">
           <view class="goal-card">
-            <view class="goal-icon">🎯</view>
+            <view class="goal-icon"><AppIcon name="goal" size="48" /></view>
             <view class="goal-info">
               <text class="goal-title">{{ currentGoal?.title || '目标' }}</text>
               <text class="goal-desc">{{ currentGoal?.description || '坚持训练，达成目标' }}</text>
@@ -122,14 +120,13 @@
             </view>
           </view>
         </view>
-
         <!-- 任务链 -->
         <view class="task-chain">
-          <view 
+          <view
             class="task-node-wrapper"
-            v-for="(task, index) in sortedTasks" 
+            v-for="(task, index) in sortedTasks"
             :key="task.id"
-            :class="{ 
+            :class="{
               'selected': selectedTaskId === task.id,
               'dragging': draggingIndex === index,
               'completed': task.status === 2
@@ -146,14 +143,12 @@
               <view class="connector-line" :class="{ 'active': task.status === 2 }"></view>
               <view class="connector-dot" :class="{ 'completed': task.status === 2 }"></view>
             </view>
-
             <!-- 任务卡片 -->
             <view class="task-node">
               <!-- 优先级标签 -->
               <view class="priority-tag" :class="'priority-' + task.priority">
                 {{ getPriorityText(task.priority) }}
               </view>
-
               <!-- 拖拽手柄 -->
               <view class="drag-handle" @longpress.stop="startDrag(index, $event)">
                 <view class="drag-lines">
@@ -162,19 +157,17 @@
                   <view class="drag-line"></view>
                 </view>
               </view>
-
               <!-- 任务内容 -->
               <view class="task-content">
                 <view class="task-main">
                   <view class="task-icon-wrapper" :class="'icon-bg-' + task.type">
-                    <text class="task-icon">{{ getTaskIcon(task.type) }}</text>
+                    <AppIcon class="task-icon" :name="getTaskIcon(task.type)" size="36" />
                   </view>
                   <view class="task-info">
                     <text class="task-name">{{ task.name }}</text>
                     <text class="task-duration">{{ formatDuration(task.duration) }}</text>
                   </view>
                 </view>
-
                 <view class="task-detail">
                   <view class="detail-item" v-if="task.distance">
                     <text class="detail-label">距离</text>
@@ -189,28 +182,24 @@
                     <text class="detail-value">{{ task.calories }}卡</text>
                   </view>
                 </view>
-
                 <!-- 状态指示器 -->
                 <view class="task-status" :class="'status-' + task.status">
-                  <text class="status-icon">{{ getStatusIcon(task.status) }}</text>
+                  <AppIcon class="status-icon" :name="getStatusIcon(task.status)" size="24" />
                   <text class="status-text">{{ getStatusText(task.status) }}</text>
                 </view>
               </view>
-
               <!-- 完成遮罩 -->
               <view class="completed-overlay" v-if="task.status === 2">
-                <text class="completed-icon">✓</text>
+                <AppIcon class="completed-icon" name="check" size="32" color="#fff" />
               </view>
             </view>
-
             <!-- 顺序序号 -->
             <view class="order-badge">{{ index + 1 }}</view>
           </view>
         </view>
-
         <!-- 补水提醒卡片 -->
         <view class="water-card" v-if="currentPlanType === 'running5k' || currentPlanType === 'running10k'" @click="showWaterCard">
-          <view class="water-icon">💧</view>
+          <view class="water-icon"><AppIcon name="hydration" size="48" /></view>
           <view class="water-info">
             <text class="water-title">补水提醒</text>
             <text class="water-subtitle">保持水分，提升运动表现</text>
@@ -222,13 +211,12 @@
             </view>
           </view>
         </view>
-
         <!-- 补水详情弹窗 -->
         <view class="water-popup" v-if="showWaterReminder" @click="hideWaterCard">
           <view class="water-popup-content" @click.stop>
             <view class="water-popup-header">
-              <text class="water-popup-title">💧 补水记录</text>
-              <text class="water-popup-close" @click="hideWaterCard">✕</text>
+              <view class="water-popup-title"><AppIcon name="hydration" size="34" /><text>补水记录</text></view>
+              <AppIcon class="water-popup-close" name="close" size="40" @click="hideWaterCard" />
             </view>
             <view class="water-popup-body">
               <view class="water-current">
@@ -243,15 +231,15 @@
               </view>
               <view class="water-buttons">
                 <view class="water-btn" @click="addWater(150)">
-                  <text class="water-btn-icon">🥤</text>
+                  <AppIcon class="water-btn-icon" name="hydration" size="48" />
                   <text class="water-btn-text">+150ml</text>
                 </view>
                 <view class="water-btn" @click="addWater(250)">
-                  <text class="water-btn-icon">🥛</text>
+                  <AppIcon class="water-btn-icon" name="hydration" size="48" />
                   <text class="water-btn-text">+250ml</text>
                 </view>
                 <view class="water-btn" @click="addWater(500)">
-                  <text class="water-btn-icon">🧴</text>
+                  <AppIcon class="water-btn-icon" name="hydration" size="48" />
                   <text class="water-btn-text">+500ml</text>
                 </view>
               </view>
@@ -261,21 +249,17 @@
             </view>
           </view>
         </view>
-
       </view>
-
       <!-- 底部留白 -->
       <view class="bottom-spacer"></view>
     </scroll-view>
-
     <!-- 结束节点（悬浮于任务栏之上） -->
     <view class="end-node">
       <view class="end-card">
         <text class="end-text">今日训练完成</text>
-        <view class="end-icon">🏆</view>
+        <view class="end-icon"><AppIcon name="achievement" size="40" /></view>
       </view>
     </view>
-
     <!-- 底部操作栏 -->
     <view class="flow-footer" v-if="selectedTaskId">
       <view class="footer-info">
@@ -283,34 +267,31 @@
         <text class="selected-status">{{ getStatusText(selectedTask?.status) }}</text>
       </view>
       <view class="footer-actions">
-        <button 
-          class="action-btn start-btn" 
+        <button
+          class="action-btn start-btn"
           v-if="selectedTask?.status === 0"
           @click="startTask(selectedTask)"
         >开始</button>
-        <button 
-          class="action-btn continue-btn" 
+        <button
+          class="action-btn continue-btn"
           v-else-if="selectedTask?.status === 1"
           @click="continueTask(selectedTask)"
         >继续</button>
-        <button 
-          class="action-btn done-btn" 
+        <button
+          class="action-btn done-btn"
           v-else
           @click="viewTaskDetail(selectedTask)"
         >查看</button>
       </view>
     </view>
-
     <!-- 拖拽提示 -->
     <view class="drag-hint" v-if="isDragging">
       <text class="hint-text">拖动调整顺序</text>
     </view>
   </view>
 </template>
-
 <script setup>
 import { ref, computed, watch } from 'vue'
-
 const props = defineProps({
   goal: {
     type: Object,
@@ -334,9 +315,7 @@ const props = defineProps({
     default: () => []
   }
 })
-
 const emit = defineEmits(['select', 'start', 'continue', 'reorder', 'date-change'])
-
 // ==================== 状态管理 ====================
 const selectedDate = ref(new Date())
 const selectedTaskId = ref(null)
@@ -345,20 +324,16 @@ const draggingIndex = ref(-1)
 const dragStartY = ref(0)
 const dragCurrentY = ref(0)
 const scrollTop = ref(0)
-
 // 训练计划类型：'strength' | 'running5k' | 'hiit' | 'yoga' | 'core' | 'running10k'
 const currentPlanType = ref('strength')
-
 // 日历相关状态
 const currentCalendarDate = ref(new Date())
 const isCalendarExpanded = ref(false)
 const pickerYear = ref(new Date().getFullYear())
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-
 // 补水提醒状态
 const showWaterReminder = ref(false)
 const waterIntake = ref(0) // 已饮水量(ml)
-
 // ==================== 数据计算 ====================
 const currentGoal = computed(() => {
   const goals = {
@@ -371,69 +346,54 @@ const currentGoal = computed(() => {
   }
   return goals[currentPlanType.value] || props.goal
 })
-
 const taskList = computed(() => props.tasks.length > 0 ? props.tasks : getDefaultTasks())
-
 const sortedTasks = computed(() => taskList.value)
-
 const completedCount = computed(() => {
   return taskList.value.filter(t => t.status === 2).length
 })
-
 const totalProgress = computed(() => {
   if (taskList.value.length === 0) return 0
   return Math.round((completedCount.value / taskList.value.length) * 100)
 })
-
 const selectedTask = computed(() => {
   return taskList.value.find(t => t.id === selectedTaskId.value)
 })
-
 // 日历计算属性
 const currentYearMonth = computed(() => {
   const year = currentCalendarDate.value.getFullYear()
   const month = currentCalendarDate.value.getMonth() + 1
   return `${year}年${month}月`
 })
-
 // 本周范围文字（如：4月6日-4月12日）
 const currentWeekRange = computed(() => {
   const weekDays = getWeekDays(new Date())
   if (weekDays.length === 0) return ''
   const firstDay = weekDays[0].fullDate
   const lastDay = weekDays[6].fullDate
-  
   const formatDay = (date) => `${date.getMonth() + 1}月${date.getDate()}日`
   return `${formatDay(firstDay)}-${formatDay(lastDay)}`
 })
-
 // 本周7天
 const currentWeekDays = computed(() => {
   return getWeekDays(new Date())
 })
-
 const calendarDays = computed(() => {
   return generateCalendarDays(currentCalendarDate.value)
 })
-
 // ==================== 日历方法 ====================
 function getWeekDays(baseDate) {
   const days = []
   const today = new Date()
-  
   // 获取本周第一天（周日）
   const dayOfWeek = baseDate.getDay()
   const firstDayOfWeek = new Date(baseDate)
   firstDayOfWeek.setDate(baseDate.getDate() - dayOfWeek)
-  
   for (let i = 0; i < 7; i++) {
     const currentDate = new Date(firstDayOfWeek)
     currentDate.setDate(firstDayOfWeek.getDate() + i)
-    
-    const isToday = today.getDate() === currentDate.getDate() && 
-                    today.getMonth() === currentDate.getMonth() && 
+    const isToday = today.getDate() === currentDate.getDate() &&
+                    today.getMonth() === currentDate.getMonth() &&
                     today.getFullYear() === currentDate.getFullYear()
-    
     const dateStr = formatDate(currentDate)
     days.push({
       day: currentDate.getDate(),
@@ -443,25 +403,19 @@ function getWeekDays(baseDate) {
       fullDate: currentDate
     })
   }
-  
   return days
 }
-
 function generateCalendarDays(date) {
   const year = date.getFullYear()
   const month = date.getMonth()
-  
   // 当月第一天
   const firstDay = new Date(year, month, 1)
   // 当月最后一天
   const lastDay = new Date(year, month + 1, 0)
-  
   // 获取第一天是星期几（0=周日，1=周一...）
   const firstDayWeek = firstDay.getDay()
-  
   const days = []
   const today = new Date()
-  
   // 上个月的日期（补全第一行）
   const prevMonthLastDay = new Date(year, month, 0).getDate()
   for (let i = firstDayWeek - 1; i >= 0; i--) {
@@ -476,14 +430,12 @@ function generateCalendarDays(date) {
       fullDate: new Date(year, month - 1, day)
     })
   }
-  
   // 当月的日期
   for (let i = 1; i <= lastDay.getDate(); i++) {
     const currentDate = new Date(year, month, i)
-    const isToday = today.getDate() === i && 
-                    today.getMonth() === month && 
+    const isToday = today.getDate() === i &&
+                    today.getMonth() === month &&
                     today.getFullYear() === year
-    
     const currentDateStr = formatDate(currentDate)
     days.push({
       day: i,
@@ -494,7 +446,6 @@ function generateCalendarDays(date) {
       fullDate: currentDate
     })
   }
-  
   // 下个月的日期（补全最后一行，凑成完整的6行或至少显示完整）
   const remainingDays = (7 - (days.length % 7)) % 7
   for (let i = 1; i <= remainingDays; i++) {
@@ -508,17 +459,14 @@ function generateCalendarDays(date) {
       fullDate: new Date(year, month + 1, i)
     })
   }
-  
   return days
 }
-
 function isSelectedDay(day) {
-  return selectedDate.value && 
+  return selectedDate.value &&
          selectedDate.value.getDate() === day.day &&
          selectedDate.value.getMonth() === day.fullDate.getMonth() &&
          selectedDate.value.getFullYear() === day.fullDate.getFullYear()
 }
-
 function selectCalendarDay(day) {
   selectedDate.value = day.fullDate
   // 如果点击的是其他月份的日期，切换日历显示
@@ -530,28 +478,23 @@ function selectCalendarDay(day) {
     date: day.fullDate
   })
 }
-
 function toggleCalendarExpand() {
   isCalendarExpanded.value = !isCalendarExpanded.value
   if (isCalendarExpanded.value) {
     pickerYear.value = currentCalendarDate.value.getFullYear()
   }
 }
-
 function changeYear(delta) {
   pickerYear.value += delta
 }
-
 function isPickerMonthActive(month) {
   return pickerYear.value === currentCalendarDate.value.getFullYear() &&
          month - 1 === currentCalendarDate.value.getMonth()
 }
-
 function isCurrentMonth(month) {
   const now = new Date()
   return pickerYear.value === now.getFullYear() && month - 1 === now.getMonth()
 }
-
 function selectMonth(month) {
   const newDate = new Date(pickerYear.value, month - 1, 1)
   currentCalendarDate.value = newDate
@@ -563,14 +506,12 @@ function selectMonth(month) {
     date: newDate
   })
 }
-
 function formatDate(date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-
 // ==================== 原有方法 ====================
 function getDefaultTasks() {
   const map = {
@@ -582,7 +523,6 @@ function getDefaultTasks() {
   }
   return (map[currentPlanType.value] || getStrengthPlan)()
 }
-
 // 力量训练计划
 function getStrengthPlan() {
   return [
@@ -643,7 +583,6 @@ function getStrengthPlan() {
     }
   ]
 }
-
 // 5km跑步训练计划
 function getRunning5KPlan() {
   return [
@@ -712,7 +651,6 @@ function getRunning5KPlan() {
     }
   ]
 }
-
 // 燃脂HIIT训练计划
 function getHIITPlan() {
   return [
@@ -806,7 +744,6 @@ function getHIITPlan() {
     }
   ]
 }
-
 // 瑜伽拉伸训练计划
 function getYogaPlan() {
   return [
@@ -884,7 +821,6 @@ function getYogaPlan() {
     }
   ]
 }
-
 // 核心雕刻训练计划
 function getCorePlan() {
   return [
@@ -979,7 +915,6 @@ function getCorePlan() {
     }
   ]
 }
-
 // 10km耐力跑训练计划
 function getRunning10KPlan() {
   return [
@@ -1061,70 +996,58 @@ function getRunning10KPlan() {
     }
   ]
 }
-
 // 切换训练计划
 function switchPlanType(type) {
   currentPlanType.value = type
   // 重置选中状态
   selectedTaskId.value = null
 }
-
 // 补水相关方法
 function showWaterCard() {
   showWaterReminder.value = true
 }
-
 function hideWaterCard() {
   showWaterReminder.value = false
 }
-
 function addWater(amount) {
   waterIntake.value += amount
 }
-
 function resetWater() {
   waterIntake.value = 0
 }
-
 // 已弃用，改为日历式展示
 function generateWeekDates() {
   return []
 }
-
 function getPriorityText(priority) {
   const map = { high: '高', medium: '中', low: '低' }
   return map[priority] || '中'
 }
-
 function getTaskIcon(type) {
   const map = {
-    warmup: '🔥',
-    strength: '💪',
-    cardio: '❤️',
-    core: '🎯',
-    stretch: '🧘',
-    rest: '😴'
+    warmup: 'intensity',
+    strength: 'strength',
+    cardio: 'cardio',
+    core: 'target',
+    stretch: 'stretch',
+    rest: 'rest'
   }
-  return map[type] || '📋'
+  return map[type] || 'plan'
 }
-
 function getStatusIcon(status) {
-  const map = { 0: '○', 1: '▶', 2: '✓' }
+  const map = { 0: 'minus-circle', 1: 'play-circle-fill', 2: 'checkCircle' }
   return map[status] || '○'
 }
-
 function getStatusText(status) {
   const map = { 0: '未开始', 1: '进行中', 2: '已完成' }
   return map[status] || '未开始'
 }
-
 function formatDuration(minutes) {
   if (minutes < 60) return `${minutes}分钟`
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   return mins > 0 ? `${hours}小时${mins}分` : `${hours}小时`
 }
-
 function getDragStyle(index) {
   if (draggingIndex.value !== index) return {}
   const offset = dragCurrentY.value - dragStartY.value
@@ -1134,50 +1057,39 @@ function getDragStyle(index) {
     opacity: 0.9
   }
 }
-
 // ==================== 事件处理 ====================
-
 function selectTask(task) {
   selectedTaskId.value = task.id
   emit('select', task)
 }
-
 function startTask(task) {
   emit('start', task)
 }
-
 function continueTask(task) {
   emit('continue', task)
 }
-
 function viewTaskDetail(task) {
   uni.navigateTo({
     url: `/pages/task/exercise-detail?id=${task.id}`
   })
 }
-
 // ==================== 拖拽排序 ====================
 function startDrag(index, event) {
   draggingIndex.value = index
   isDragging.value = true
   dragStartY.value = event.touches ? event.touches[0].clientY : event.clientY
   dragCurrentY.value = dragStartY.value
-  
   // 震动反馈
   uni.vibrateShort()
 }
-
 function onDragMove(event) {
   if (!isDragging.value || draggingIndex.value === -1) return
-  
   const clientY = event.touches ? event.touches[0].clientY : event.clientY
   dragCurrentY.value = clientY
-  
   // 计算需要交换的位置
   const itemHeight = 100 // 卡片高度估算
   const offset = clientY - dragStartY.value
   const moveIndex = Math.round(offset / itemHeight)
-  
   if (moveIndex !== 0 && draggingIndex.value + moveIndex >= 0 && draggingIndex.value + moveIndex < sortedTasks.value.length) {
     const newIndex = draggingIndex.value + moveIndex
     // 交换位置
@@ -1185,18 +1097,15 @@ function onDragMove(event) {
     const temp = tasks[draggingIndex.value]
     tasks[draggingIndex.value] = tasks[newIndex]
     tasks[newIndex] = temp
-    
     // 更新order并触发重排
     tasks.forEach((task, i) => {
       task.order = i + 1
     })
-    
     emit('reorder', tasks)
     draggingIndex.value = newIndex
     dragStartY.value = clientY
   }
 }
-
 function endDrag() {
   if (isDragging.value) {
     isDragging.value = false
@@ -1205,21 +1114,17 @@ function endDrag() {
     dragCurrentY.value = 0
   }
 }
-
 function onScroll(e) {
   scrollTop.value = e.detail.scrollTop
 }
-
 // ==================== 暴露方法 ====================
 function refresh() {
   selectedTaskId.value = null
 }
-
 defineExpose({
   refresh
 })
 </script>
-
 <style lang="scss" scoped>
 .task-flow-container {
   height: 100%;
@@ -1227,25 +1132,21 @@ defineExpose({
   flex-direction: column;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
-
 // ==================== 自定义导航栏 ====================
 .custom-nav {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
-
   // 状态栏占位（适配刘海屏）
   .nav-status-bar {
     height: var(--status-bar-height, 44rpx);
   }
-
   .nav-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 16rpx 30rpx;
     height: 88rpx;
-
     .nav-left {
       .nav-title {
         font-size: 36rpx;
@@ -1253,7 +1154,6 @@ defineExpose({
         color: #1c1c1e;
       }
     }
-
     .nav-right {
       .stat-badge {
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
@@ -1261,13 +1161,11 @@ defineExpose({
         border-radius: 24rpx;
         display: flex;
         align-items: baseline;
-
         .stat-num {
           font-size: 32rpx;
           font-weight: 700;
           color: white;
         }
-
         .stat-total {
           font-size: 20rpx;
           color: rgba(255, 255, 255, 0.8);
@@ -1276,76 +1174,62 @@ defineExpose({
     }
   }
 }
-
 // ==================== 训练计划切换 ====================
 // ==================== 日历式日期选择器 ====================
 .calendar-header {
   background: white;
   padding: 20rpx 30rpx;
   border-bottom: 1rpx solid #f1f5f9;
-
   .calendar-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20rpx;
-
     .current-month {
       font-size: 32rpx;
       font-weight: 700;
       color: #1c1c1e;
     }
-
     .expand-btn {
       width: 56rpx;
       height: 56rpx;
-      background: #f8fafc;
-      border-radius: 16rpx;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: #2563eb;
       transition: all 0.2s ease;
-
       &:active {
-        background: #e2e8f0;
+        opacity: 0.7;
       }
-
       .expand-icon {
-        font-size: 24rpx;
-        color: #64748b;
         transition: transform 0.3s ease;
-
         &.expanded {
           transform: rotate(180deg);
         }
       }
     }
   }
-
   // 星期标题
   .week-header {
     display: flex;
     justify-content: space-around;
     margin-bottom: 16rpx;
-
     .week-day-title {
       width: 80rpx;
       text-align: center;
       font-size: 24rpx;
       color: #64748b;
       font-weight: 500;
-
       &.weekend {
         color: #f97316;
       }
     }
   }
-
   // 本周7天网格（默认显示）
   .week-grid {
     display: flex;
     justify-content: space-around;
-
     .week-day {
       width: 80rpx;
       height: 88rpx;
@@ -1356,51 +1240,41 @@ defineExpose({
       border-radius: 20rpx;
       position: relative;
       transition: all 0.2s ease;
-
       &:active {
         transform: scale(0.95);
       }
-
       &.weekend {
         .day-number {
           color: #f97316;
         }
       }
-
       &.today {
         background: rgba(59, 130, 246, 0.1);
-
         .day-number {
           color: #3b82f6;
           font-weight: 700;
         }
       }
-
       &.active {
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-
         .day-number {
           color: white;
           font-weight: 700;
         }
-
         .day-dot {
           background: white;
         }
       }
-
       &.has-task:not(.active) {
         .day-dot {
           background: #3b82f6;
         }
       }
-
       .day-number {
         font-size: 32rpx;
         color: #1c1c1e;
         font-weight: 600;
       }
-
       .day-dot {
         position: absolute;
         bottom: 12rpx;
@@ -1411,13 +1285,11 @@ defineExpose({
       }
     }
   }
-
   // 日历网格（展开后显示）
   .calendar-grid {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
-
     .calendar-day {
       width: 80rpx;
       height: 80rpx;
@@ -1429,55 +1301,44 @@ defineExpose({
       margin-bottom: 12rpx;
       position: relative;
       transition: all 0.2s ease;
-
       &:active {
         transform: scale(0.95);
       }
-
       &.other-month {
         opacity: 0.4;
       }
-
       &.weekend {
         .day-number {
           color: #f97316;
         }
       }
-
       &.today {
         background: rgba(59, 130, 246, 0.1);
-
         .day-number {
           color: #3b82f6;
           font-weight: 700;
         }
       }
-
       &.active {
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-
         .day-number {
           color: white;
           font-weight: 700;
         }
-
         .day-dot {
           background: white;
         }
       }
-
       &.has-task:not(.active) {
         .day-dot {
           background: #3b82f6;
         }
       }
-
       .day-number {
         font-size: 28rpx;
         color: #1c1c1e;
         font-weight: 500;
       }
-
       .day-dot {
         position: absolute;
         bottom: 10rpx;
@@ -1488,14 +1349,12 @@ defineExpose({
       }
     }
   }
-
   // 月份选择器（展开状态）
   .month-picker {
     margin-top: 20rpx;
     padding-top: 20rpx;
     border-top: 1rpx solid #f1f5f9;
     animation: slideDown 0.3s ease;
-
     @keyframes slideDown {
       from {
         opacity: 0;
@@ -1506,37 +1365,34 @@ defineExpose({
         transform: translateY(0);
       }
     }
-
     .month-picker-header {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 40rpx;
       margin-bottom: 20rpx;
-
       .year-nav {
-        font-size: 40rpx;
-        color: #64748b;
-        padding: 10rpx 20rpx;
-        font-weight: 300;
-
+        width: 58rpx;
+        height: 58rpx;
+        background: transparent;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         &:active {
-          color: #3b82f6;
+          opacity: 0.7;
         }
       }
-
       .picker-year {
         font-size: 32rpx;
         font-weight: 600;
         color: #1c1c1e;
       }
     }
-
     .month-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16rpx;
-
       .month-item {
         height: 80rpx;
         background: #f8fafc;
@@ -1545,28 +1401,22 @@ defineExpose({
         align-items: center;
         justify-content: center;
         transition: all 0.2s ease;
-
         &:active {
           transform: scale(0.95);
         }
-
         &.active {
           background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-
           .month-name {
             color: white;
             font-weight: 600;
           }
         }
-
         &.current:not(.active) {
           background: rgba(59, 130, 246, 0.1);
-
           .month-name {
             color: #3b82f6;
           }
         }
-
         .month-name {
           font-size: 26rpx;
           color: #64748b;
@@ -1575,25 +1425,20 @@ defineExpose({
     }
   }
 }
-
 // ==================== 流程图内容 ====================
 .flow-content {
   flex: 1;
   padding: 30rpx;
-
   .flow-list {
     position: relative;
   }
-
   .bottom-spacer {
     height: calc(220rpx + env(safe-area-inset-bottom));
   }
 }
-
 // ==================== 目标节点 ====================
 .goal-node {
   margin-bottom: 40rpx;
-
   .goal-card {
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     border-radius: 24rpx;
@@ -1602,38 +1447,31 @@ defineExpose({
     align-items: center;
     gap: 20rpx;
     box-shadow: 0 8rpx 30rpx rgba(59, 130, 246, 0.3);
-
     .goal-icon {
       font-size: 48rpx;
     }
-
     .goal-info {
       flex: 1;
-
       .goal-title {
         font-size: 32rpx;
         font-weight: 700;
         color: white;
         display: block;
       }
-
       .goal-desc {
         font-size: 24rpx;
         color: rgba(255, 255, 255, 0.8);
         margin-top: 4rpx;
       }
     }
-
     .goal-progress {
       text-align: center;
-
       .progress-text {
         font-size: 36rpx;
         font-weight: 700;
         color: white;
         display: block;
       }
-
       .progress-mini {
         width: 80rpx;
         height: 8rpx;
@@ -1641,7 +1479,6 @@ defineExpose({
         border-radius: 4rpx;
         margin-top: 8rpx;
         overflow: hidden;
-
         .progress-mini-fill {
           height: 100%;
           background: white;
@@ -1652,11 +1489,9 @@ defineExpose({
     }
   }
 }
-
 // ==================== 任务链 ====================
 .task-chain {
   position: relative;
-
   &::before {
     content: '';
     position: absolute;
@@ -1668,12 +1503,10 @@ defineExpose({
     z-index: 0;
   }
 }
-
 .task-node-wrapper {
   position: relative;
   margin-bottom: 30rpx;
   transition: all 0.3s ease;
-
   &.selected {
     .task-node {
       border-color: #3b82f6;
@@ -1681,20 +1514,17 @@ defineExpose({
       transform: scale(1.02);
     }
   }
-
   &.dragging {
     .task-node {
       box-shadow: 0 20rpx 50rpx rgba(0, 0, 0, 0.15);
     }
   }
-
   &.completed {
     .task-node {
       opacity: 0.8;
     }
   }
 }
-
 // 连接线
 .connector {
   position: absolute;
@@ -1703,7 +1533,6 @@ defineExpose({
   width: 4rpx;
   height: 30rpx;
   z-index: 1;
-
   .connector-line {
     position: absolute;
     top: 0;
@@ -1712,12 +1541,10 @@ defineExpose({
     height: 100%;
     background: #e2e8f0;
     transition: all 0.3s ease;
-
     &.active {
       background: linear-gradient(180deg, #10b981 0%, #059669 100%);
     }
   }
-
   .connector-dot {
     position: absolute;
     top: 50%;
@@ -1729,14 +1556,12 @@ defineExpose({
     border: 4rpx solid #e2e8f0;
     border-radius: 50%;
     transition: all 0.3s ease;
-
     &.completed {
       background: #10b981;
       border-color: #10b981;
     }
   }
 }
-
 // 任务卡片
 .task-node {
   background: rgba(255, 255, 255, 0.95);
@@ -1747,11 +1572,9 @@ defineExpose({
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
   position: relative;
   transition: all 0.2s ease;
-
   &:active {
     transform: scale(0.98);
   }
-
   // 优先级标签
   .priority-tag {
     position: absolute;
@@ -1761,23 +1584,19 @@ defineExpose({
     border-radius: 12rpx;
     font-size: 20rpx;
     font-weight: 600;
-
     &.priority-high {
       background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
       color: #dc2626;
     }
-
     &.priority-medium {
       background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
       color: #d97706;
     }
-
     &.priority-low {
       background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
       color: #059669;
     }
   }
-
   // 拖拽手柄
   .drag-handle {
     position: absolute;
@@ -1790,12 +1609,10 @@ defineExpose({
     align-items: center;
     justify-content: center;
     opacity: 0.5;
-
     .drag-lines {
       display: flex;
       flex-direction: column;
       gap: 6rpx;
-
       .drag-line {
         width: 24rpx;
         height: 4rpx;
@@ -1804,7 +1621,6 @@ defineExpose({
       }
     }
   }
-
   // 任务内容
   .task-content {
     .task-main {
@@ -1812,7 +1628,6 @@ defineExpose({
       align-items: center;
       gap: 20rpx;
       margin-bottom: 16rpx;
-
       .task-icon-wrapper {
         width: 72rpx;
         height: 72rpx;
@@ -1820,46 +1635,36 @@ defineExpose({
         display: flex;
         align-items: center;
         justify-content: center;
-
         &.icon-bg-warmup {
           background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         }
-
         &.icon-bg-strength {
           background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
         }
-
         &.icon-bg-cardio {
           background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         }
-
         &.icon-bg-core {
           background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
         }
-
         &.icon-bg-stretch {
           background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         }
-
         &.icon-bg-rest {
           background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
         }
-
         .task-icon {
           font-size: 36rpx;
         }
       }
-
       .task-info {
         flex: 1;
-
         .task-name {
           font-size: 32rpx;
           font-weight: 600;
           color: #1c1c1e;
           display: block;
         }
-
         .task-duration {
           font-size: 24rpx;
           color: #64748b;
@@ -1867,7 +1672,6 @@ defineExpose({
         }
       }
     }
-
     .task-detail {
       display: flex;
       gap: 30rpx;
@@ -1875,17 +1679,14 @@ defineExpose({
       background: #f8fafc;
       border-radius: 12rpx;
       margin-bottom: 16rpx;
-
       .detail-item {
         display: flex;
         align-items: center;
         gap: 8rpx;
-
         .detail-label {
           font-size: 22rpx;
           color: #94a3b8;
         }
-
         .detail-value {
           font-size: 24rpx;
           font-weight: 600;
@@ -1893,46 +1694,39 @@ defineExpose({
         }
       }
     }
-
     .task-status {
       display: flex;
       align-items: center;
       gap: 8rpx;
       padding-top: 16rpx;
       border-top: 1rpx solid #f1f5f9;
-
       &.status-0 {
         .status-icon,
         .status-text {
           color: #94a3b8;
         }
       }
-
       &.status-1 {
         .status-icon,
         .status-text {
           color: #3b82f6;
         }
       }
-
       &.status-2 {
         .status-icon,
         .status-text {
           color: #10b981;
         }
       }
-
       .status-icon {
         font-size: 24rpx;
       }
-
       .status-text {
         font-size: 24rpx;
         font-weight: 500;
       }
     }
   }
-
   // 完成遮罩
   .completed-overlay {
     position: absolute;
@@ -1945,7 +1739,6 @@ defineExpose({
     display: flex;
     align-items: center;
     justify-content: center;
-
     .completed-icon {
       width: 64rpx;
       height: 64rpx;
@@ -1960,7 +1753,6 @@ defineExpose({
     }
   }
 }
-
 // 顺序序号
 .order-badge {
   position: absolute;
@@ -1980,7 +1772,6 @@ defineExpose({
   color: #64748b;
   z-index: 2;
 }
-
 // ==================== 补水卡片 ====================
 .water-card {
   margin: 20rpx 0;
@@ -1994,32 +1785,26 @@ defineExpose({
   box-shadow: 0 8rpx 30rpx rgba(14, 165, 233, 0.3);
   cursor: pointer;
   transition: all 0.2s ease;
-
   &:active {
     transform: scale(0.98);
   }
-
   .water-icon {
     font-size: 48rpx;
   }
-
   .water-info {
     flex: 1;
-
     .water-title {
       font-size: 32rpx;
       font-weight: 700;
       color: white;
       display: block;
     }
-
     .water-subtitle {
       font-size: 24rpx;
       color: rgba(255, 255, 255, 0.8);
       margin-top: 4rpx;
     }
   }
-
   .water-progress {
     .water-circle {
       width: 80rpx;
@@ -2031,13 +1816,11 @@ defineExpose({
       align-items: center;
       justify-content: center;
       border: 4rpx solid rgba(255, 255, 255, 0.4);
-
       .water-amount {
         font-size: 28rpx;
         font-weight: 700;
         color: white;
       }
-
       .water-unit {
         font-size: 18rpx;
         color: rgba(255, 255, 255, 0.8);
@@ -2045,7 +1828,6 @@ defineExpose({
     }
   }
 }
-
 // 补水弹窗
 .water-popup {
   position: fixed;
@@ -2059,84 +1841,71 @@ defineExpose({
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
-
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
-
   .water-popup-content {
     width: 80%;
     background: white;
     border-radius: 32rpx;
     padding: 40rpx;
     animation: slideUp 0.3s ease;
-
     @keyframes slideUp {
-      from { 
+      from {
         opacity: 0;
         transform: translateY(50rpx);
       }
-      to { 
+      to {
         opacity: 1;
         transform: translateY(0);
       }
     }
-
     .water-popup-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 40rpx;
-
       .water-popup-title {
         font-size: 36rpx;
         font-weight: 700;
         color: #1c1c1e;
       }
-
       .water-popup-close {
         font-size: 40rpx;
         color: #94a3b8;
         padding: 10rpx;
       }
     }
-
     .water-popup-body {
       .water-current {
         text-align: center;
         margin-bottom: 30rpx;
-
         .water-current-label {
           font-size: 26rpx;
           color: #64748b;
           display: block;
           margin-bottom: 10rpx;
         }
-
         .water-current-value {
           font-size: 56rpx;
           font-weight: 700;
           color: #0ea5e9;
         }
       }
-
       .water-target {
         margin-bottom: 40rpx;
-
         .water-target-label {
           font-size: 24rpx;
           color: #64748b;
           display: block;
           margin-bottom: 12rpx;
         }
-
         .water-progress-bar {
           height: 16rpx;
           background: #e2e8f0;
           border-radius: 8rpx;
           overflow: hidden;
-
           .water-progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%);
@@ -2145,12 +1914,10 @@ defineExpose({
           }
         }
       }
-
       .water-buttons {
         display: flex;
         justify-content: space-around;
         gap: 20rpx;
-
         .water-btn {
           flex: 1;
           display: flex;
@@ -2161,16 +1928,13 @@ defineExpose({
           background: #f8fafc;
           border-radius: 20rpx;
           transition: all 0.2s ease;
-
           &:active {
             background: #e2e8f0;
             transform: scale(0.95);
           }
-
           .water-btn-icon {
             font-size: 48rpx;
           }
-
           .water-btn-text {
             font-size: 24rpx;
             font-weight: 600;
@@ -2179,11 +1943,9 @@ defineExpose({
         }
       }
     }
-
     .water-popup-footer {
       margin-top: 30rpx;
       text-align: center;
-
       .water-reset {
         font-size: 26rpx;
         color: #94a3b8;
@@ -2192,7 +1954,6 @@ defineExpose({
     }
   }
 }
-
 // ==================== 结束节点 ====================
 .end-node {
   position: fixed;
@@ -2200,7 +1961,6 @@ defineExpose({
   right: 30rpx;
   bottom: calc(120rpx + env(safe-area-inset-bottom));
   z-index: 100;
-
   .end-card {
     background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
     border-radius: 24rpx;
@@ -2210,19 +1970,16 @@ defineExpose({
     justify-content: center;
     gap: 16rpx;
     box-shadow: 0 8rpx 30rpx rgba(245, 158, 11, 0.3);
-
     .end-text {
       font-size: 28rpx;
       font-weight: 600;
       color: white;
     }
-
     .end-icon {
       font-size: 40rpx;
     }
   }
 }
-
 // ==================== 底部操作栏 ====================
 .flow-footer {
   position: fixed;
@@ -2236,7 +1993,6 @@ defineExpose({
   align-items: center;
   box-shadow: 0 -4rpx 30rpx rgba(0, 0, 0, 0.08);
   z-index: 100;
-
   .footer-info {
     .selected-name {
       font-size: 28rpx;
@@ -2244,14 +2000,12 @@ defineExpose({
       color: #1c1c1e;
       display: block;
     }
-
     .selected-status {
       font-size: 22rpx;
       color: #64748b;
       margin-top: 4rpx;
     }
   }
-
   .footer-actions {
     .action-btn {
       min-width: 160rpx;
@@ -2263,22 +2017,18 @@ defineExpose({
       display: flex;
       align-items: center;
       justify-content: center;
-
       &.start-btn {
         background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         color: white;
       }
-
       &.continue-btn {
         background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
         color: white;
       }
-
       &.done-btn {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
       }
-
       &:active {
         opacity: 0.9;
         transform: scale(0.95);
@@ -2286,7 +2036,6 @@ defineExpose({
     }
   }
 }
-
 // ==================== 拖拽提示 ====================
 .drag-hint {
   position: fixed;
@@ -2297,7 +2046,6 @@ defineExpose({
   padding: 20rpx 40rpx;
   border-radius: 40rpx;
   z-index: 1000;
-
   .hint-text {
     font-size: 28rpx;
     color: white;

@@ -3,17 +3,16 @@
     <!-- 搜索栏 -->
     <view class="search-bar">
       <view class="search-inner">
-        <text class="search-icon">🔍</text>
+        <AppIcon class="search-icon" name="search" size="28" />
         <input
           class="search-input"
           v-model="searchKeyword"
           placeholder="搜索计划名称"
           placeholder-class="search-placeholder"
         />
-        <text class="search-clear" v-if="searchKeyword" @click="searchKeyword = ''">✕</text>
+        <AppIcon class="search-clear" v-if="searchKeyword" name="close" size="24" @click="searchKeyword = ''" />
       </view>
     </view>
-
     <!-- 分类标签 -->
     <scroll-view class="tag-scroll" scroll-x :show-scrollbar="false">
       <view class="tag-track">
@@ -28,7 +27,6 @@
         </view>
       </view>
     </scroll-view>
-
     <!-- 计划列表 -->
     <scroll-view
       class="plan-scroll"
@@ -54,7 +52,7 @@
             <view class="card-meta">
               <text class="meta-author">{{ plan.authorName || '官方' }}</text>
               <text class="meta-divider" v-if="plan.rating">·</text>
-              <text class="meta-rating" v-if="plan.rating">⭐ {{ plan.rating }}</text>
+              <view class="meta-rating" v-if="plan.rating"><AppIcon name="star-fill" size="20" /><text>{{ plan.rating }}</text></view>
               <text class="meta-divider" v-if="plan.usageCount || plan.enrollCount">·</text>
               <text class="meta-count" v-if="plan.usageCount || plan.enrollCount">
                 {{ plan.usageCount || plan.enrollCount }} 人采用
@@ -69,28 +67,23 @@
           </view>
         </view>
       </view>
-
       <view class="empty-state" v-else-if="!loading">
         <text class="empty-text">暂无匹配计划</text>
         <text class="empty-sub">试试其他关键词或分类</text>
       </view>
-
       <view class="bottom-spacer"></view>
     </scroll-view>
   </view>
 </template>
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getCommunityPlans, adoptPlan, getCommunityTemplates } from '@/api/plan'
-
 const refreshing = ref(false)
 const loading = ref(false)
 const searchKeyword = ref('')
 const activeCategory = ref('all')
 const plans = ref([])
-
 const categories = [
   { key: 'all', label: '全部' },
   { key: 'run', label: '跑步' },
@@ -99,7 +92,6 @@ const categories = [
   { key: 'bike', label: '骑行' },
   { key: 'fatloss', label: '减脂' },
 ]
-
 const filteredPlans = computed(() => {
   let list = plans.value
   // 分类筛选
@@ -127,15 +119,12 @@ const filteredPlans = computed(() => {
   }
   return list
 })
-
 onMounted(() => {
   loadPlans()
 })
-
 onShow(() => {
   loadPlans()
 })
-
 function loadPlans() {
   loading.value = true
   getCommunityPlans()
@@ -149,7 +138,6 @@ function loadPlans() {
     .catch(() => fallbackLocal())
     .finally(() => { loading.value = false })
 }
-
 function fallbackLocal() {
   const tpl = getCommunityTemplates()
   if (tpl && tpl.length) {
@@ -158,7 +146,6 @@ function fallbackLocal() {
     plans.value = []
   }
 }
-
 function normalizePlans(list) {
   return list.map(p => ({
     ...p,
@@ -168,13 +155,11 @@ function normalizePlans(list) {
     tags: p.tags || (p.targetAudience ? [p.targetAudience] : []),
   }))
 }
-
 function onRefresh() {
   refreshing.value = true
   loadPlans()
   setTimeout(() => { refreshing.value = false }, 500)
 }
-
 function doAdopt(plan) {
   if (plan.userStatus === 1) return
   adoptPlan(plan.id)
@@ -188,14 +173,12 @@ function doAdopt(plan) {
       uni.showToast({ title: '已采用（本地）', icon: 'success' })
     })
 }
-
 function goPlanDetail(plan) {
   if (plan && plan.id) {
     uni.navigateTo({ url: `/pages/goal/detail?id=${plan.id}` })
   }
 }
 </script>
-
 <style lang="scss" scoped>
 .container {
   min-height: 100vh;
@@ -203,13 +186,11 @@ function goPlanDetail(plan) {
   display: flex;
   flex-direction: column;
 }
-
 // 搜索栏
 .search-bar {
   padding: 24rpx 28rpx;
   background: #fff;
 }
-
 .search-inner {
   display: flex;
   align-items: center;
@@ -218,13 +199,11 @@ function goPlanDetail(plan) {
   padding: 0 20rpx;
   height: 72rpx;
 }
-
 .search-icon {
   font-size: 28rpx;
   margin-right: 12rpx;
   color: #9ca3af;
 }
-
 .search-input {
   flex: 1;
   font-size: 28rpx;
@@ -232,29 +211,24 @@ function goPlanDetail(plan) {
   height: 72rpx;
   line-height: 72rpx;
 }
-
 .search-placeholder {
   color: #9ca3af;
 }
-
 .search-clear {
   font-size: 24rpx;
   color: #9ca3af;
   padding: 8rpx;
 }
-
 // 分类标签
 .tag-scroll {
   background: #fff;
   padding: 0 28rpx 20rpx;
   white-space: nowrap;
 }
-
 .tag-track {
   display: flex;
   gap: 16rpx;
 }
-
 .tag-item {
   display: inline-flex;
   align-items: center;
@@ -263,36 +237,30 @@ function goPlanDetail(plan) {
   border-radius: 32rpx;
   background: #f5f5f7;
   transition: all 0.2s;
-
   &.active {
     background: #3366FF;
-
     .tag-text {
       color: #fff;
       font-weight: 600;
     }
   }
 }
-
 .tag-text {
   font-size: 26rpx;
   color: #4b5563;
   white-space: nowrap;
 }
-
 // 计划列表
 .plan-scroll {
   flex: 1;
   padding: 0 28rpx;
 }
-
 .plan-list {
   display: flex;
   flex-direction: column;
   gap: 20rpx;
   padding-top: 20rpx;
 }
-
 .community-card {
   display: flex;
   align-items: center;
@@ -300,12 +268,10 @@ function goPlanDetail(plan) {
   border-radius: 24rpx;
   padding: 28rpx;
   gap: 20rpx;
-
   &:active {
     opacity: 0.85;
   }
 }
-
 .card-main {
   flex: 1;
   min-width: 0;
@@ -313,25 +279,21 @@ function goPlanDetail(plan) {
   flex-direction: column;
   gap: 10rpx;
 }
-
 .card-top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12rpx;
 }
-
 .card-name {
   font-size: 32rpx;
   font-weight: 700;
   color: #000000;
 }
-
 .card-tags {
   display: flex;
   gap: 8rpx;
 }
-
 .card-tag {
   font-size: 20rpx;
   padding: 4rpx 14rpx;
@@ -340,35 +302,29 @@ function goPlanDetail(plan) {
   color: #3366ff;
   font-weight: 500;
 }
-
 .card-meta {
   display: flex;
   align-items: center;
   gap: 8rpx;
   flex-wrap: wrap;
 }
-
 .meta-author {
   font-size: 24rpx;
   color: #6b7280;
 }
-
 .meta-divider {
   font-size: 24rpx;
   color: #d1d5db;
 }
-
 .meta-rating {
   font-size: 24rpx;
   color: #f59e0b;
   font-weight: 500;
 }
-
 .meta-count {
   font-size: 24rpx;
   color: #9ca3af;
 }
-
 .card-desc {
   font-size: 26rpx;
   color: #6b7280;
@@ -378,11 +334,9 @@ function goPlanDetail(plan) {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-
 .card-action {
   flex-shrink: 0;
 }
-
 .adopt-btn {
   width: 120rpx;
   height: 56rpx;
@@ -391,26 +345,21 @@ function goPlanDetail(plan) {
   display: flex;
   align-items: center;
   justify-content: center;
-
   &:active {
     background: #2952cc;
   }
-
   &.adopted {
     background: #e5e7eb;
-
     .adopt-text {
       color: #9ca3af;
     }
   }
 }
-
 .adopt-text {
   font-size: 24rpx;
   color: #ffffff;
   font-weight: 500;
 }
-
 // 空状态
 .empty-state {
   display: flex;
@@ -419,19 +368,16 @@ function goPlanDetail(plan) {
   justify-content: center;
   padding: 120rpx 0;
 }
-
 .empty-text {
   font-size: 32rpx;
   color: #6b7280;
   font-weight: 500;
 }
-
 .empty-sub {
   font-size: 26rpx;
   color: #9ca3af;
   margin-top: 12rpx;
 }
-
 .bottom-spacer {
   height: 40rpx;
 }

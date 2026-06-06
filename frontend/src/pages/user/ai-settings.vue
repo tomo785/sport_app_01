@@ -15,11 +15,10 @@
             <text class="ai-provider-name">{{ model.name }}</text>
             <text class="ai-provider-id">{{ model.model }}</text>
           </view>
-          <text v-if="model.id === selectedModelId" class="ai-provider-check">✓</text>
+          <AppIcon v-if="model.id === selectedModelId" class="ai-provider-check" name="check" size="28" />
         </view>
       </view>
     </view>
-
     <!-- API Key -->
     <view class="ai-section">
       <view class="ai-section-title">API Key</view>
@@ -31,7 +30,6 @@
         password
       />
     </view>
-
     <!-- 连接测试 -->
     <view class="ai-section">
       <view class="ai-section-title">连接测试</view>
@@ -50,28 +48,22 @@
         </view>
       </view>
     </view>
-
     <!-- 提示 -->
     <view class="ai-hint">
       <text>配置仅保存在当前设备</text>
     </view>
   </view>
 </template>
-
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { get, post } from '../../utils/request.js'
-
 const modelList = ref([])
 const selectedModelId = ref(uni.getStorageSync('ai_selected_model') || '')
-
 // 按模型分别存储 API Key: { kimi: 'xxx', deepseek: 'yyy' }
 const apiKeyMap = ref(JSON.parse(uni.getStorageSync('ai_api_key_map') || '{}'))
 const customApiKey = computed(() => apiKeyMap.value[selectedModelId.value] || '')
-
 const testingConnection = ref(false)
 const testResult = ref(null)
-
 const fetchModels = async () => {
   try {
     const res = await get('/ai/models')
@@ -88,7 +80,6 @@ const fetchModels = async () => {
     console.warn('[AI配置] 获取模型列表失败:', e)
   }
 }
-
 const selectModel = async (model) => {
   selectedModelId.value = model.id
   uni.setStorageSync('ai_selected_model', model.id)
@@ -100,22 +91,17 @@ const selectModel = async (model) => {
     uni.showToast({ title: '切换失败', icon: 'none', duration: 1500 })
   }
 }
-
 const updateApiKey = (val) => {
   apiKeyMap.value[selectedModelId.value] = val
   uni.setStorageSync('ai_api_key_map', JSON.stringify(apiKeyMap.value))
 }
-
 const testConnection = async () => {
   if (testingConnection.value) return
   testingConnection.value = true
   testResult.value = null
-
   const modelId = selectedModelId.value || 'deepseek'
   const apiKey = customApiKey.value || ''
-
   console.log('[AI测试] 请求参数:', { modelId, apiKey: apiKey ? '***' : '空' })
-
   try {
     const res = await post('/ai/test-connection', { modelId, apiKey })
     console.log('[AI测试] 响应:', res)
@@ -131,19 +117,16 @@ const testConnection = async () => {
     testingConnection.value = false
   }
 }
-
 onMounted(() => {
   fetchModels()
 })
 </script>
-
 <style lang="scss" scoped>
 .ai-settings-container {
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: 40rpx;
 }
-
 .ai-section {
   margin: 20rpx 30rpx;
   background: #fff;
@@ -151,19 +134,16 @@ onMounted(() => {
   padding: 24rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
-
 .ai-section-title {
   font-size: 28rpx;
   color: #999;
   margin-bottom: 20rpx;
 }
-
 .ai-provider-list {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
 }
-
 .ai-provider-card {
   display: flex;
   justify-content: space-between;
@@ -172,40 +152,33 @@ onMounted(() => {
   border-radius: 16rpx;
   background: #f8f8fc;
   border: 2rpx solid transparent;
-
   &:active {
     background: #f0f0f7;
   }
 }
-
 .ai-provider-active {
   border-color: #667eea;
   background: #f0f0ff;
 }
-
 .ai-provider-info {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
 }
-
 .ai-provider-name {
   font-size: 28rpx;
   font-weight: 500;
   color: #333;
 }
-
 .ai-provider-id {
   font-size: 22rpx;
   color: #999;
 }
-
 .ai-provider-check {
   color: #667eea;
   font-size: 28rpx;
   font-weight: bold;
 }
-
 .ai-input {
   width: 100%;
   height: 80rpx;
@@ -216,47 +189,38 @@ onMounted(() => {
   border: 2rpx solid #e0e0e0;
   box-sizing: border-box;
 }
-
 .ai-test-row {
   display: flex;
   align-items: center;
   gap: 20rpx;
   flex-wrap: wrap;
 }
-
 .ai-test-btn {
   padding: 16rpx 32rpx;
   border-radius: 32rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-size: 26rpx;
   color: #fff;
-
   &:active {
     opacity: 0.85;
   }
 }
-
 .ai-test-running {
   opacity: 0.6;
   pointer-events: none;
 }
-
 .ai-test-result {
   font-size: 26rpx;
 }
-
 .ai-test-success {
   color: #10b981;
 }
-
 .ai-test-fail {
   color: #e74c3c;
 }
-
 .ai-hint {
   text-align: center;
   padding: 30rpx;
-
   text {
     font-size: 22rpx;
     color: #bbb;

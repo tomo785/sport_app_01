@@ -22,8 +22,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -82,7 +84,7 @@ public class WorkoutServiceImpl implements WorkoutService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public WorkoutDetailVO finishWorkout(Long userId, Long recordId) {
+    public WorkoutDetailVO finishWorkout(Long userId, Long recordId, Map<String, Object> metrics) {
         WorkoutRecord record = workoutRecordMapper.selectById(recordId);
         if (record == null || !record.getUserId().equals(userId)) {
             return null;
@@ -93,19 +95,41 @@ public class WorkoutServiceImpl implements WorkoutService {
         record.setEndTime(endTime);
         record.setStatus(WorkoutStatusEnum.COMPLETED.getCode());
 
+        if (metrics != null && !metrics.isEmpty()) {
+            Integer duration = getInteger(metrics, "duration");
+            Integer distance = getInteger(metrics, "distance");
+            Integer calories = getInteger(metrics, "calories");
+            Integer steps = getInteger(metrics, "steps");
+            Integer totalAscent = getInteger(metrics, "totalAscent");
+            BigDecimal avgSpeed = getBigDecimal(metrics, "avgSpeed");
+            BigDecimal maxSpeed = getBigDecimal(metrics, "maxSpeed");
+
+            if (duration != null && duration >= 0) record.setDuration(duration);
+            if (distance != null && distance >= 0) record.setDistance(distance);
+            if (calories != null && calories >= 0) record.setCalories(calories);
+            if (steps != null && steps >= 0) record.setSteps(steps);
+            if (totalAscent != null && totalAscent >= 0) record.setTotalAscent(totalAscent);
+            if (avgSpeed != null) record.setAvgSpeed(avgSpeed);
+            if (maxSpeed != null) record.setMaxSpeed(maxSpeed);
+        }
+
         // 计算时长（秒）
-        if (record.getStartTime() != null) {
+        if (record.getDuration() == null && record.getStartTime() != null) {
             long seconds = java.time.Duration.between(record.getStartTime(), endTime).getSeconds();
             record.setDuration((int) seconds);
         }
 
-        // 从轨迹计算距离（简化计算，实际应该累加轨迹点距离）
         List<WorkoutTrajectory> trajectories = workoutTrajectoryMapper.selectByRecordId(recordId);
-        if (trajectories != null && !trajectories.isEmpty()) {
-            // 计算总距离（简化）
+        if ((record.getDistance() == null || record.getDistance() <= 0) && trajectories != null && !trajectories.isEmpty()) {
             record.setDistance(calculateDistance(trajectories));
-            // 计算卡路里（简化：每公里约60大卡）
+        }
+        if ((record.getCalories() == null || record.getCalories() <= 0) && record.getDistance() != null) {
             record.setCalories((int) (record.getDistance() / 1000.0 * 60));
+        }
+        if ((record.getAvgSpeed() == null || record.getAvgSpeed().compareTo(BigDecimal.ZERO) <= 0)
+                && record.getDistance() != null && record.getDuration() != null && record.getDuration() > 0) {
+            record.setAvgSpeed(BigDecimal.valueOf(record.getDistance() / (double) record.getDuration())
+                    .setScale(2, java.math.RoundingMode.HALF_UP));
         }
 
         record.setUpdateTime(LocalDateTime.now());
@@ -170,9 +194,28 @@ public class WorkoutServiceImpl implements WorkoutService {
         if (record == null || !record.getUserId().equals(userId)) {
             return;
         }
+        if (trajectory == null || trajectory.isEmpty()) {
+            return;
+        }
 
-        int sequence = 0;
+        List<WorkoutTrajectory> existing = workoutTrajectoryMapper.selectByRecordId(recordId);
+        if (existing == null) {
+            existing = new ArrayList<>();
+        }
+        Set<Long> existingTimestamps = existing.stream()
+                .map(WorkoutTrajectory::getTimestamp)
+                .collect(Collectors.toCollection(HashSet::new));
+        int sequence = existing.stream()
+                .map(WorkoutTrajectory::getSequence)
+                .filter(s -> s != null)
+                .max(Integer::compareTo)
+                .orElse(-1) + 1;
+
         for (Map<String, Object> point : trajectory) {
+            Long timestamp = Long.valueOf(point.get("timestamp").toString());
+            if (existingTimestamps.contains(timestamp)) {
+                continue;
+            }
             WorkoutTrajectory trajectoryPoint = new WorkoutTrajectory();
             trajectoryPoint.setRecordId(recordId);
             trajectoryPoint.setUserId(userId);
@@ -180,11 +223,12 @@ public class WorkoutServiceImpl implements WorkoutService {
             trajectoryPoint.setLongitude(new BigDecimal(point.get("longitude").toString()));
             trajectoryPoint.setAltitude(point.get("altitude") != null ? Integer.valueOf(point.get("altitude").toString()) : null);
             trajectoryPoint.setSpeed(point.get("speed") != null ? new BigDecimal(point.get("speed").toString()) : null);
-            trajectoryPoint.setTimestamp(Long.valueOf(point.get("timestamp").toString()));
+            trajectoryPoint.setTimestamp(timestamp);
             trajectoryPoint.setSequence(sequence++);
             trajectoryPoint.setCreateTime(LocalDateTime.now());
 
             workoutTrajectoryMapper.insert(trajectoryPoint);
+            existingTimestamps.add(timestamp);
         }
     }
 
@@ -268,8 +312,46 @@ public class WorkoutServiceImpl implements WorkoutService {
         if (record.getEndTime() != null) {
             vo.setEndTimeStr(record.getEndTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         }
+        if (record.getDistance() != null && record.getDistance() > 0 && record.getDuration() != null && record.getDuration() > 0) {
+            vo.setAvgPace((int) Math.round(record.getDuration() / (record.getDistance() / 1000.0)));
+        }
+        if (record.getMaxSpeed() != null && record.getMaxSpeed().compareTo(BigDecimal.ZERO) > 0) {
+            vo.setBestPace((int) Math.round(1000 / record.getMaxSpeed().doubleValue()));
+        }
+        if (trajectories != null) {
+            vo.setTrajectoryCount(trajectories.size());
+        }
 
         return vo;
+    }
+
+    private Integer getInteger(Map<String, Object> data, String key) {
+        Object value = data.get(key);
+        if (value == null) return null;
+        try {
+            if (value instanceof Number number) {
+                return number.intValue();
+            }
+            return Integer.valueOf(value.toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private BigDecimal getBigDecimal(Map<String, Object> data, String key) {
+        Object value = data.get(key);
+        if (value == null) return null;
+        try {
+            if (value instanceof BigDecimal decimal) {
+                return decimal;
+            }
+            if (value instanceof Number number) {
+                return BigDecimal.valueOf(number.doubleValue()).setScale(2, java.math.RoundingMode.HALF_UP);
+            }
+            return new BigDecimal(value.toString()).setScale(2, java.math.RoundingMode.HALF_UP);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

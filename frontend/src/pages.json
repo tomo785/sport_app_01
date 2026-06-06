@@ -5,9 +5,9 @@
       "style": {
         "navigationStyle": "custom",
         "enablePullDownRefresh": false,
-        "backgroundColor": "#f5f5f5",
-        "backgroundColorTop": "#f5f5f5",
-        "backgroundColorBottom": "#f5f5f5"
+        "backgroundColor": "#f3f4f6",
+        "backgroundColorTop": "#f3f4f6",
+        "backgroundColorBottom": "#f3f4f6"
       }
     },
     {
@@ -95,7 +95,7 @@
       "style": {
         "navigationStyle": "custom",
         "enablePullDownRefresh": false,
-        "backgroundColor": "#f5f5f5"
+        "backgroundColor": "#f3f4f6"
       }
     },
     {
@@ -163,8 +163,8 @@
     }
   ],
   "tabBar": {
-    "color": "#94a3b8",
-    "selectedColor": "#3b82f6",
+    "color": "#8aa29a",
+    "selectedColor": "#16a34a",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "height": "50px",
@@ -209,14 +209,14 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "运动App",
     "navigationBarBackgroundColor": "#ffffff",
-    "backgroundColor": "#f5f5f5",
-    "backgroundColorTop": "#f5f5f5",
-    "backgroundColorBottom": "#f5f5f5"
+    "backgroundColor": "#f3f4f6",
+    "backgroundColorTop": "#f3f4f6",
+    "backgroundColorBottom": "#f3f4f6"
   },
   "easycom": {
     "autoscan": true,
     "custom": {
-      "^u-(.*)": "@/components/u-$1.vue",
+      "^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
       "^task-(.*)": "@/components/task/task-$1.vue"
     }
   },

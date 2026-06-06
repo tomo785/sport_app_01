@@ -87,13 +87,14 @@ public class WorkoutController {
     @PutMapping("/finish")
     public Result<WorkoutDetailVO> finishWorkout(
             @Parameter(description = "运动记录ID") @RequestParam Long recordId,
+            @RequestBody(required = false) Map<String, Object> metrics,
             HttpServletRequest request) {
         Long userId = getUserIdFromRequest(request);
         if (userId == null) {
             return Result.fail(com.sport.common.constant.ResultCode.UNAUTHORIZED);
         }
 
-        WorkoutDetailVO vo = workoutService.finishWorkout(userId, recordId);
+        WorkoutDetailVO vo = workoutService.finishWorkout(userId, recordId, metrics);
         return Result.success(vo);
     }
 

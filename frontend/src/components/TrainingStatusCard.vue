@@ -3,23 +3,22 @@
     <swiper class="ts-swiper" :current="currentIndex" @change="onSwiperChange">
       <swiper-item v-for="(card, idx) in cards" :key="idx">
         <view class="ts-card">
-          <!-- 顶部标题 -->
           <view class="ts-header">
-            <text class="ts-title">{{ card.title }}</text>
+            <view class="ts-heading">
+              <text class="ts-title">{{ card.title }}</text>
+              <text class="ts-subtitle">{{ card.subtitle }}</text>
+            </view>
+            <text class="ts-status">{{ card.status }}</text>
           </view>
 
-          <!-- 中间内容区 -->
           <view class="ts-body">
-            <!-- 左侧柱状图 -->
             <view class="ts-chart">
               <view class="ts-chart-bars">
                 <view
                   class="ts-bar-wrap"
                   v-for="(bar, bi) in card.chartData"
                   :key="bi"
-                  @click="onBarClick(bar, bi)"
                 >
-                  <text class="ts-bar-value" v-if="activeBarIdx === bi && activeCardIdx === idx">{{ bar.value }}</text>
                   <view
                     class="ts-bar"
                     :style="{ height: bar.pct + '%', background: bar.color || '#2563EB' }"
@@ -29,7 +28,6 @@
               </view>
             </view>
 
-            <!-- 右侧指标 -->
             <view class="ts-metrics">
               <view class="ts-metric" v-for="(m, mi) in card.metrics" :key="mi">
                 <text class="ts-metric-value">{{ m.value }}</text>
@@ -38,23 +36,17 @@
             </view>
           </view>
 
-          <!-- 底部进度条 -->
-          <view class="ts-footer">
-            <view class="ts-progress-track">
-              <view
-                class="ts-progress-segment"
-                v-for="(seg, si) in card.progress"
-                :key="si"
-                :style="{ width: seg.width, background: seg.color }"
-              ></view>
-            </view>
-            <text class="ts-footer-text">过去4周</text>
+          <view class="ts-progress-track">
+            <view
+              class="ts-progress-segment"
+              v-for="(seg, si) in card.progress"
+              :key="si"
+              :style="{ width: seg.width, background: seg.color }"
+            ></view>
           </view>
         </view>
       </swiper-item>
     </swiper>
-
-    <!-- 轮播指示器 -->
     <view class="ts-dots">
       <view
         class="ts-dot"
@@ -65,19 +57,16 @@
     </view>
   </view>
 </template>
-
 <script setup>
 import { ref } from 'vue'
-
 const currentIndex = ref(0)
-const activeBarIdx = ref(-1)
-const activeCardIdx = ref(-1)
-
 // 三个数据维度卡片
 const cards = ref([
   {
-    icon: '🏃',
+    icon: 'run',
     title: '训练状态',
+    subtitle: '最近7天负荷趋势',
+    status: '负荷偏低',
     chartData: [
       { label: '一', value: '45', pct: 60, color: '#2563EB' },
       { label: '二', value: '60', pct: 80, color: '#2563EB' },
@@ -100,8 +89,10 @@ const cards = ref([
     ]
   },
   {
-    icon: '❤️',
+    icon: 'cardio',
     title: '有氧基础',
+    subtitle: '心肺与恢复节奏',
+    status: '稳定',
     chartData: [
       { label: '一', value: '120', pct: 55, color: '#2563EB' },
       { label: '二', value: '135', pct: 70, color: '#2563EB' },
@@ -124,8 +115,10 @@ const cards = ref([
     ]
   },
   {
-    icon: '😴',
+    icon: 'rest',
     title: '恢复状态',
+    subtitle: '睡眠与身体反馈',
+    status: '恢复良好',
     chartData: [
       { label: '一', value: '8h', pct: 90, color: '#10B981' },
       { label: '二', value: '7h', pct: 78, color: '#10B981' },
@@ -148,77 +141,89 @@ const cards = ref([
     ]
   }
 ])
-
 function onSwiperChange(e) {
   currentIndex.value = e.detail.current
-  activeBarIdx.value = -1
-  activeCardIdx.value = -1
-}
-
-function onBarClick(bar, idx) {
-  activeBarIdx.value = idx
-  activeCardIdx.value = currentIndex.value
 }
 </script>
-
 <style lang="scss" scoped>
 .ts-wrapper {
-  margin: 0 28rpx 20rpx;
+  margin: 0 28rpx 18rpx;
 }
-
 .ts-swiper {
-  height: 480rpx;
+  height: 390rpx;
 }
-
 .ts-card {
-  background: var(--bg-card);
+  background: var(--surface-card-gradient);
+  border: 1rpx solid var(--card-border);
   border-radius: 24rpx;
-  padding: 28rpx;
+  padding: 22rpx 24rpx;
   height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2rpx 12rpx var(--shadow-color);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  position: relative;
 }
-
-/* 顶部标题 */
+.ts-card::before {
+  display: none;
+}
 .ts-header {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-bottom: 16rpx;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-bottom: 12rpx;
+  position: relative;
+  z-index: 1;
 }
-
+.ts-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
 .ts-title {
-  font-size: 34rpx;
-  font-weight: 700;
+  font-size: 30rpx;
+  font-weight: 800;
   color: var(--text-primary);
 }
-
-/* 中间内容 */
+.ts-subtitle {
+  font-size: 22rpx;
+  color: var(--text-tertiary);
+}
+.ts-status {
+  flex-shrink: 0;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: var(--selected-soft);
+  color: var(--accent-green-dark);
+  font-size: 24rpx;
+  font-weight: 700;
+}
 .ts-body {
   flex: 1;
   display: flex;
-  gap: 20rpx;
+  flex-direction: column;
+  gap: 10rpx;
+  justify-content: space-between;
   min-height: 0;
+  position: relative;
+  z-index: 1;
 }
-
-/* 左侧柱状图 */
 .ts-chart {
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
 }
-
 .ts-chart-bars {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  height: 240rpx;
+  height: 98rpx;
   padding-bottom: 4rpx;
 }
-
 .ts-bar-wrap {
   display: flex;
   flex-direction: column;
@@ -227,86 +232,72 @@ function onBarClick(bar, idx) {
   gap: 8rpx;
   position: relative;
 }
-
-.ts-bar-value {
-  font-size: 20rpx;
-  font-weight: 600;
-  color: var(--text-primary);
-  position: absolute;
-  top: -28rpx;
-  white-space: nowrap;
-}
-
 .ts-bar {
-  width: 28rpx;
-  border-radius: 6rpx;
+  width: 22rpx;
+  border-radius: 999rpx;
   min-height: 4rpx;
   transition: all 0.3s;
 }
-
 .ts-bar-label {
-  font-size: 22rpx;
-  color: var(--text-primary);
+  font-size: 20rpx;
+  color: var(--text-tertiary);
 }
-
-/* 右侧指标 */
 .ts-metrics {
-  width: 200rpx;
+  width: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
-  gap: 24rpx;
+  gap: 10rpx;
 }
-
 .ts-metric {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4rpx;
+  gap: 2rpx;
+  height: 72rpx;
+  padding: 10rpx;
+  border-radius: 14rpx;
+  background: var(--metric-bg);
+  border: 1rpx solid var(--metric-border);
+  min-width: 0;
+  box-sizing: border-box;
 }
-
 .ts-metric-value {
-  font-size: 34rpx;
+  font-size: 26rpx;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 .ts-metric-label {
-  font-size: 24rpx;
+  font-size: 20rpx;
   color: var(--text-primary);
   opacity: 0.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-/* 底部进度条 */
-.ts-footer {
-  margin-top: 16rpx;
-}
-
 .ts-progress-track {
   display: flex;
   height: 8rpx;
   border-radius: 999rpx;
   overflow: hidden;
-  margin-bottom: 8rpx;
+  margin-top: 12rpx;
+  background: var(--border-color);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
 }
-
 .ts-progress-segment {
   height: 100%;
 }
-
-.ts-footer-text {
-  font-size: 20rpx;
-  color: var(--text-primary);
-  opacity: 0.4;
-}
-
-/* 轮播指示器 */
 .ts-dots {
   display: flex;
   justify-content: center;
   gap: 12rpx;
-  margin-top: 16rpx;
+  margin-top: 10rpx;
 }
-
 .ts-dot {
   width: 16rpx;
   height: 16rpx;
@@ -314,9 +305,10 @@ function onBarClick(bar, idx) {
   background: var(--text-tertiary);
   transition: all 0.3s;
   opacity: 0.4;
-
   &.active {
     background: var(--accent-green);
+    width: 34rpx;
+    border-radius: 999rpx;
     opacity: 1;
   }
 }

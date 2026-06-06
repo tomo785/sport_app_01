@@ -2,9 +2,13 @@
   <view class="week-date-bar">
     <view class="week-top">
       <view class="week-switch">
-        <view class="switch-btn" @click="changeWeek(-1)">‹</view>
+        <view class="switch-btn" @click="changeWeek(-1)">
+          <AppIcon name="arrowLeft" size="26" bold />
+        </view>
         <text class="week-range">{{ weekRangeText }}</text>
-        <view class="switch-btn" @click="changeWeek(1)">›</view>
+        <view class="switch-btn" @click="changeWeek(1)">
+          <AppIcon name="arrowRight" size="26" bold />
+        </view>
       </view>
       <view class="edit-btn" @click="$emit('edit')">编辑</view>
     </view>
@@ -135,14 +139,13 @@ function isSameDay(a, b) {
 }
 
 .switch-btn {
-  width: 44rpx;
-  height: 44rpx;
-  border-radius: 12rpx;
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: 34rpx;
-  line-height: 44rpx;
-  text-align: center;
+  width: 52rpx;
+  height: 52rpx;
+  background: transparent;
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .week-range {

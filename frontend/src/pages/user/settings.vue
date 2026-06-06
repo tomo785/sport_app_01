@@ -46,15 +46,15 @@
       <view class="menu-list">
         <view class="menu-item" @click="goToAiSettings">
           <text class="menu-text">AI 配置</text>
-          <text class="menu-arrow">›</text>
+          <AppIcon class="menu-arrow" name="arrowRight" size="28" bold />
         </view>
         <view class="menu-item" @click="clearCache">
           <text class="menu-text">清除缓存</text>
-          <text class="menu-arrow">›</text>
+          <AppIcon class="menu-arrow" name="arrowRight" size="28" bold />
         </view>
         <view class="menu-item" @click="checkVersion">
           <text class="menu-text">检查更新</text>
-          <text class="menu-arrow">›</text>
+          <AppIcon class="menu-arrow" name="arrowRight" size="28" bold />
         </view>
       </view>
     </view>
@@ -232,8 +232,10 @@ const checkVersion = () => {
   }
 
   .menu-arrow {
-    font-size: 32rpx;
-    color: #ccc;
+    width: 52rpx;
+    height: 52rpx;
+    color: #374151;
+    flex-shrink: 0;
   }
 }
 </style>

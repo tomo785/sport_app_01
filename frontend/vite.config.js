@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
 import { resolve } from 'path'
-
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -26,6 +25,7 @@ export default defineConfig({
         silenceDeprecations: ['legacy-js-api', 'import'],
         // 全局变量
         additionalData: `
+          @import "uview-plus/theme.scss";
           $primary-color: #3b82f6;
           $secondary-color: #8b5cf6;
           $success-color: #10b981;

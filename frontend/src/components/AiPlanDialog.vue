@@ -5,117 +5,107 @@
       <text class="ai-float-icon"></text>
       <text class="ai-float-text">AI方案</text>
     </view>
-
     <!-- 对话框遮罩 -->
     <view class="ai-mask" v-if="visible" @click="closeDialog"></view>
-
     <!-- 对话框主体 -->
     <view class="ai-dialog" :class="{ 'ai-dialog-show': visible }">
       <!-- 头部 -->
       <view class="ai-header">
         <view class="ai-header-left">
-          <text class="ai-header-icon">🤖</text>
+          <AppIcon class="ai-header-icon" name="ai" size="40" />
           <view class="ai-model-selector" @click="showModelPicker = !showModelPicker">
             <text class="ai-header-title">{{ currentModelName() }}</text>
-            <text class="ai-model-arrow" :class="{ 'ai-model-arrow-up': showModelPicker }">▼</text>
+            <AppIcon class="ai-model-arrow" :class="{ 'ai-model-arrow-up': showModelPicker }" name="arrowDown" size="22" bold />
           </view>
         </view>
         <view class="ai-header-close" @click="closeDialog">
-          <text>✕</text>
+          <AppIcon name="close" size="28" />
         </view>
       </view>
-
       <!-- 模型设置面板 -->
       <view class="ai-settings-panel" v-if="showModelPicker">
-        <view class="ai-settings-header">
-          <text class="ai-settings-title">模型配置</text>
-          <view class="ai-settings-close" @click="showModelPicker = false">✕</view>
-        </view>
-
-        <view class="ai-settings-section">
-          <text class="ai-settings-label">选择模型</text>
-          <view class="ai-provider-list">
-            <view
-              v-for="model in modelList"
-              :key="model.id"
-              class="ai-provider-card"
-              :class="{ 'ai-provider-active': model.id === selectedModelId }"
-              @click="selectModel(model)"
-            >
-              <view class="ai-provider-info">
-                <text class="ai-provider-name">{{ model.name }}</text>
-                <text class="ai-provider-id">{{ model.model }}</text>
+        <scroll-view class="ai-settings-scroll" scroll-y :show-scrollbar="true">
+          <view class="ai-settings-header">
+            <text class="ai-settings-title">模型配置</text>
+            <AppIcon class="ai-settings-close" name="close" size="24" @click="showModelPicker = false" />
+          </view>
+          <view class="ai-settings-section">
+            <text class="ai-settings-label">选择模型</text>
+            <view class="ai-provider-list">
+              <view
+                v-for="model in modelList"
+                :key="model.id"
+                class="ai-provider-card"
+                :class="{ 'ai-provider-active': model.id === selectedModelId }"
+                @click="selectModel(model)"
+              >
+                <view class="ai-provider-info">
+                  <text class="ai-provider-name">{{ model.name }}</text>
+                  <text class="ai-provider-id">{{ model.model }}</text>
+                </view>
+                <AppIcon v-if="model.id === selectedModelId" class="ai-provider-check" name="check" size="28" />
               </view>
-              <text v-if="model.id === selectedModelId" class="ai-provider-check">✓</text>
             </view>
           </view>
-        </view>
-
-        <view class="ai-settings-section">
-          <text class="ai-settings-label">API Key</text>
-          <input
-            class="ai-settings-input"
-            :value="customApiKey"
-            @input="updateApiKey($event.detail.value)"
-            placeholder="输入自定义 API Key（留空使用后端配置）"
-            password
-          />
-        </view>
-
-        <view class="ai-settings-section">
-          <text class="ai-settings-label">连接测试</text>
-          <view class="ai-test-row">
-            <view
-              class="ai-test-btn"
-              :class="{ 'ai-test-running': testingConnection }"
-              @click="testConnection"
-            >
-              <text>{{ testingConnection ? '测试中...' : '测试连接' }}</text>
-            </view>
-            <view class="ai-test-result" v-if="testResult">
-              <text :class="testResult.ok ? 'ai-test-success' : 'ai-test-fail'">
-                {{ testResult.message }}
-              </text>
+          <view class="ai-settings-section">
+            <text class="ai-settings-label">API Key</text>
+            <input
+              class="ai-settings-input"
+              :value="customApiKey"
+              @input="updateApiKey($event.detail.value)"
+              placeholder="输入自定义 API Key（留空使用后端配置）"
+              password
+            />
+          </view>
+          <view class="ai-settings-section">
+            <text class="ai-settings-label">连接测试</text>
+            <view class="ai-test-row">
+              <view
+                class="ai-test-btn"
+                :class="{ 'ai-test-running': testingConnection }"
+                @click="testConnection"
+              >
+                <text>{{ testingConnection ? '测试中...' : '测试连接' }}</text>
+              </view>
+              <view class="ai-test-result" v-if="testResult">
+                <text :class="testResult.ok ? 'ai-test-success' : 'ai-test-fail'">
+                  {{ testResult.message }}
+                </text>
+              </view>
             </view>
           </view>
-        </view>
-
-        <view class="ai-settings-footer">
-          <text class="ai-settings-hint">配置仅保存在当前设备</text>
-        </view>
+          <view class="ai-settings-footer">
+            <text class="ai-settings-hint">配置仅保存在当前设备</text>
+          </view>
+        </scroll-view>
       </view>
-
       <!-- 消息区域 -->
       <scroll-view class="ai-messages" scroll-y :scroll-top="scrollTop" :scroll-with-animation="true">
         <!-- 欢迎消息 -->
         <view class="ai-message ai-message-system" v-if="messages.length === 0">
-          <view class="ai-avatar">🤖</view>
+          <view class="ai-avatar"><AppIcon name="ai" size="34" /></view>
           <view class="ai-bubble">
             <text class="ai-text">你好！我是 AI 教练。我可以根据你的运动数据生成个性化的训练方案。请告诉我你的需求，比如：
-
-• "生成下周训练计划"
-• "帮我制定减脂方案"
-• "根据数据给些建议"</text>
+• "制定下周计划"
+• "制定本周计划"
+• "制定减脂周计划"</text>
           </view>
         </view>
-
         <view v-for="msg in messages" :key="msg.id" :class="['ai-message', msg.role === 'user' ? 'ai-message-user' : 'ai-message-assistant']">
-          <view class="ai-avatar">{{ msg.role === 'user' ? '😊' : '🤖' }}</view>
+          <view class="ai-avatar"><AppIcon :name="msg.role === 'user' ? 'account' : 'ai'" size="34" /></view>
           <view class="ai-bubble">
             <text class="ai-text">{{ msg.displayContent || msg.content }}</text>
-            <view v-if="msg.role === 'assistant' && msg.isPlan" class="ai-action-bar">
+            <view v-if="msg.role === 'assistant' && msg.planData" class="ai-action-bar">
               <view class="ai-action-btn" @click="copyPlan(msg.displayContent || msg.content)">
-                <text>📋 复制</text>
+                <AppIcon name="copy" size="24" /><text>复制</text>
               </view>
               <view class="ai-action-btn ai-action-primary" @click="usePlan(msg.planData || msg.content)">
-                <text>✓ 使用此方案</text>
+                <AppIcon name="check" size="24" /><text>使用此方案</text>
               </view>
             </view>
           </view>
         </view>
-
       </scroll-view>
-
       <!-- AI 思考中状态条 -->
       <view class="ai-thinking-bar" v-if="loading">
         <view class="ai-thinking-dots">
@@ -125,12 +115,10 @@
         </view>
         <text class="ai-thinking-text">AI 思考中...</text>
       </view>
-
       <!-- 快捷标签 -->
       <view class="ai-quick-tags" v-if="messages.length === 0">
         <text class="ai-tag" v-for="tag in quickTags" :key="tag" @click="sendQuick(tag)">{{ tag }}</text>
       </view>
-
       <!-- 输入区域 -->
       <view class="ai-input-area">
         <input
@@ -145,23 +133,21 @@
           <text>发送</text>
         </view>
       </view>
-
       <!-- WebSocket 状态提示 -->
       <view class="ai-ws-status" v-if="visible && !wsConnected && messages.length > 0">
         <text class="ai-ws-text" v-if="!wsError">连接中...</text>
         <text class="ai-ws-error" v-else>{{ wsError }}</text>
         <text class="ai-ws-retry" v-if="wsError" @click="retryConnect">点击重试</text>
       </view>
-
     </view>
   </view>
 </template>
-
 <script setup>
 import { ref, nextTick, onUnmounted, onMounted, watch, computed } from 'vue'
 import { WS_BASE_URL } from '@/utils/request.js'
 import { get, post } from '@/utils/request.js'
-
+import { PLAN_QUICK_TAGS, buildAiSystemPrompt } from '@/services/ai/planPrompt'
+import { cacheAiPlanDraft, saveAiPlanToMyTrainingPlans, saveAiPlanToWeekly } from '@/services/plan/planPersistence'
 const props = defineProps({
   // 运动统计数据，作为上下文传给 AI
   statsData: {
@@ -169,22 +155,17 @@ const props = defineProps({
     default: () => ({})
   }
 })
-
 const emit = defineEmits(['usePlan'])
-
 // 模型切换
 const modelList = ref([])
 const selectedModelId = ref(uni.getStorageSync('ai_selected_model') || '')
 const showModelPicker = ref(false)
-
 // 按模型分别存储 API Key
 const apiKeyMap = ref(JSON.parse(uni.getStorageSync('ai_api_key_map') || '{}'))
 const customApiKey = computed(() => apiKeyMap.value[selectedModelId.value] || '')
-
 // 连接测试
 const testingConnection = ref(false)
 const testResult = ref(null)
-
 const testConnection = async () => {
   if (testingConnection.value) return
   testingConnection.value = true
@@ -205,12 +186,10 @@ const testConnection = async () => {
     testingConnection.value = false
   }
 }
-
 const updateApiKey = (val) => {
   apiKeyMap.value[selectedModelId.value] = val
   uni.setStorageSync('ai_api_key_map', JSON.stringify(apiKeyMap.value))
 }
-
 const fetchModels = async () => {
   try {
     const res = await get('/ai/models')
@@ -227,12 +206,10 @@ const fetchModels = async () => {
     console.warn('获取模型列表失败:', e)
   }
 }
-
 const selectModel = async (model) => {
   selectedModelId.value = model.id
   uni.setStorageSync('ai_selected_model', model.id)
   showModelPicker.value = false
-
   try {
     await post('/ai/switch-model', { modelId: model.id })
     uni.showToast({ title: `已切换为 ${model.name}`, icon: 'none', duration: 1500 })
@@ -241,12 +218,10 @@ const selectModel = async (model) => {
     uni.showToast({ title: '切换失败', icon: 'none', duration: 1500 })
   }
 }
-
 const currentModelName = () => {
   const m = modelList.value.find(m => m.id === selectedModelId.value)
   return m ? m.name : 'AI 教练'
 }
-
 const visible = ref(false)
 const inputText = ref('')
 const messages = ref([])
@@ -260,27 +235,17 @@ let connectTimer = null
 let wsSessionId = 0
 let inJsonBlock = false   // 是否正在 JSON 区域内
 let jsonBuffer = ''       // JSON 区域的累积内容
-
-const quickTags = [
-  '生成下周训练计划',
-  '制定减脂方案',
-  '增肌训练建议',
-  '分析运动数据'
-]
-
-
+const quickTags = PLAN_QUICK_TAGS
 // 打开对话框
 const openDialog = () => {
   visible.value = true
   connectWebSocket()
 }
-
 // 关闭对话框
 const closeDialog = () => {
   visible.value = false
   disconnectWebSocket()
 }
-
 function isTokenExpired(token) {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
@@ -290,28 +255,22 @@ function isTokenExpired(token) {
     return false
   }
 }
-
 // 连接 WebSocket（全局 API 模式，兼容微信小程序）
 const connectWebSocket = () => {
   if (wsConnecting.value || wsConnected.value) return
-
   const token = uni.getStorageSync('token')
   if (!token) {
     wsError.value = '请先登录后再使用 AI 功能'
     return
   }
-
   if (isTokenExpired(token)) {
     wsError.value = '登录已过期，请重新登录'
     return
   }
-
   wsConnecting.value = true
   const sessionId = ++wsSessionId
-
   const url = `${WS_BASE_URL}?token=${token}`
   console.log('正在连接 WebSocket:', url)
-
   uni.onSocketOpen(() => {
     if (sessionId !== wsSessionId) return
     clearTimeout(connectTimer)
@@ -321,7 +280,6 @@ const connectWebSocket = () => {
     wsError.value = ''
     console.log('WebSocket 连接成功')
   })
-
   uni.onSocketMessage((res) => {
     if (sessionId !== wsSessionId) return
     try {
@@ -331,7 +289,6 @@ const connectWebSocket = () => {
       console.error('WebSocket 消息解析失败:', res.data)
     }
   })
-
   uni.onSocketError((err) => {
     if (sessionId !== wsSessionId) return
     clearTimeout(connectTimer)
@@ -341,7 +298,6 @@ const connectWebSocket = () => {
     wsError.value = 'AI 连接失败，请检查网络或后端服务是否启动'
     console.error('WebSocket 错误:', err)
   })
-
   uni.onSocketClose(() => {
     if (sessionId !== wsSessionId) return
     clearTimeout(connectTimer)
@@ -350,9 +306,7 @@ const connectWebSocket = () => {
     wsConnected.value = false
     console.log('WebSocket 关闭')
   })
-
   uni.connectSocket({ url })
-
   connectTimer = setTimeout(() => {
     if (sessionId !== wsSessionId) return
     if (!wsConnected.value) {
@@ -364,7 +318,6 @@ const connectWebSocket = () => {
     }
   }, 10000)
 }
-
 // 断开 WebSocket
 const disconnectWebSocket = () => {
   clearTimeout(connectTimer)
@@ -377,13 +330,11 @@ const disconnectWebSocket = () => {
   wsConnected.value = false
   wsError.value = ''
 }
-
 // 重试连接
 const retryConnect = () => {
   disconnectWebSocket()
   connectWebSocket()
 }
-
 // 清洗 AI 输出的 Markdown 标记（仅处理可读文本部分）
 const cleanAiText = (text) => {
   if (!text) return ''
@@ -392,12 +343,11 @@ const cleanAiText = (text) => {
     .replace(/__(.+?)__/g, '$1')
     .replace(/`{3}[\s\S]*?`{3}/g, '')
     .replace(/`(.+?)`/g, '$1')
-    .replace(/^###\s*/gm, '▶ ')
-    .replace(/^##\s*/gm, '▶▶ ')
-    .replace(/^#\s*/gm, '▶▶▶ ')
+    .replace(/^###\s*/gm, '')
+    .replace(/^##\s*/gm, '')
+    .replace(/^#\s*/gm, '')
     .replace(/^[-*]\s/gm, '• ')
 }
-
 // 从 AI 回复中提取结构化计划 JSON
 const parsePlanJson = (text) => {
   if (!text) return null
@@ -406,7 +356,6 @@ const parsePlanJson = (text) => {
   const startIdx = text.indexOf(startMarker)
   const endIdx = text.indexOf(endMarker)
   if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) return null
-
   const jsonStr = text.substring(startIdx + startMarker.length, endIdx).trim()
   try {
     const plan = JSON.parse(jsonStr)
@@ -418,13 +367,11 @@ const parsePlanJson = (text) => {
   }
   return null
 }
-
 // 从可读文本中移除 JSON 块（仅展示纯文本部分）
 const stripPlanJson = (text) => {
   if (!text) return ''
   return text.replace(/<<<PLAN_JSON>>>[\s\S]*?<<<PLAN_JSON_END>>>/g, '').trim()
 }
-
 // 滚动节流
 let scrollTimer = null
 const throttledScroll = () => {
@@ -434,22 +381,20 @@ const throttledScroll = () => {
     scrollTimer = null
   }, 300)
 }
-
 // 处理 WebSocket 消息
 const handleWsMessage = (data) => {
   switch (data.type) {
     case 'start':
       loading.value = true
       currentAssistantIndex.value = messages.value.length
-      messages.value.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), role: 'assistant', content: '', displayContent: '', isPlan: false })
+      messages.value.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), role: 'assistant', content: '', rawContent: '', displayContent: '', isPlan: false })
       scrollToBottom()
       break
-
     case 'delta':
       if (currentAssistantIndex.value >= 0) {
         const msg = messages.value[currentAssistantIndex.value]
         const chunk = data.content
-
+        msg.rawContent = (msg.rawContent || '') + chunk
         if (!inJsonBlock) {
           msg.content += chunk
           // 检查是否出现 JSON 开始标记
@@ -473,7 +418,6 @@ const handleWsMessage = (data) => {
         throttledScroll()
       }
       break
-
     case 'done':
       loading.value = false
       if (currentAssistantIndex.value >= 0) {
@@ -481,19 +425,18 @@ const handleWsMessage = (data) => {
         // 重置状态
         inJsonBlock = false
         // 拼回完整原始内容用于解析 JSON
-        const rawContent = msg.content + jsonBuffer
+        const rawContent = msg.rawContent || (msg.content + jsonBuffer)
         jsonBuffer = ''
         // 提取结构化 JSON
         const planData = parsePlanJson(rawContent)
         // 最终清洗展示内容
         msg.displayContent = cleanAiText(msg.content)
-        msg.isPlan = !!planData || msg.displayContent.includes('计划') || msg.displayContent.includes('方案') || msg.displayContent.includes('训练')
+        msg.isPlan = !!planData
         msg.planData = planData
       }
       currentAssistantIndex.value = -1
       scrollToBottom()
       break
-
     case 'error':
       loading.value = false
       currentAssistantIndex.value = -1
@@ -506,13 +449,11 @@ const handleWsMessage = (data) => {
       break
   }
 }
-
 // 快捷发送
 const sendQuick = (text) => {
   inputText.value = text
   sendMessage()
 }
-
 // 构建系统提示词
 const buildSystemPrompt = () => {
   const s = props.statsData || {}
@@ -520,7 +461,6 @@ const buildSystemPrompt = () => {
   const today = s.todayStats || {}
   const trend = s.trendData || {}
   const recordSummary = s.recordSummary || null
-
   const totalDist = trend.dates?.length
     ? (trend.distances || []).reduce((a, b) => a + b, 0)
     : 0
@@ -530,16 +470,13 @@ const buildSystemPrompt = () => {
   const totalCal = trend.dates?.length
     ? (trend.calories || []).reduce((a, b) => a + b, 0)
     : 0
-
   const typeMap = { 1: '跑步', 2: '健走', 3: '骑行' }
   const typeLines = recordSummary
     ? Object.entries(recordSummary.typeCount || {})
         .map(([type, count]) => `${typeMap[type] || '运动'}：${count} 次`)
         .join('\n')
     : ''
-
   return `你是一位专业的运动健身 AI 教练，擅长根据用户的运动数据制定个性化的训练方案。请用中文回复，语气亲切专业。
-
 【用户运动数据】
 总运动次数：${summary.totalWorkouts || 0} 次
 总距离：${summary.totalDistanceStr || '0km'}
@@ -547,43 +484,35 @@ const buildSystemPrompt = () => {
 连续运动天数：${summary.streakDays || 0} 天
 本周运动：${summary.weeklyWorkouts || 0} 次
 本月运动：${summary.monthlyWorkouts || 0} 次
-
 ${today.statDate ? `【今日运动】
 距离：${today.distanceStr || '0m'}
 时长：${today.durationStr || '0分'}
 消耗：${today.caloriesStr || '0千卡'}
 次数：${today.recordCount || 0} 次
-
 ` : ''}${trend.dates?.length ? `【近期趋势】
 统计周期：${trend.dates.length} 个数据点
 周期总距离：${totalDist} 米
 周期总时长：${totalDur} 秒
 周期总消耗：${totalCal} 千卡
-
 ` : ''}${recordSummary ? `【记录详情】
 总距离：${(recordSummary.totalDistance / 1000).toFixed(2)} km
 总时长：${Math.floor(recordSummary.totalDuration / 60)} 分钟
 总消耗：${recordSummary.totalCalories} 千卡
 ${typeLines}
-
 ` : ''}请根据以上数据，为用户提供专业、可行的运动方案或建议。
-
 【输出格式要求 — 双模式】
 你的回复必须包含两部分：
-
 第一部分：可读文本
 - 用中文序号（一、二、三 或 1. 2. 3.）做层级分隔
 - 用空行分隔不同段落，保持排版整洁
 - 禁止使用 Markdown 语法（如 **加粗**、- 列表、# 标题）
-- 禁止使用 emoji
+- 禁止使用 表情符号
 - 禁止使用代码块（除了下面的 JSON 块）
-
 第二部分：结构化数据（仅当用户要求生成训练计划时输出）
 - 在文本末尾另起一行，输出 <<<PLAN_JSON>>> 标记
 - 然后输出一个 JSON 对象，严格遵循下面的格式
 - JSON 结束后另起一行输出 <<<PLAN_JSON_END>>> 标记
 - 如果用户只是咨询建议而非生成计划，则不需要输出 JSON 部分
-
 JSON 格式如下：
 {
   "name": "计划名称",
@@ -613,7 +542,6 @@ JSON 格式如下：
     }
   ]
 }
-
 字段说明：
 - type: 1=有氧(跑步), 2=力量, 3=拉伸, 4=HIIT, 5=综合, 6=休息
 - level: 1=入门, 2=初级, 3=中级, 4=高级, 5=精英
@@ -623,7 +551,6 @@ JSON 格式如下：
 - day: 1=周一, 2=周二, ..., 7=周日
 - 休息日的 exercises 为空数组，type 为 6`
 }
-
 // 发送消息
 const sendMessage = () => {
   const text = inputText.value.trim()
@@ -632,31 +559,31 @@ const sendMessage = () => {
     uni.showToast({ title: 'AI 连接中，请稍候', icon: 'none' })
     return
   }
-
   // 添加用户消息
   messages.value.push({ id: Date.now() + '_' + Math.random().toString(36).slice(2, 7), role: 'user', content: text })
   inputText.value = ''
   scrollToBottom()
-
   // 构建系统提示词
-  const systemPrompt = buildSystemPrompt()
+  const systemPrompt = buildAiSystemPrompt(props.statsData, text)
   const chatMessages = [
     { role: 'system', content: systemPrompt },
     ...messages.value.map(m => ({ role: m.role, content: m.content }))
   ]
-
   // 通过 WebSocket 发送
-  const payload = JSON.stringify({ type: 'chat', messages: chatMessages, modelId: selectedModelId.value || undefined })
+  const payload = JSON.stringify({
+    type: 'chat',
+    messages: chatMessages,
+    modelId: selectedModelId.value || undefined,
+    apiKey: customApiKey.value || undefined
+  })
   uni.sendSocketMessage({ data: payload })
 }
-
 // 滚动到底部
 const scrollToBottom = () => {
   nextTick(() => {
     scrollTop.value = messages.value.length * 9999
   })
 }
-
 // 复制方案
 const copyPlan = (content) => {
   uni.setClipboardData({
@@ -664,28 +591,54 @@ const copyPlan = (content) => {
     success: () => uni.showToast({ title: '已复制', icon: 'success' })
   })
 }
-
 // 使用方案
 const usePlan = (planData) => {
-  emit('usePlan', planData)
-  uni.showToast({ title: '已应用方案', icon: 'success' })
-  closeDialog()
+  if (!planData || typeof planData !== 'object' || !Array.isArray(planData.courses)) {
+    emit('usePlan', planData)
+    uni.showToast({ title: '已进入编辑', icon: 'success' })
+    closeDialog()
+    return
+  }
+  uni.showActionSheet({
+    itemList: ['保存到本周计划', '保存为多周计划', '进入编辑器微调'],
+    success: ({ tapIndex }) => {
+      try {
+        if (tapIndex === 0) {
+          const savedPlan = saveAiPlanToWeekly(planData)
+          emit('usePlan', { action: 'savedWeekly', plan: savedPlan, planData })
+          uni.showToast({ title: '已保存到本周计划', icon: 'success' })
+          closeDialog()
+          return
+        }
+        if (tapIndex === 1) {
+          const savedPlan = saveAiPlanToMyTrainingPlans(planData)
+          emit('usePlan', { action: 'savedTraining', plan: savedPlan, planData })
+          uni.showToast({ title: '已保存为多周计划', icon: 'success' })
+          closeDialog()
+          return
+        }
+        cacheAiPlanDraft(planData)
+        emit('usePlan', planData)
+        uni.showToast({ title: '已进入编辑', icon: 'success' })
+        closeDialog()
+      } catch (e) {
+        console.error('[AI] 保存计划失败:', e)
+        uni.showToast({ title: '保存失败，请重试', icon: 'none' })
+      }
+    }
+  })
 }
-
 // 组件挂载时获取模型列表
 onMounted(() => {
   fetchModels()
 })
-
 // 组件卸载时断开连接
 onUnmounted(() => {
   disconnectWebSocket()
 })
-
 // 暴露方法
 defineExpose({ openDialog })
 </script>
-
 <style lang="scss" scoped>
 // 浮动按钮
 .ai-float-btn {
@@ -703,23 +656,19 @@ defineExpose({ openDialog })
   box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
   z-index: 99;
   transition: transform 0.2s;
-
   &:active {
     transform: scale(0.92);
   }
 }
-
 .ai-float-icon {
   font-size: 44rpx;
   margin-bottom: 2rpx;
 }
-
 .ai-float-text {
   font-size: 20rpx;
   color: #fff;
   font-weight: 500;
 }
-
 // 遮罩
 .ai-mask {
   position: fixed;
@@ -730,7 +679,6 @@ defineExpose({ openDialog })
   background: rgba(0, 0, 0, 0.5);
   z-index: 100;
 }
-
 // 对话框
 .ai-dialog {
   position: fixed;
@@ -745,14 +693,12 @@ defineExpose({ openDialog })
   flex-direction: column;
   transition: height 0.3s ease;
   overflow: hidden;
-
   &.ai-dialog-show {
     height: 80vh;
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
-
 // 头部
 .ai-header {
   display: flex;
@@ -762,23 +708,19 @@ defineExpose({ openDialog })
   border-bottom: 1rpx solid #f0f0f0;
   flex-shrink: 0;
 }
-
 .ai-header-left {
   display: flex;
   align-items: center;
   gap: 12rpx;
 }
-
 .ai-header-icon {
   font-size: 40rpx;
 }
-
 .ai-header-title {
   font-size: 32rpx;
   font-weight: bold;
   color: #333;
 }
-
 .ai-header-close {
   width: 56rpx;
   height: 56rpx;
@@ -789,12 +731,10 @@ defineExpose({ openDialog })
   justify-content: center;
   font-size: 28rpx;
   color: #666;
-
   &:active {
     background: #e0e0e0;
   }
 }
-
 // 模型选择器
 .ai-model-selector {
   display: flex;
@@ -804,37 +744,36 @@ defineExpose({ openDialog })
   border-radius: 20rpx;
   background: #f0f0f7;
   cursor: pointer;
-
   &:active {
     background: #e0e0f0;
   }
 }
-
 .ai-model-arrow {
-  font-size: 18rpx;
-  color: #999;
+  width: 34rpx;
+  height: 34rpx;
+  color: #4f46e5;
   transition: transform 0.2s;
 }
-
 .ai-model-arrow-up {
   transform: rotate(180deg);
 }
-
 // 模型设置面板
 .ai-settings-panel {
   position: absolute;
   top: 100rpx;
   left: 20rpx;
   right: 20rpx;
+  bottom: 24rpx;
   background: #fff;
   border-radius: 20rpx;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
   z-index: 20;
   overflow: hidden;
-  max-height: 60vh;
-  overflow-y: auto;
 }
-
+.ai-settings-scroll {
+  height: 100%;
+  max-height: calc(80vh - 148rpx);
+}
 .ai-settings-header {
   display: flex;
   justify-content: space-between;
@@ -842,13 +781,11 @@ defineExpose({ openDialog })
   padding: 24rpx 30rpx;
   border-bottom: 1rpx solid #f0f0f0;
 }
-
 .ai-settings-title {
   font-size: 30rpx;
   font-weight: bold;
   color: #333;
 }
-
 .ai-settings-close {
   width: 48rpx;
   height: 48rpx;
@@ -859,34 +796,28 @@ defineExpose({ openDialog })
   justify-content: center;
   font-size: 24rpx;
   color: #666;
-
   &:active {
     background: #e0e0e0;
   }
 }
-
 .ai-settings-section {
   padding: 24rpx 30rpx;
   border-bottom: 1rpx solid #f5f5f5;
-
   &:last-child {
     border-bottom: none;
   }
 }
-
 .ai-settings-label {
   display: block;
   font-size: 26rpx;
   color: #666;
   margin-bottom: 16rpx;
 }
-
 .ai-provider-list {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
 }
-
 .ai-provider-card {
   display: flex;
   justify-content: space-between;
@@ -895,40 +826,33 @@ defineExpose({ openDialog })
   border-radius: 16rpx;
   background: #f8f8fc;
   border: 2rpx solid transparent;
-
   &:active {
     background: #f0f0f7;
   }
 }
-
 .ai-provider-active {
   border-color: #667eea;
   background: #f0f0ff;
 }
-
 .ai-provider-info {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
 }
-
 .ai-provider-name {
   font-size: 28rpx;
   font-weight: 500;
   color: #333;
 }
-
 .ai-provider-id {
   font-size: 22rpx;
   color: #999;
 }
-
 .ai-provider-check {
   color: #667eea;
   font-size: 28rpx;
   font-weight: bold;
 }
-
 .ai-settings-input {
   width: 100%;
   height: 80rpx;
@@ -939,77 +863,63 @@ defineExpose({ openDialog })
   border: 2rpx solid #e0e0e0;
   box-sizing: border-box;
 }
-
 .ai-test-row {
   display: flex;
   align-items: center;
   gap: 20rpx;
   flex-wrap: wrap;
 }
-
 .ai-test-btn {
   padding: 16rpx 32rpx;
   border-radius: 32rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-size: 26rpx;
   color: #fff;
-
   &:active {
     opacity: 0.85;
   }
 }
-
 .ai-test-running {
   opacity: 0.6;
   pointer-events: none;
 }
-
 .ai-test-result {
   font-size: 26rpx;
 }
-
 .ai-test-success {
   color: #10b981;
 }
-
 .ai-test-fail {
   color: #e74c3c;
 }
-
 .ai-settings-footer {
   padding: 20rpx 30rpx;
   text-align: center;
 }
-
 .ai-settings-hint {
   font-size: 22rpx;
   color: #bbb;
 }
-
 // 消息区域
 .ai-messages {
   flex: 1;
   padding: 20rpx 24rpx;
   overflow-y: auto;
 }
-
 .ai-message {
   display: flex;
   margin-bottom: 24rpx;
   align-items: flex-start;
 }
-
 .ai-message-user {
   flex-direction: row-reverse;
 }
-
 .ai-message-system {
   .ai-bubble {
     background: #f0f7ff;
     border: 1rpx solid #d0e3ff;
   }
 }
-
 .ai-avatar {
   width: 64rpx;
   height: 64rpx;
@@ -1021,7 +931,6 @@ defineExpose({ openDialog })
   font-size: 36rpx;
   flex-shrink: 0;
 }
-
 .ai-bubble {
   max-width: 70%;
   padding: 20rpx 24rpx;
@@ -1029,11 +938,9 @@ defineExpose({ openDialog })
   margin: 0 16rpx;
   background: #f5f5f5;
 }
-
 .ai-message-user .ai-bubble {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
-
 .ai-text {
   font-size: 28rpx;
   color: #333;
@@ -1041,11 +948,9 @@ defineExpose({ openDialog })
   white-space: pre-wrap;
   word-break: break-word;
 }
-
 .ai-message-user .ai-text {
   color: #fff;
 }
-
 // AI 思考中状态条
 .ai-thinking-bar {
   display: flex;
@@ -1057,33 +962,27 @@ defineExpose({ openDialog })
   border-top: 1rpx solid #f0f0f0;
   flex-shrink: 0;
 }
-
 .ai-thinking-dots {
   display: flex;
   gap: 8rpx;
 }
-
 .ai-thinking-text {
   font-size: 24rpx;
   color: #999;
 }
-
 .ai-dot {
   width: 12rpx;
   height: 12rpx;
   border-radius: 50%;
   background: #999;
   animation: ai-dot-bounce 1.4s infinite ease-in-out both;
-
   &:nth-child(1) { animation-delay: -0.32s; }
   &:nth-child(2) { animation-delay: -0.16s; }
 }
-
 @keyframes ai-dot-bounce {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
   40% { transform: scale(1); opacity: 1; }
 }
-
 // 操作栏
 .ai-action-bar {
   display: flex;
@@ -1092,7 +991,6 @@ defineExpose({ openDialog })
   padding-top: 16rpx;
   border-top: 1rpx solid rgba(0, 0, 0, 0.06);
 }
-
 .ai-action-btn {
   padding: 10rpx 20rpx;
   border-radius: 28rpx;
@@ -1100,22 +998,18 @@ defineExpose({ openDialog })
   border: 1rpx solid #ddd;
   font-size: 24rpx;
   color: #666;
-
   &:active {
     background: #f0f0f0;
   }
 }
-
 .ai-action-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: #fff;
-
   &:active {
     opacity: 0.85;
   }
 }
-
 // 快捷标签
 .ai-quick-tags {
   display: flex;
@@ -1124,7 +1018,6 @@ defineExpose({ openDialog })
   padding: 0 24rpx 16rpx;
   flex-shrink: 0;
 }
-
 .ai-tag {
   padding: 12rpx 24rpx;
   border-radius: 32rpx;
@@ -1132,12 +1025,10 @@ defineExpose({ openDialog })
   font-size: 26rpx;
   color: #667eea;
   border: 1rpx solid #e0e0f0;
-
   &:active {
     background: #e0e0f0;
   }
 }
-
 // 输入区域
 .ai-input-area {
   display: flex;
@@ -1149,7 +1040,6 @@ defineExpose({ openDialog })
   background: #fafafa;
   flex-shrink: 0;
 }
-
 .ai-input {
   flex: 1;
   height: 72rpx;
@@ -1159,7 +1049,6 @@ defineExpose({ openDialog })
   font-size: 28rpx;
   border: 1rpx solid #e0e0e0;
 }
-
 .ai-send-btn {
   padding: 16rpx 32rpx;
   border-radius: 36rpx;
@@ -1167,17 +1056,14 @@ defineExpose({ openDialog })
   font-size: 28rpx;
   color: #fff;
   font-weight: 500;
-
   &:active {
     opacity: 0.85;
   }
 }
-
 .ai-send-disabled {
   opacity: 0.5;
   pointer-events: none;
 }
-
 // WebSocket 状态
 .ai-ws-status {
   text-align: center;
@@ -1192,25 +1078,20 @@ defineExpose({ openDialog })
   justify-content: center;
   gap: 16rpx;
 }
-
 .ai-ws-text {
   color: #999;
 }
-
 .ai-ws-error {
   color: #e74c3c;
   font-size: 22rpx;
 }
-
 .ai-ws-retry {
   color: #667eea;
   font-size: 22rpx;
   text-decoration: underline;
   padding: 4rpx 8rpx;
-
   &:active {
     opacity: 0.7;
   }
 }
-
 </style>

@@ -3,13 +3,12 @@
     <view class="editor-content" @click.stop>
       <view class="editor-header">
         <text class="editor-title">编辑周计划</text>
-        <text class="close-btn" @click="close">✕</text>
+        <AppIcon class="close-btn" name="close" size="28" @click="close" />
       </view>
-      
       <!-- 7天网格 -->
       <view class="week-grid">
-        <view 
-          v-for="day in weekDays" 
+        <view
+          v-for="day in weekDays"
           :key="day.dayOfWeek"
           class="day-column"
           :class="{ hasPlan: day.plan }"
@@ -22,37 +21,35 @@
           </view>
         </view>
       </view>
-      
       <!-- 批量操作 -->
       <view class="batch-actions">
         <view class="batch-btn" @click="showCopyModal = true">
-          <text>📋 复制到</text>
+          <AppIcon name="copy" size="24" /><text>复制到</text>
         </view>
         <view class="batch-btn danger" @click="confirmClear">
-          <text>🗑️ 清空本周</text>
+          <AppIcon name="delete" size="24" /><text>清空本周</text>
         </view>
         <view class="batch-btn" @click="showSaveTemplate = true">
-          <text>💾 保存模板</text>
+          <AppIcon name="save" size="24" /><text>保存模板</text>
         </view>
         <view class="batch-btn primary" @click="$emit('upload')">
-          <text>📤 上传分享</text>
+          <AppIcon name="upload" size="24" /><text>上传分享</text>
         </view>
       </view>
-      
       <!-- 复制弹窗 -->
       <view class="modal-overlay" v-if="showCopyModal" @click="showCopyModal = false">
         <view class="modal-content" @click.stop>
           <text class="modal-title">复制计划</text>
           <text class="modal-sub">选择要复制到的日期</text>
           <view class="day-check-list">
-            <view 
-              v-for="day in weekDays" 
+            <view
+              v-for="day in weekDays"
               :key="day.dayOfWeek"
               class="day-check-item"
               @click="toggleCopyDay(day.dayOfWeek)"
             >
               <text class="check-box" :class="{ checked: copyTargets.includes(day.dayOfWeek) }">
-                {{ copyTargets.includes(day.dayOfWeek) ? '✓' : '' }}
+                {{ copyTargets.includes(day.dayOfWeek) ? '' : '' }}
               </text>
               <text>{{ day.label }}</text>
             </view>
@@ -63,7 +60,6 @@
           </view>
         </view>
       </view>
-      
       <!-- 保存模板弹窗 -->
       <view class="modal-overlay" v-if="showSaveTemplate" @click="showSaveTemplate = false">
         <view class="modal-content" @click.stop>
@@ -75,9 +71,8 @@
           </view>
         </view>
       </view>
-      
       <!-- 类型选择器 -->
-      <TypeSelector 
+      <TypeSelector
         :visible="showTypeSelector"
         :initialData="editingDay?.plan"
         @close="showTypeSelector = false"
@@ -86,11 +81,9 @@
     </view>
   </view>
 </template>
-
 <script setup>
 import { ref, computed } from 'vue'
 import TypeSelector from './TypeSelector.vue'
-
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -101,18 +94,14 @@ const props = defineProps({
     default: () => []
   }
 })
-
 const emit = defineEmits(['close', 'update-day', 'copy-day', 'clear', 'save-template', 'upload'])
-
 const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-
 const showTypeSelector = ref(false)
 const showCopyModal = ref(false)
 const showSaveTemplate = ref(false)
 const editingDay = ref(null)
 const copyTargets = ref([])
 const templateName = ref('')
-
 const weekDays = computed(() => {
   return weekLabels.map((label, index) => {
     const dayOfWeek = index + 1
@@ -120,12 +109,10 @@ const weekDays = computed(() => {
     return { label, dayOfWeek, plan }
   })
 })
-
 function editDay(day) {
   editingDay.value = day
   showTypeSelector.value = true
 }
-
 function onTypeConfirm(data) {
   if (editingDay.value) {
     emit('update-day', { dayOfWeek: editingDay.value.dayOfWeek, data })
@@ -133,7 +120,6 @@ function onTypeConfirm(data) {
   showTypeSelector.value = false
   editingDay.value = null
 }
-
 function toggleCopyDay(dayOfWeek) {
   const idx = copyTargets.value.indexOf(dayOfWeek)
   if (idx > -1) {
@@ -142,7 +128,6 @@ function toggleCopyDay(dayOfWeek) {
     copyTargets.value.push(dayOfWeek)
   }
 }
-
 function confirmCopy() {
   if (copyTargets.value.length === 0) {
     uni.showToast({ title: '请选择目标日期', icon: 'none' })
@@ -157,7 +142,6 @@ function confirmCopy() {
   showCopyModal.value = false
   copyTargets.value = []
 }
-
 function confirmClear() {
   uni.showModal({
     title: '确认清空',
@@ -170,7 +154,6 @@ function confirmClear() {
     }
   })
 }
-
 function confirmSaveTemplate() {
   if (!templateName.value.trim()) {
     uni.showToast({ title: '请输入模板名称', icon: 'none' })
@@ -180,11 +163,9 @@ function confirmSaveTemplate() {
   showSaveTemplate.value = false
   templateName.value = ''
 }
-
 function close() {
   emit('close')
 }
-
 function getTypeIcon(type) {
   const map = {
     run: '/static/images/plan/run.png',
@@ -197,7 +178,6 @@ function getTypeIcon(type) {
   return map[type] || '/static/images/plan/add.png'
 }
 </script>
-
 <style lang="scss" scoped>
 .plan-editor-popup {
   position: fixed;
@@ -210,7 +190,6 @@ function getTypeIcon(type) {
   align-items: flex-end;
   z-index: 1000;
 }
-
 .editor-content {
   width: 100%;
   max-height: 90vh;
@@ -220,12 +199,10 @@ function getTypeIcon(type) {
   flex-direction: column;
   animation: slideUp 0.3s ease;
 }
-
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-
 .editor-header {
   display: flex;
   justify-content: space-between;
@@ -233,38 +210,32 @@ function getTypeIcon(type) {
   padding: 30rpx;
   border-bottom: 1rpx solid #f1f5f9;
 }
-
 .editor-title {
   font-size: 32rpx;
   font-weight: 700;
   color: #1c1c1e;
 }
-
 .close-btn {
   font-size: 32rpx;
   color: #94a3b8;
   padding: 10rpx;
 }
-
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 12rpx;
   padding: 24rpx 20rpx;
 }
-
 .day-column {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
 }
-
 .column-week {
   font-size: 22rpx;
   color: #64748b;
 }
-
 .day-plan-card {
   width: 88rpx;
   height: 120rpx;
@@ -276,23 +247,19 @@ function getTypeIcon(type) {
   gap: 8rpx;
   background: #f8fafc;
   transition: all 0.2s ease;
-  
   &:active {
     transform: scale(0.95);
   }
-  
   &.type-run { background: rgba(59, 130, 246, 0.1); }
   &.type-strength { background: rgba(249, 115, 22, 0.1); }
   &.type-yoga { background: rgba(16, 185, 129, 0.1); }
   &.type-rest { background: rgba(148, 163, 184, 0.1); }
   &.type-custom { background: rgba(139, 92, 246, 0.1); }
 }
-
 .day-plan-icon-img {
   width: 40rpx;
   height: 40rpx;
 }
-
 .day-plan-title {
   font-size: 18rpx;
   color: #64748b;
@@ -303,13 +270,11 @@ function getTypeIcon(type) {
   text-overflow: ellipsis;
   max-width: 80rpx;
 }
-
 .batch-actions {
   display: flex;
   gap: 16rpx;
   padding: 0 30rpx 24rpx;
 }
-
 .batch-btn {
   flex: 1;
   height: 72rpx;
@@ -320,21 +285,17 @@ function getTypeIcon(type) {
   justify-content: center;
   font-size: 24rpx;
   color: #334155;
-  
   &:active {
     background: #e2e8f0;
   }
-  
   &.danger {
     color: #ef4444;
   }
-  
   &.primary {
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     color: #fff;
   }
 }
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -347,14 +308,12 @@ function getTypeIcon(type) {
   justify-content: center;
   z-index: 1001;
 }
-
 .modal-content {
   width: 80%;
   background: #fff;
   border-radius: 24rpx;
   padding: 30rpx;
 }
-
 .modal-title {
   font-size: 32rpx;
   font-weight: 700;
@@ -362,21 +321,18 @@ function getTypeIcon(type) {
   display: block;
   margin-bottom: 8rpx;
 }
-
 .modal-sub {
   font-size: 24rpx;
   color: #64748b;
   margin-bottom: 20rpx;
   display: block;
 }
-
 .day-check-list {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
   margin-bottom: 24rpx;
 }
-
 .day-check-item {
   display: flex;
   align-items: center;
@@ -387,7 +343,6 @@ function getTypeIcon(type) {
   font-size: 28rpx;
   color: #334155;
 }
-
 .check-box {
   width: 40rpx;
   height: 40rpx;
@@ -398,13 +353,11 @@ function getTypeIcon(type) {
   justify-content: center;
   font-size: 22rpx;
   color: #fff;
-  
   &.checked {
     background: #3b82f6;
     border-color: #3b82f6;
   }
 }
-
 .modal-input {
   width: 100%;
   height: 80rpx;
@@ -415,12 +368,10 @@ function getTypeIcon(type) {
   margin-bottom: 24rpx;
   box-sizing: border-box;
 }
-
 .modal-footer {
   display: flex;
   gap: 20rpx;
 }
-
 .modal-btn {
   flex: 1;
   height: 76rpx;
@@ -431,12 +382,10 @@ function getTypeIcon(type) {
   align-items: center;
   justify-content: center;
   border: none;
-  
   &.cancel {
     background: #f1f5f9;
     color: #64748b;
   }
-  
   &.confirm {
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     color: #fff;

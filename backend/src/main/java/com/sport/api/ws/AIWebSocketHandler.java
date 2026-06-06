@@ -40,7 +40,7 @@ public class AIWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         String payload = message.getPayload();
-        log.debug("收到 WebSocket 消息: sessionId={}, payload={}", session.getId(), payload);
+        log.debug("收到 WebSocket 消息: sessionId={}, payloadLength={}", session.getId(), payload.length());
 
         try {
             JsonNode root = objectMapper.readTree(payload);
@@ -67,6 +67,7 @@ public class AIWebSocketHandler extends TextWebSocketHandler {
 
             // 解析 modelId
             String modelId = root.path("modelId").asText(null);
+            String customApiKey = root.path("apiKey").asText(null);
 
             if (messages.isEmpty()) {
                 sendJson(session, Map.of("type", "error", "message", "messages 不能为空"));
@@ -79,6 +80,7 @@ public class AIWebSocketHandler extends TextWebSocketHandler {
             // 调用流式 API（同步阻塞读取，但在 WebSocket 线程中执行）
             aiService.chatCompletionStream(
                     modelId,
+                    customApiKey,
                     messages,
                     delta -> {
                         if (session.isOpen()) {

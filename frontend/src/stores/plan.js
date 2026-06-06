@@ -12,7 +12,6 @@ import {
   saveCardOrder,
   normalizeDayPlan
 } from '../api/plan'
-
 export const usePlanStore = defineStore('plan', () => {
   // ==================== State ====================
   const currentPlan = ref(null)
@@ -20,12 +19,10 @@ export const usePlanStore = defineStore('plan', () => {
   const communityTemplates = ref([])
   const selectedDate = ref('')
   const isLoading = ref(false)
-
   // ==================== Getters ====================
   const hasPlan = computed(() => {
     return currentPlan.value && currentPlan.value.days && currentPlan.value.days.length > 0
   })
-
   const getDayPlan = computed(() => {
     return (dateStr) => {
       if (!currentPlan.value || !currentPlan.value.days) return null
@@ -34,11 +31,9 @@ export const usePlanStore = defineStore('plan', () => {
       return day ? normalizeDayPlan(day) : null
     }
   })
-
   const weekStartDate = computed(() => {
     return currentPlan.value?.weekStartDate || getWeekStart(new Date())
   })
-
   // ==================== Actions ====================
   function initPlan(weekStart) {
     const saved = getCurrentPlan()
@@ -56,7 +51,6 @@ export const usePlanStore = defineStore('plan', () => {
     templates.value = getPlanTemplates()
     communityTemplates.value = getCommunityTemplates()
   }
-
   function updateDayPlan(dayOfWeek, planData) {
     if (!currentPlan.value) return
     const days = currentPlan.value.days || []
@@ -72,9 +66,9 @@ export const usePlanStore = defineStore('plan', () => {
     // 确保 activities 数组存在
     if (!newDay.activities && newDay.type) {
       // 旧格式单活动 → 包装为 activities 数组
-      const style = { run: '🏃', strength: '💪', yoga: '🧘', rest: '😴', custom: '⚡' }
+      const style = { run: 'run', strength: 'strength', yoga: 'stretch', rest: 'rest', custom: 'hiit' }
       newDay.activities = [{
-        icon: style[newDay.type] || '⚡',
+        icon: style[newDay.type] || 'hiit',
         type: newDay.type,
         name: newDay.title || '训练',
         duration: newDay.details?.duration || 30,
@@ -92,13 +86,11 @@ export const usePlanStore = defineStore('plan', () => {
     currentPlan.value.days = days
     saveCurrentPlan(currentPlan.value)
   }
-
   function removeDayPlan(dayOfWeek) {
     if (!currentPlan.value) return
     currentPlan.value.days = currentPlan.value.days.filter(d => d.dayOfWeek !== dayOfWeek)
     saveCurrentPlan(currentPlan.value)
   }
-
   function reorderDays(dayOfWeek, newOrder) {
     if (!currentPlan.value) return
     const day = currentPlan.value.days.find(d => d.dayOfWeek === dayOfWeek)
@@ -107,7 +99,6 @@ export const usePlanStore = defineStore('plan', () => {
       saveCurrentPlan(currentPlan.value)
     }
   }
-
   function toggleComplete(dayOfWeek) {
     if (!currentPlan.value) return
     const day = currentPlan.value.days.find(d => d.dayOfWeek === dayOfWeek)
@@ -116,7 +107,6 @@ export const usePlanStore = defineStore('plan', () => {
       saveCurrentPlan(currentPlan.value)
     }
   }
-
   function updatePersonalNote(dayOfWeek, note) {
     if (!currentPlan.value) return
     const day = currentPlan.value.days.find(d => d.dayOfWeek === dayOfWeek)
@@ -125,7 +115,6 @@ export const usePlanStore = defineStore('plan', () => {
       saveCurrentPlan(currentPlan.value)
     }
   }
-
   function clearWeek() {
     if (!currentPlan.value) return
     currentPlan.value.days = []
@@ -133,7 +122,6 @@ export const usePlanStore = defineStore('plan', () => {
     currentPlan.value.templateId = undefined
     saveCurrentPlan(currentPlan.value)
   }
-
   function copyDayTo(sourceDayOfWeek, targetDays) {
     if (!currentPlan.value) return
     const sourceDay = currentPlan.value.days.find(d => d.dayOfWeek === sourceDayOfWeek)
@@ -149,7 +137,6 @@ export const usePlanStore = defineStore('plan', () => {
     })
     saveCurrentPlan(currentPlan.value)
   }
-
   function saveAsTemplate(name) {
     if (!currentPlan.value) return
     const template = {
@@ -161,12 +148,10 @@ export const usePlanStore = defineStore('plan', () => {
     templates.value.push(template)
     savePlanTemplate(template)
   }
-
   function deleteTemplate(id) {
     templates.value = templates.value.filter(t => t.id !== id)
     deletePlanTemplate(id)
   }
-
   function useTemplate(template) {
     if (!currentPlan.value) return
     currentPlan.value.days = template.weeklyStructure.map((day, index) => ({
@@ -179,7 +164,6 @@ export const usePlanStore = defineStore('plan', () => {
     currentPlan.value.templateId = template.id
     saveCurrentPlan(currentPlan.value)
   }
-
   function saveToCommunity(data) {
     const template = {
       name: data.name,
@@ -192,15 +176,12 @@ export const usePlanStore = defineStore('plan', () => {
     communityTemplates.value.push(template)
     saveCommunityTemplate(template)
   }
-
   function loadCardOrder(date) {
     return getCardOrder(date)
   }
-
   function saveDayCardOrder(date, order) {
     saveCardOrder(date, order)
   }
-
   return {
     currentPlan,
     templates,
@@ -226,14 +207,12 @@ export const usePlanStore = defineStore('plan', () => {
     saveDayCardOrder
   }
 })
-
 // ==================== 工具函数 ====================
 function getDayOfWeek(dateStr) {
   const date = new Date(dateStr)
   let day = date.getDay()
   return day === 0 ? 7 : day
 }
-
 function getWeekStart(date) {
   const d = new Date(date)
   const day = d.getDay()
@@ -241,7 +220,6 @@ function getWeekStart(date) {
   const monday = new Date(d.setDate(diff))
   return formatDate(monday)
 }
-
 function formatDate(date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')

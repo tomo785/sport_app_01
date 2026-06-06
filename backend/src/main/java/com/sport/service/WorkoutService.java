@@ -29,7 +29,7 @@ public interface WorkoutService {
     /**
      * 结束运动
      */
-    WorkoutDetailVO finishWorkout(Long userId, Long recordId);
+    WorkoutDetailVO finishWorkout(Long userId, Long recordId, Map<String, Object> metrics);
 
     /**
      * 获取运动详情

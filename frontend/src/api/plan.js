@@ -1,18 +1,14 @@
 import { get, post, put, del } from '@/utils/request'
-
 /**
  * 计划相关API（本地存储 + 云端接口）
  */
-
 // ==================== 本地存储（兼容现有组件） ====================
-
 const STORAGE_KEYS = {
   currentPlan: 'weeklyPlan_current',
   templates: 'planTemplates',
   communityTemplates: 'communityTemplates',
   cardOrder: (date) => `planCardOrder_${date}`
 }
-
 export function getCurrentPlan() {
   const data = uni.getStorageSync(STORAGE_KEYS.currentPlan)
   if (data) {
@@ -20,12 +16,10 @@ export function getCurrentPlan() {
   }
   return null
 }
-
 export function saveCurrentPlan(plan) {
   uni.setStorageSync(STORAGE_KEYS.currentPlan, JSON.stringify(plan))
   return Promise.resolve({ code: 200, data: plan })
 }
-
 /**
  * 生成默认周计划（新手入门方案）
  * 当用户没有任何计划时自动创建，让用户首页就能看到可用方案
@@ -38,7 +32,6 @@ export function createDefaultWeeklyPlan() {
   const diff = now.getDate() - day + (day === 0 ? -6 : 1)
   const monday = new Date(now.setDate(diff))
   const weekStart = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`
-
   const baseId = Date.now()
   const plan = {
     id: 'wp_default_' + baseId,
@@ -54,13 +47,13 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '🏃', type: 'run', name: '晨间唤醒跑', duration: 35,
+            icon: 'run', type: 'run', name: '晨间唤醒跑', duration: 35,
             tags: ['有氧', '跑步'],
             summary: '5km · 配速 6:00/km',
             details: { description: '用舒适的配速跑完 5 公里，感受清晨的微风，让身体慢慢苏醒。坚持比强度更重要，今天是最棒的开端！', duration: 35, runParams: { subType: 'easy', distance: 5 } }
           },
           {
-            icon: '🧘', type: 'yoga', name: '跑后拉伸', duration: 10,
+            icon: 'stretch', type: 'yoga', name: '跑后拉伸', duration: 10,
             tags: ['拉伸', '恢复'],
             summary: '哈他瑜伽',
             details: { description: '跑后全身拉伸，帮助肌肉恢复', duration: 10, yogaStyle: 'hatha' }
@@ -76,7 +69,7 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '💪', type: 'strength', name: '上肢力量充电', duration: 45,
+            icon: 'strength', type: 'strength', name: '上肢力量充电', duration: 45,
             tags: ['力量', '上肢'],
             summary: '俯卧撑 4×12 · 哑铃推举 4×12 · 平板支撑 3×60s · 卷腹 3×20',
             details: { description: '俯卧撑、哑铃训练与核心稳定性练习。每一点力量的增长，都是你努力最好的见证。', duration: 45, bodyPart: '胸', exercises: [
@@ -95,7 +88,7 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '😴', type: 'rest', name: '休息自由活动', duration: 0,
+            icon: 'rest', type: 'rest', name: '休息自由活动', duration: 0,
             tags: ['休息', '恢复'],
             summary: '充分休息，让身体恢复',
             details: { description: '肌肉在休息时才会生长，好好放松是为了明天更强！今天可以散散步、做些轻度活动。', duration: 0, restType: 'full' }
@@ -111,7 +104,7 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '🏃', type: 'run', name: '间歇跑挑战', duration: 40,
+            icon: 'run', type: 'run', name: '间歇跑挑战', duration: 40,
             tags: ['有氧', '高强度'],
             summary: '5km · 6组间歇 · 配速 5:30/km',
             details: { description: '通过间歇训练提升心肺能力。短距离冲刺与恢复交替，燃烧更多卡路里，效率翻倍！', duration: 40, runParams: { subType: 'interval', distance: 5, sets: 6, pace: '5:30/km' } }
@@ -127,7 +120,7 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '💪', type: 'strength', name: '腿部力量训练', duration: 35,
+            icon: 'strength', type: 'strength', name: '腿部力量训练', duration: 35,
             tags: ['力量', '下肢'],
             summary: '深蹲 4×12 · 弓步蹲 3×12 · 臀桥 3×15 · 小腿提踵 3×20',
             details: { description: '练好腿部力量，跑步更轻松，日常更有活力！', duration: 35, bodyPart: '腿', exercises: [
@@ -136,7 +129,7 @@ export function createDefaultWeeklyPlan() {
             ]}
           },
           {
-            icon: '🚶', type: 'run', name: '有氧燃脂走', duration: 20,
+            icon: 'walk', type: 'run', name: '有氧燃脂走', duration: 20,
             tags: ['有氧', '燃脂'],
             summary: '快走 2km · 保持心率 130',
             details: { description: '力量训练后加一组快走，提升燃脂效率', duration: 20, runParams: { subType: 'easy', distance: 2 } }
@@ -152,13 +145,13 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '🏃', type: 'run', name: '周末长距离慢跑', duration: 60,
+            icon: 'run', type: 'run', name: '周末长距离慢跑', duration: 60,
             tags: ['有氧', '耐力'],
             summary: '10km · 配速 6:30/km',
             details: { description: '周末来一场长距离慢跑，建立有氧耐力基础。不用追求速度，享受跑步的过程就好。', duration: 60, runParams: { subType: 'long', distance: 10 } }
           },
           {
-            icon: '🧘', type: 'yoga', name: '跑后拉伸放松', duration: 15,
+            icon: 'stretch', type: 'yoga', name: '跑后拉伸放松', duration: 15,
             tags: ['拉伸', '恢复'],
             summary: '全身拉伸',
             details: { description: '长跑后的拉伸非常重要', duration: 15, yogaStyle: 'hatha' }
@@ -174,31 +167,27 @@ export function createDefaultWeeklyPlan() {
         personalNote: '',
         activities: [
           {
-            icon: '🧘', type: 'yoga', name: '瑜伽拉伸放松', duration: 30,
+            icon: 'stretch', type: 'yoga', name: '瑜伽拉伸放松', duration: 30,
             tags: ['拉伸', '放松'],
             summary: '哈他瑜伽 · 全身拉伸',
-            details: { description: '全身拉伸放松，缓解一周训练疲劳。柔韧性和力量同样重要，做一个柔软的健身人 🧘', duration: 30, yogaStyle: 'hatha' }
+            details: { description: '全身拉伸放松，缓解一周训练疲劳。柔韧性和力量同样重要，做一个柔软的健身人', duration: 30, yogaStyle: 'hatha' }
           }
         ]
       }
     ],
     isFromTemplate: false
   }
-
   saveCurrentPlan(plan)
   // 保存到我的计划列表
   savePlanToMyTrainingPlans(plan, '轻松入门周计划')
   return plan
 }
-
 /** 活动类型映射：字符串 → 数字（用于 myTrainingPlans） */
 const activityTypeMap = { run: 1, strength: 2, yoga: 3, rest: 6, custom: 5 }
-
 /** 活动图标映射 */
 export const activityIconMap = {
-  run: '🏃', strength: '💪', yoga: '🧘', rest: '😴', custom: '⚡'
+  run: 'run', strength: 'strength', yoga: 'stretch', rest: 'rest', custom: 'hiit'
 }
-
 /** 活动标签颜色映射 */
 export const activityStyleMap = {
   run: { color: '#22c55e', bg: '#ecfdf5', label: '跑步' },
@@ -207,7 +196,6 @@ export const activityStyleMap = {
   rest: { color: '#94a3b8', bg: '#f1f5f9', label: '休息' },
   custom: { color: '#f97316', bg: '#fff7ed', label: '自定义' }
 }
-
 /**
  * 标准化 dayPlan：兼容旧格式 → 统一转为 activities 数组
  * 旧格式（单 type+details）自动包装为新格式
@@ -224,7 +212,7 @@ export function normalizeDayPlan(dayPlan) {
     return {
       ...dayPlan,
       activities: [{
-        icon: activityIconMap[dayPlan.type] || '⚡',
+        icon: activityIconMap[dayPlan.type] || 'hiit',
         type: dayPlan.type,
         name: dayPlan.title || style.label,
         duration: dayPlan.details?.duration || 30,
@@ -236,7 +224,6 @@ export function normalizeDayPlan(dayPlan) {
   }
   return dayPlan
 }
-
 /** 构建活动摘要文本 */
 function buildActivitySummary(dayPlan) {
   const d = dayPlan.details || {}
@@ -260,7 +247,6 @@ function buildActivitySummary(dayPlan) {
   }
   return d.description || ''
 }
-
 /**
  * 将默认周计划同步保存到 myTrainingPlans 列表
  * 确保用户在「定制」页能看到已有计划
@@ -274,7 +260,6 @@ function savePlanToMyTrainingPlans(weeklyPlan, planName) {
       try { plans = JSON.parse(raw) } catch (e) { plans = [] }
     }
     if (plans.some(p => p.id === weeklyPlan.id || p.name === planName)) return
-
     // 遍历每天，将每个 activity 转为一条 course
     const courses = []
     weeklyPlan.days.forEach(d => {
@@ -296,7 +281,6 @@ function savePlanToMyTrainingPlans(weeklyPlan, planName) {
         })
       })
     })
-
     plans.unshift({
       id: weeklyPlan.id,
       name: planName,
@@ -314,7 +298,6 @@ function savePlanToMyTrainingPlans(weeklyPlan, planName) {
     console.warn('[默认计划] 保存到 myTrainingPlans 失败:', e)
   }
 }
-
 export function getPlanTemplates() {
   const data = uni.getStorageSync(STORAGE_KEYS.templates)
   if (data) {
@@ -322,7 +305,6 @@ export function getPlanTemplates() {
   }
   return []
 }
-
 export function savePlanTemplate(template) {
   const templates = getPlanTemplates()
   const index = templates.findIndex(t => t.id === template.id)
@@ -331,13 +313,11 @@ export function savePlanTemplate(template) {
   uni.setStorageSync(STORAGE_KEYS.templates, JSON.stringify(templates))
   return Promise.resolve({ code: 200, data: template })
 }
-
 export function deletePlanTemplate(id) {
   const templates = getPlanTemplates().filter(t => t.id !== id)
   uni.setStorageSync(STORAGE_KEYS.templates, JSON.stringify(templates))
   return Promise.resolve({ code: 200 })
 }
-
 export function getCommunityTemplates() {
   const data = uni.getStorageSync(STORAGE_KEYS.communityTemplates)
   if (data) {
@@ -345,7 +325,6 @@ export function getCommunityTemplates() {
   }
   return getDefaultCommunityTemplates()
 }
-
 export function saveCommunityTemplate(template) {
   const templates = getCommunityTemplates()
   const index = templates.findIndex(t => t.id === template.id)
@@ -354,7 +333,6 @@ export function saveCommunityTemplate(template) {
   uni.setStorageSync(STORAGE_KEYS.communityTemplates, JSON.stringify(templates))
   return Promise.resolve({ code: 200, data: template })
 }
-
 export function getCardOrder(date) {
   const key = STORAGE_KEYS.cardOrder(date)
   const data = uni.getStorageSync(key)
@@ -363,13 +341,11 @@ export function getCardOrder(date) {
   }
   return null
 }
-
 export function saveCardOrder(date, order) {
   const key = STORAGE_KEYS.cardOrder(date)
   uni.setStorageSync(key, JSON.stringify(order))
   return Promise.resolve({ code: 200 })
 }
-
 function getDefaultCommunityTemplates() {
   const templates = [
     {
@@ -421,82 +397,68 @@ function getDefaultCommunityTemplates() {
   uni.setStorageSync(STORAGE_KEYS.communityTemplates, JSON.stringify(templates))
   return templates
 }
-
 // ==================== 云端API ====================
-
 /**
  * 创建训练计划
  */
 export function createPlan(data) {
   return post('/plan', data)
 }
-
 /**
  * 获取我的计划列表
  */
 export function getMyPlans(params = {}) {
   return get('/plan/my', params)
 }
-
 /**
  * 获取社区计划列表
  */
 export function getCommunityPlans(params = {}) {
   return get('/plan/community', params)
 }
-
 /**
  * 智能匹配计划
  */
 export function matchPlans(data) {
   return post('/plan/match', data)
 }
-
 /**
  * 获取计划详情
  */
 export function getPlanDetail(id) {
   return get(`/plan/${id}`)
 }
-
 /**
  * 更新计划
  */
 export function updatePlan(id, data) {
   return put(`/plan/${id}`, data)
 }
-
 /**
  * 删除计划
  */
 export function deletePlan(id) {
   return del(`/plan/${id}`)
 }
-
 /**
  * 上传计划到社区
  */
 export function uploadPlanToCommunity(id) {
   return post(`/plan/${id}/upload`)
 }
-
 /**
  * 采用社区计划
  */
 export function adoptPlan(id) {
   return post(`/plan/${id}/adopt`)
 }
-
 // ==================== 兼容旧接口 ====================
-
 export function fetchPlanFromCloud(id) {
   return get(`/plan/${id}`)
 }
-
 export function uploadPlanToCloud(data) {
   return post('/plan', data)
 }
-
 export function fetchCommunityPlans(params) {
   return get('/plan/community', params)
 }

@@ -41,4 +41,22 @@ public class UserVO {
 
     @Schema(description = "体重(公斤)")
     private BigDecimal weight;
+
+    @Schema(description = "腰围(厘米)")
+    private BigDecimal waistCircumference;
+
+    @Schema(description = "收缩压(mmHg)")
+    private Integer systolicPressure;
+
+    @Schema(description = "舒张压(mmHg)")
+    private Integer diastolicPressure;
+
+    @Schema(description = "静息心率(次/分)")
+    private Integer restingHeartRate;
+
+    @Schema(description = "运动平均心率(次/分)")
+    private Integer avgExerciseHeartRate;
+
+    @Schema(description = "运动最高心率(次/分)")
+    private Integer maxHeartRate;
 }

@@ -10,7 +10,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(180deg, #f0f4f8 0%, #e8eef5 100%);
@@ -20,7 +19,6 @@
             min-height: 100vh;
             padding: 20px;
         }
-
         /* iPhone 15 Pro 框架 */
         .iphone-frame {
             width: 393px;
@@ -28,12 +26,11 @@
             background: #000;
             border-radius: 55px;
             padding: 12px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3), 
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3),
                         0 10px 30px rgba(0, 0, 0, 0.2),
                         inset 0 0 0 2px #333;
             position: relative;
         }
-
         .iphone-screen {
             width: 100%;
             height: 100%;
@@ -44,7 +41,6 @@
             display: flex;
             flex-direction: column;
         }
-
         /* 灵动岛 */
         .dynamic-island {
             position: absolute;
@@ -57,7 +53,6 @@
             border-radius: 20px;
             z-index: 1000;
         }
-
         /* 状态栏 */
         .status-bar {
             display: flex;
@@ -67,25 +62,21 @@
             height: 54px;
             background: transparent;
         }
-
         .status-time {
             font-size: 17px;
             font-weight: 600;
             color: #1c1c1e;
             letter-spacing: -0.5px;
         }
-
         .status-icons {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-
         .signal-icon, .wifi-icon, .battery-icon {
             width: 18px;
             height: 12px;
         }
-
         .battery-icon {
             width: 27px;
             height: 13px;
@@ -96,7 +87,6 @@
             align-items: center;
             padding: 2px;
         }
-
         .battery-icon::after {
             content: '';
             position: absolute;
@@ -106,14 +96,12 @@
             background: #1c1c1e;
             border-radius: 0 1px 1px 0;
         }
-
         .battery-level {
             width: 80%;
             height: 100%;
             background: #1c1c1e;
             border-radius: 1.5px;
         }
-
         /* 主内容区域 */
         .main-content {
             flex: 1;
@@ -122,11 +110,9 @@
             padding: 0 20px;
             scrollbar-width: none;
         }
-
         .main-content::-webkit-scrollbar {
             display: none;
         }
-
         /* 顶部标题栏 */
         .header {
             display: flex;
@@ -134,14 +120,12 @@
             align-items: center;
             padding: 12px 0 20px;
         }
-
         .header-title {
             font-size: 28px;
             font-weight: 700;
             color: #1c1c1e;
             letter-spacing: -0.5px;
         }
-
         .header-more {
             width: 36px;
             height: 36px;
@@ -155,23 +139,19 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             transition: all 0.2s ease;
         }
-
         .header-more:active {
             transform: scale(0.95);
             background: rgba(255, 255, 255, 0.6);
         }
-
         .header-more svg {
             width: 20px;
             height: 20px;
             color: #1c1c1e;
         }
-
         /* ==================== 上区块：计划展示区 ==================== */
         .plan-section {
             margin-bottom: 20px;
         }
-
         /* 第一行卡片 */
         .cards-row-1 {
             display: grid;
@@ -179,7 +159,6 @@
             gap: 10px;
             margin-bottom: 12px;
         }
-
         /* 卡片基础样式 */
         .card {
             background: rgba(255, 255, 255, 0.9);
@@ -191,24 +170,20 @@
             border: 1px solid rgba(255, 255, 255, 0.5);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-
         .card:active {
             transform: scale(0.98);
         }
-
         /* 今日运动计划卡片 */
         .today-plan-card {
             display: flex;
             flex-direction: column;
         }
-
         .card-header {
             display: flex;
             align-items: center;
             gap: 6px;
             margin-bottom: 10px;
         }
-
         .card-icon {
             width: 28px;
             height: 28px;
@@ -219,26 +194,22 @@
             justify-content: center;
             font-size: 14px;
         }
-
         .card-title {
             font-size: 12px;
             font-weight: 600;
             color: #1c1c1e;
         }
-
         .today-plan-subtitle {
             font-size: 11px;
             font-weight: 600;
             color: #3b82f6;
             margin-bottom: 8px;
         }
-
         .exercise-list {
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
-
         .exercise-item {
             font-size: 10px;
             color: #64748b;
@@ -247,13 +218,11 @@
             align-items: flex-start;
             gap: 4px;
         }
-
         .exercise-item::before {
             content: '•';
             color: #3b82f6;
             font-weight: bold;
         }
-
         .rest-time {
             margin-top: 6px;
             font-size: 9px;
@@ -263,7 +232,6 @@
             align-items: center;
             gap: 3px;
         }
-
         /* 训练进度卡片 */
         .progress-card {
             display: flex;
@@ -271,26 +239,22 @@
             align-items: center;
             justify-content: center;
         }
-
         .progress-ring-container {
             position: relative;
             width: 70px;
             height: 70px;
             margin-bottom: 10px;
         }
-
         .progress-ring {
             width: 100%;
             height: 100%;
             transform: rotate(-90deg);
         }
-
         .progress-ring-bg {
             fill: none;
             stroke: #e2e8f0;
             stroke-width: 6;
         }
-
         .progress-ring-fill {
             fill: none;
             stroke: url(#progressGradient);
@@ -300,7 +264,6 @@
             stroke-dashoffset: 66;
             transition: stroke-dashoffset 1s ease;
         }
-
         .progress-text {
             position: absolute;
             top: 50%;
@@ -310,23 +273,19 @@
             font-weight: 700;
             color: #1c1c1e;
         }
-
         .progress-info {
             text-align: center;
         }
-
         .progress-tasks {
             font-size: 11px;
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 2px;
         }
-
         .progress-time {
             font-size: 9px;
             color: #64748b;
         }
-
         /* 数据看板卡片 */
         .stats-card {
             display: grid;
@@ -334,14 +293,12 @@
             gap: 8px;
             padding: 12px;
         }
-
         .stat-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
         }
-
         .stat-icon {
             width: 22px;
             height: 22px;
@@ -352,44 +309,37 @@
             font-size: 11px;
             margin-bottom: 4px;
         }
-
         .stat-icon.heart { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
         .stat-icon.fire { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
         .stat-icon.chart { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
         .stat-icon.target { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-
         .stat-value {
             font-size: 13px;
             font-weight: 700;
             color: #1c1c1e;
         }
-
         .stat-label {
             font-size: 8px;
             color: #94a3b8;
             margin-top: 1px;
         }
-
         /* 第二行卡片 */
         .cards-row-2 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
         }
-
         /* 趋势图卡片 */
         .trend-card {
             display: flex;
             flex-direction: column;
         }
-
         .trend-title {
             font-size: 11px;
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 8px;
         }
-
         .trend-chart {
             flex: 1;
             display: flex;
@@ -398,7 +348,6 @@
             padding: 0 2px;
             height: 70px;
         }
-
         .trend-bar {
             width: 8px;
             background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
@@ -406,7 +355,6 @@
             position: relative;
             transition: all 0.3s ease;
         }
-
         .trend-bar:nth-child(1) { height: 45%; }
         .trend-bar:nth-child(2) { height: 65%; }
         .trend-bar:nth-child(3) { height: 55%; }
@@ -414,14 +362,12 @@
         .trend-bar:nth-child(5) { height: 70%; }
         .trend-bar:nth-child(6) { height: 90%; }
         .trend-bar:nth-child(7) { height: 75%; }
-
         .trend-label {
             font-size: 8px;
             color: #94a3b8;
             text-align: center;
             margin-top: 6px;
         }
-
         /* 智能穿戴卡片 */
         .device-card {
             display: flex;
@@ -430,7 +376,6 @@
             justify-content: center;
             text-align: center;
         }
-
         .device-icon {
             width: 40px;
             height: 40px;
@@ -443,20 +388,17 @@
             margin-bottom: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-
         .device-status {
             font-size: 11px;
             font-weight: 600;
             color: #10b981;
             margin-bottom: 2px;
         }
-
         .device-name {
             font-size: 9px;
             color: #64748b;
             margin-bottom: 8px;
         }
-
         .sync-btn {
             font-size: 9px;
             color: #3b82f6;
@@ -467,24 +409,20 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .sync-btn:active {
             background: rgba(59, 130, 246, 0.2);
         }
-
         /* 训练提醒卡片 */
         .reminder-card {
             display: flex;
             flex-direction: column;
         }
-
         .reminder-header {
             display: flex;
             align-items: center;
             gap: 6px;
             margin-bottom: 10px;
         }
-
         .reminder-icon {
             width: 22px;
             height: 22px;
@@ -495,27 +433,23 @@
             justify-content: center;
             font-size: 11px;
         }
-
         .reminder-title {
             font-size: 11px;
             font-weight: 600;
             color: #1c1c1e;
         }
-
         .reminder-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
-
         .next-exercise {
             font-size: 12px;
             font-weight: 600;
             color: #1c1c1e;
             margin-bottom: 8px;
         }
-
         .countdown {
             font-size: 24px;
             font-weight: 700;
@@ -523,13 +457,11 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: -1px;
         }
-
         .countdown-label {
             font-size: 9px;
             color: #94a3b8;
             margin-top: 2px;
         }
-
         /* ==================== 下区块：AI对话区 ==================== */
         .chat-section {
             background: rgba(255, 255, 255, 0.7);
@@ -543,7 +475,6 @@
             border: 1px solid rgba(255, 255, 255, 0.5);
             min-height: 200px;
         }
-
         .chat-header {
             display: flex;
             align-items: center;
@@ -552,7 +483,6 @@
             padding-bottom: 12px;
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
-
         .ai-avatar {
             width: 32px;
             height: 32px;
@@ -566,13 +496,11 @@
             color: white;
             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
-
         .ai-name {
             font-size: 14px;
             font-weight: 600;
             color: #1c1c1e;
         }
-
         .ai-status {
             font-size: 11px;
             color: #10b981;
@@ -580,7 +508,6 @@
             align-items: center;
             gap: 4px;
         }
-
         .ai-status::before {
             content: '';
             width: 6px;
@@ -589,12 +516,10 @@
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -602,7 +527,6 @@
             flex-direction: column;
             gap: 12px;
         }
-
         .message {
             max-width: 85%;
             padding: 12px 16px;
@@ -611,7 +535,6 @@
             line-height: 1.5;
             animation: messageSlide 0.3s ease;
         }
-
         @keyframes messageSlide {
             from {
                 opacity: 0;
@@ -622,7 +545,6 @@
                 transform: translateY(0);
             }
         }
-
         .message-ai {
             background: linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%);
             color: white;
@@ -630,14 +552,12 @@
             border-bottom-left-radius: 4px;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
-
         .message-user {
             background: #e5e7eb;
             color: #1c1c1e;
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
-
         /* 底部输入栏 */
         .chat-input-bar {
             display: flex;
@@ -646,7 +566,6 @@
             padding: 12px 0 0;
             margin-top: auto;
         }
-
         .voice-btn, .more-btn {
             width: 40px;
             height: 40px;
@@ -658,37 +577,30 @@
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
-
         .voice-btn {
             background: rgba(59, 130, 246, 0.1);
             color: #3b82f6;
         }
-
         .voice-btn:active {
             background: rgba(59, 130, 246, 0.2);
             transform: scale(0.95);
         }
-
         .more-btn {
             background: rgba(0, 0, 0, 0.05);
             color: #64748b;
         }
-
         .more-btn:active {
             background: rgba(0, 0, 0, 0.1);
             transform: scale(0.95);
         }
-
         .voice-btn svg, .more-btn svg {
             width: 20px;
             height: 20px;
         }
-
         .input-wrapper {
             flex: 1;
             position: relative;
         }
-
         .chat-input {
             width: 100%;
             height: 40px;
@@ -701,15 +613,12 @@
             outline: none;
             transition: all 0.2s ease;
         }
-
         .chat-input::placeholder {
             color: #94a3b8;
         }
-
         .chat-input:focus {
             background: rgba(0, 0, 0, 0.08);
         }
-
         /* 底部导航栏 */
         .tab-bar {
             display: flex;
@@ -721,7 +630,6 @@
             border-top: 1px solid rgba(0, 0, 0, 0.05);
             padding-bottom: 20px;
         }
-
         .tab-item {
             display: flex;
             flex-direction: column;
@@ -731,29 +639,24 @@
             transition: all 0.2s ease;
             padding: 8px 20px;
         }
-
         .tab-item.active .tab-icon {
             color: #3b82f6;
         }
-
         .tab-item.active .tab-label {
             color: #3b82f6;
         }
-
         .tab-icon {
             width: 24px;
             height: 24px;
             color: #94a3b8;
             transition: color 0.2s ease;
         }
-
         .tab-label {
             font-size: 11px;
             color: #94a3b8;
             font-weight: 500;
             transition: color 0.2s ease;
         }
-
         /* Home条 */
         .home-indicator {
             position: absolute;
@@ -766,7 +669,6 @@
             border-radius: 3px;
             z-index: 1000;
         }
-
         /* SVG渐变定义 */
         .svg-defs {
             position: absolute;
@@ -785,13 +687,11 @@
             </linearGradient>
         </defs>
     </svg>
-
     <!-- iPhone 15 Pro 框架 -->
     <div class="iphone-frame">
         <div class="iphone-screen">
             <!-- 灵动岛 -->
             <div class="dynamic-island"></div>
-
             <!-- 状态栏 -->
             <div class="status-bar">
                 <div class="status-time">9:41</div>
@@ -807,7 +707,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- 主内容区域 -->
             <div class="main-content">
                 <!-- 顶部标题栏 -->
@@ -821,7 +720,6 @@
                         </svg>
                     </div>
                 </div>
-
                 <!-- ==================== 上区块：计划展示区 ==================== -->
                 <div class="plan-section">
                     <!-- 第一行：3个卡片 -->
@@ -829,7 +727,7 @@
                         <!-- 今日运动计划 -->
                         <div class="card today-plan-card">
                             <div class="card-header">
-                                <div class="card-icon">💪</div>
+                                <div class="card-icon">strength</div>
                                 <div class="card-title">今日计划</div>
                             </div>
                             <div class="today-plan-subtitle">上肢力量训练</div>
@@ -843,7 +741,6 @@
                                 <span>组间休息 60秒</span>
                             </div>
                         </div>
-
                         <!-- 训练进度条 -->
                         <div class="card progress-card">
                             <div class="progress-ring-container">
@@ -858,32 +755,30 @@
                                 <div class="progress-time">剩余时长：28分钟</div>
                             </div>
                         </div>
-
                         <!-- 数据看板 -->
                         <div class="card stats-card">
                             <div class="stat-item">
-                                <div class="stat-icon heart">❤️</div>
+                                <div class="stat-icon heart">heart</div>
                                 <div class="stat-value">135</div>
                                 <div class="stat-label">心率/分</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-icon fire">🔥</div>
+                                <div class="stat-icon fire">intensity</div>
                                 <div class="stat-value">428</div>
                                 <div class="stat-label">大卡</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-icon chart">📊</div>
+                                <div class="stat-icon chart">chart</div>
                                 <div class="stat-value">65%</div>
                                 <div class="stat-label">训练率</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-icon target">🎯</div>
+                                <div class="stat-icon target">target</div>
                                 <div class="stat-value">72%</div>
                                 <div class="stat-label">目标度</div>
                             </div>
                         </div>
                     </div>
-
                     <!-- 第二行：3个卡片 -->
                     <div class="cards-row-2">
                         <!-- 7天训练趋势图 -->
@@ -900,7 +795,6 @@
                             </div>
                             <div class="trend-label">近7天训练时长</div>
                         </div>
-
                         <!-- 智能穿戴对接 -->
                         <div class="card device-card">
                             <div class="device-icon">⌚</div>
@@ -908,7 +802,6 @@
                             <div class="device-name">Apple Watch</div>
                             <div class="sync-btn">同步数据</div>
                         </div>
-
                         <!-- 训练提醒 -->
                         <div class="card reminder-card">
                             <div class="reminder-header">
@@ -923,7 +816,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- ==================== 下区块：AI对话区 ==================== -->
                 <div class="chat-section">
                     <div class="chat-header">
@@ -957,7 +849,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- 底部导航栏 -->
             <div class="tab-bar">
                 <div class="tab-item active">
@@ -985,50 +876,40 @@
                     <span class="tab-label">我的</span>
                 </div>
             </div>
-
             <!-- Home条 -->
             <div class="home-indicator"></div>
         </div>
     </div>
-
     <script>
         // 倒计时功能
         let countdownTime = 10;
         const countdownElement = document.querySelector('.countdown');
-        
         function updateCountdown() {
             const minutes = Math.floor(countdownTime / 60);
             const seconds = countdownTime % 60;
-            countdownElement.textContent = 
+            countdownElement.textContent =
                 String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
-            
             if (countdownTime > 0) {
                 countdownTime--;
             } else {
                 countdownTime = 60; // 重置
             }
         }
-        
         setInterval(updateCountdown, 1000);
-
         // 进度环动画
         setTimeout(() => {
             const progressRing = document.querySelector('.progress-ring-fill');
             progressRing.style.strokeDashoffset = 66;
         }, 500);
-
         // 输入框焦点效果
         const chatInput = document.querySelector('.chat-input');
         const chatSection = document.querySelector('.chat-section');
-        
         chatInput.addEventListener('focus', () => {
             chatSection.style.background = 'rgba(255, 255, 255, 0.95)';
         });
-        
         chatInput.addEventListener('blur', () => {
             chatSection.style.background = 'rgba(255, 255, 255, 0.7)';
         });
-
         // Tab切换
         const tabItems = document.querySelectorAll('.tab-item');
         tabItems.forEach(item => {
@@ -1037,7 +918,6 @@
                 item.classList.add('active');
             });
         });
-
         // 同步按钮交互
         const syncBtn = document.querySelector('.sync-btn');
         syncBtn.addEventListener('click', function() {

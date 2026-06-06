@@ -43,6 +43,18 @@ public class User implements Serializable {
 
     private BigDecimal weight;
 
+    private BigDecimal waistCircumference;
+
+    private Integer systolicPressure;
+
+    private Integer diastolicPressure;
+
+    private Integer restingHeartRate;
+
+    private Integer avgExerciseHeartRate;
+
+    private Integer maxHeartRate;
+
     private Integer role;
 
     private Integer status;

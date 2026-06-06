@@ -10,7 +10,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(180deg, #f0f4f8 0%, #e8eef5 100%);
@@ -20,7 +19,6 @@
             min-height: 100vh;
             padding: 20px;
         }
-
         /* iPhone 15 Pro 框架 */
         .iphone-frame {
             width: 393px;
@@ -28,12 +26,11 @@
             background: #000;
             border-radius: 55px;
             padding: 12px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3), 
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3),
                         0 10px 30px rgba(0, 0, 0, 0.2),
                         inset 0 0 0 2px #333;
             position: relative;
         }
-
         .iphone-screen {
             width: 100%;
             height: 100%;
@@ -44,7 +41,6 @@
             display: flex;
             flex-direction: column;
         }
-
         /* 灵动岛 */
         .dynamic-island {
             position: absolute;
@@ -57,7 +53,6 @@
             border-radius: 20px;
             z-index: 1000;
         }
-
         /* 状态栏 */
         .status-bar {
             display: flex;
@@ -67,25 +62,21 @@
             height: 54px;
             background: transparent;
         }
-
         .status-time {
             font-size: 17px;
             font-weight: 600;
             color: #1c1c1e;
             letter-spacing: -0.5px;
         }
-
         .status-icons {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-
         .signal-icon, .wifi-icon {
             width: 18px;
             height: 12px;
         }
-
         .battery-icon {
             width: 27px;
             height: 13px;
@@ -96,7 +87,6 @@
             align-items: center;
             padding: 2px;
         }
-
         .battery-icon::after {
             content: '';
             position: absolute;
@@ -106,14 +96,12 @@
             background: #1c1c1e;
             border-radius: 0 1px 1px 0;
         }
-
         .battery-level {
             width: 80%;
             height: 100%;
             background: #1c1c1e;
             border-radius: 1.5px;
         }
-
         /* 主内容区域 */
         .main-content {
             flex: 1;
@@ -122,22 +110,18 @@
             display: flex;
             flex-direction: column;
         }
-
         .main-content::-webkit-scrollbar {
             display: none;
         }
-
         /* ==================== 自定义导航栏 ==================== */
         .custom-nav {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
-
         .nav-status-bar {
             height: 44px;
         }
-
         .nav-content {
             display: flex;
             justify-content: space-between;
@@ -145,13 +129,11 @@
             padding: 12px 24px;
             height: 56px;
         }
-
         .nav-left .nav-title {
             font-size: 22px;
             font-weight: 700;
             color: #1c1c1e;
         }
-
         .nav-right .stat-badge {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             padding: 8px 16px;
@@ -160,38 +142,32 @@
             align-items: baseline;
             gap: 2px;
         }
-
         .stat-num {
             font-size: 18px;
             font-weight: 700;
             color: white;
         }
-
         .stat-total {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.8);
         }
-
         /* ==================== 日历式日期选择器 ==================== */
         .calendar-header {
             background: white;
             padding: 16px 24px;
             border-bottom: 1px solid #f1f5f9;
         }
-
         .calendar-title {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
         }
-
         .current-month {
             font-size: 20px;
             font-weight: 700;
             color: #1c1c1e;
         }
-
         .expand-btn {
             width: 36px;
             height: 36px;
@@ -203,28 +179,23 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .expand-btn:hover {
             background: #e2e8f0;
         }
-
         .expand-icon {
             font-size: 14px;
             color: #64748b;
             transition: transform 0.3s ease;
         }
-
         .expand-icon.expanded {
             transform: rotate(180deg);
         }
-
         /* 星期标题 */
         .week-header {
             display: flex;
             justify-content: space-around;
             margin-bottom: 12px;
         }
-
         .week-day-title {
             width: 40px;
             text-align: center;
@@ -232,17 +203,14 @@
             color: #64748b;
             font-weight: 500;
         }
-
         .week-day-title.weekend {
             color: #f97316;
         }
-
         /* 本周7天网格（默认显示） */
         .week-grid {
             display: flex;
             justify-content: space-around;
         }
-
         .week-day {
             width: 40px;
             height: 50px;
@@ -255,47 +223,37 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .week-day:hover {
             background: #f1f5f9;
         }
-
         .week-day.weekend .day-number {
             color: #f97316;
         }
-
         .week-day.today {
             background: rgba(59, 130, 246, 0.1);
         }
-
         .week-day.today .day-number {
             color: #3b82f6;
             font-weight: 700;
         }
-
         .week-day.active {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         }
-
         .week-day.active .day-number {
             color: white;
             font-weight: 700;
         }
-
         .week-day.active .day-dot {
             background: white;
         }
-
         .week-day.has-task:not(.active) .day-dot {
             background: #3b82f6;
         }
-
         .week-day .day-number {
             font-size: 17px;
             color: #1c1c1e;
             font-weight: 600;
         }
-
         .week-day .day-dot {
             position: absolute;
             bottom: 6px;
@@ -304,14 +262,12 @@
             background: transparent;
             border-radius: 50%;
         }
-
         /* 日历网格（展开后显示） */
         .calendar-grid {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-around;
         }
-
         .calendar-day {
             width: 40px;
             height: 40px;
@@ -325,51 +281,40 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .calendar-day:hover {
             background: #f1f5f9;
         }
-
         .calendar-day.other-month {
             opacity: 0.4;
         }
-
         .calendar-day.weekend .day-number {
             color: #f97316;
         }
-
         .calendar-day.today {
             background: rgba(59, 130, 246, 0.1);
         }
-
         .calendar-day.today .day-number {
             color: #3b82f6;
             font-weight: 700;
         }
-
         .calendar-day.active {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         }
-
         .calendar-day.active .day-number {
             color: white;
             font-weight: 700;
         }
-
         .calendar-day.active .day-dot {
             background: white;
         }
-
         .calendar-day.has-task:not(.active) .day-dot {
             background: #3b82f6;
         }
-
         .day-number {
             font-size: 15px;
             color: #1c1c1e;
             font-weight: 500;
         }
-
         .day-dot {
             position: absolute;
             bottom: 4px;
@@ -378,7 +323,6 @@
             background: transparent;
             border-radius: 50%;
         }
-
         /* 月份选择器（展开状态） */
         .month-picker {
             margin-top: 16px;
@@ -386,7 +330,6 @@
             border-top: 1px solid #f1f5f9;
             animation: slideDown 0.3s ease;
         }
-
         @keyframes slideDown {
             from {
                 opacity: 0;
@@ -397,7 +340,6 @@
                 transform: translateY(0);
             }
         }
-
         .month-picker-header {
             display: flex;
             justify-content: center;
@@ -405,7 +347,6 @@
             gap: 24px;
             margin-bottom: 16px;
         }
-
         .year-nav {
             font-size: 24px;
             color: #64748b;
@@ -413,23 +354,19 @@
             font-weight: 300;
             cursor: pointer;
         }
-
         .year-nav:hover {
             color: #3b82f6;
         }
-
         .picker-year {
             font-size: 18px;
             font-weight: 600;
             color: #1c1c1e;
         }
-
         .month-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
         }
-
         .month-item {
             height: 44px;
             background: #f8fafc;
@@ -440,33 +377,26 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .month-item:hover {
             background: #e2e8f0;
         }
-
         .month-item.active {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         }
-
         .month-item.active .month-name {
             color: white;
             font-weight: 600;
         }
-
         .month-item.current:not(.active) {
             background: rgba(59, 130, 246, 0.1);
         }
-
         .month-item.current:not(.active) .month-name {
             color: #3b82f6;
         }
-
         .month-name {
             font-size: 14px;
             color: #64748b;
         }
-
         /* ==================== 流程图内容 ==================== */
         .flow-content {
             flex: 1;
@@ -474,16 +404,13 @@
             overflow-y: auto;
             scrollbar-width: none;
         }
-
         .flow-content::-webkit-scrollbar {
             display: none;
         }
-
         /* ==================== 目标节点 ==================== */
         .goal-node {
             margin-bottom: 24px;
         }
-
         .goal-card {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             border-radius: 20px;
@@ -493,39 +420,32 @@
             gap: 14px;
             box-shadow: 0 6px 24px rgba(59, 130, 246, 0.3);
         }
-
         .goal-icon {
             font-size: 36px;
         }
-
         .goal-info {
             flex: 1;
         }
-
         .goal-title {
             font-size: 20px;
             font-weight: 700;
             color: white;
             display: block;
         }
-
         .goal-desc {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.8);
             margin-top: 2px;
         }
-
         .goal-progress {
             text-align: center;
         }
-
         .progress-text {
             font-size: 24px;
             font-weight: 700;
             color: white;
             display: block;
         }
-
         .progress-mini {
             width: 50px;
             height: 5px;
@@ -534,19 +454,16 @@
             margin-top: 6px;
             overflow: hidden;
         }
-
         .progress-mini-fill {
             height: 100%;
             background: white;
             border-radius: 3px;
             transition: width 0.3s ease;
         }
-
         /* ==================== 任务链 ==================== */
         .task-chain {
             position: relative;
         }
-
         .task-chain::before {
             content: '';
             position: absolute;
@@ -557,23 +474,19 @@
             background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
             z-index: 0;
         }
-
         .task-node-wrapper {
             position: relative;
             margin-bottom: 20px;
             transition: all 0.3s ease;
         }
-
         .task-node-wrapper.selected .task-node {
             border-color: #3b82f6;
             box-shadow: 0 6px 24px rgba(59, 130, 246, 0.2);
             transform: scale(1.02);
         }
-
         .task-node-wrapper.completed .task-node {
             opacity: 0.85;
         }
-
         /* 连接线 */
         .connector {
             position: absolute;
@@ -583,7 +496,6 @@
             height: 20px;
             z-index: 1;
         }
-
         .connector-line {
             position: absolute;
             top: 0;
@@ -593,11 +505,9 @@
             background: #e2e8f0;
             transition: all 0.3s ease;
         }
-
         .connector-line.active {
             background: linear-gradient(180deg, #10b981 0%, #059669 100%);
         }
-
         .connector-dot {
             position: absolute;
             top: 50%;
@@ -610,12 +520,10 @@
             border-radius: 50%;
             transition: all 0.3s ease;
         }
-
         .connector-dot.completed {
             background: #10b981;
             border-color: #10b981;
         }
-
         /* 任务卡片 */
         .task-node {
             background: rgba(255, 255, 255, 0.95);
@@ -628,11 +536,9 @@
             transition: all 0.2s ease;
             cursor: pointer;
         }
-
         .task-node:hover {
             transform: scale(1.01);
         }
-
         /* 优先级标签 */
         .priority-tag {
             position: absolute;
@@ -643,22 +549,18 @@
             font-size: 11px;
             font-weight: 600;
         }
-
         .priority-tag.priority-high {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             color: #dc2626;
         }
-
         .priority-tag.priority-medium {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             color: #d97706;
         }
-
         .priority-tag.priority-low {
             background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
             color: #059669;
         }
-
         /* 拖拽手柄 */
         .drag-handle {
             position: absolute;
@@ -673,36 +575,30 @@
             opacity: 0.4;
             cursor: grab;
         }
-
         .drag-handle:active {
             cursor: grabbing;
         }
-
         .drag-lines {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
-
         .drag-line {
             width: 18px;
             height: 3px;
             background: #94a3b8;
             border-radius: 2px;
         }
-
         /* 任务内容 */
         .task-content {
             padding-right: 50px;
         }
-
         .task-main {
             display: flex;
             align-items: center;
             gap: 12px;
             margin-bottom: 12px;
         }
-
         .task-icon-wrapper {
             width: 48px;
             height: 48px;
@@ -712,48 +608,38 @@
             justify-content: center;
             flex-shrink: 0;
         }
-
         .icon-bg-warmup {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
         }
-
         .icon-bg-strength {
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
         }
-
         .icon-bg-cardio {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
         }
-
         .icon-bg-core {
             background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
         }
-
         .icon-bg-stretch {
             background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         }
-
         .task-icon {
             font-size: 24px;
         }
-
         .task-info {
             flex: 1;
         }
-
         .task-name {
             font-size: 17px;
             font-weight: 600;
             color: #1c1c1e;
             display: block;
         }
-
         .task-duration {
             font-size: 13px;
             color: #64748b;
             margin-top: 2px;
         }
-
         .task-detail {
             display: flex;
             gap: 20px;
@@ -762,24 +648,20 @@
             border-radius: 10px;
             margin-bottom: 10px;
         }
-
         .detail-item {
             display: flex;
             align-items: center;
             gap: 4px;
         }
-
         .detail-label {
             font-size: 12px;
             color: #94a3b8;
         }
-
         .detail-value {
             font-size: 13px;
             font-weight: 600;
             color: #1c1c1e;
         }
-
         .task-status {
             display: flex;
             align-items: center;
@@ -787,31 +669,25 @@
             padding-top: 10px;
             border-top: 1px solid #f1f5f9;
         }
-
         .task-status.status-0 .status-icon,
         .task-status.status-0 .status-text {
             color: #94a3b8;
         }
-
         .task-status.status-1 .status-icon,
         .task-status.status-1 .status-text {
             color: #3b82f6;
         }
-
         .task-status.status-2 .status-icon,
         .task-status.status-2 .status-text {
             color: #10b981;
         }
-
         .status-icon {
             font-size: 14px;
         }
-
         .status-text {
             font-size: 13px;
             font-weight: 500;
         }
-
         /* 完成遮罩 */
         .completed-overlay {
             position: absolute;
@@ -825,7 +701,6 @@
             align-items: center;
             justify-content: center;
         }
-
         .completed-icon {
             width: 44px;
             height: 44px;
@@ -838,7 +713,6 @@
             font-size: 22px;
             font-weight: 700;
         }
-
         /* 顺序序号 */
         .order-badge {
             position: absolute;
@@ -858,7 +732,6 @@
             color: #64748b;
             z-index: 2;
         }
-
         /* ==================== 训练计划切换 ==================== */
         .plan-switcher {
             display: flex;
@@ -867,7 +740,6 @@
             gap: 12px;
             border-bottom: 1px solid #f1f5f9;
         }
-
         .plan-tab {
             flex: 1;
             display: flex;
@@ -880,30 +752,24 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .plan-tab:hover {
             background: #e2e8f0;
         }
-
         .plan-tab.active {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
         }
-
         .plan-tab.active .plan-icon,
         .plan-tab.active .plan-name {
             color: white;
         }
-
         .plan-icon {
             font-size: 20px;
         }
-
         .plan-name {
             font-size: 16px;
             font-weight: 600;
             color: #64748b;
         }
-
         /* ==================== 补水卡片 ==================== */
         .water-card {
             margin: 16px 0;
@@ -918,36 +784,29 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .water-card:hover {
             transform: scale(1.02);
         }
-
         .water-card:active {
             transform: scale(0.98);
         }
-
         .water-icon {
             font-size: 36px;
         }
-
         .water-info {
             flex: 1;
         }
-
         .water-title {
             font-size: 18px;
             font-weight: 700;
             color: white;
             display: block;
         }
-
         .water-subtitle {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.8);
             margin-top: 2px;
         }
-
         .water-progress .water-circle {
             width: 56px;
             height: 56px;
@@ -959,18 +818,15 @@
             justify-content: center;
             border: 3px solid rgba(255, 255, 255, 0.4);
         }
-
         .water-amount {
             font-size: 18px;
             font-weight: 700;
             color: white;
         }
-
         .water-unit {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.8);
         }
-
         /* 补水弹窗 */
         .water-popup {
             position: fixed;
@@ -984,11 +840,9 @@
             justify-content: center;
             z-index: 1000;
         }
-
         .water-popup.show {
             display: flex;
         }
-
         .water-popup-content {
             width: 80%;
             max-width: 320px;
@@ -997,87 +851,74 @@
             padding: 28px;
             animation: slideUp 0.3s ease;
         }
-
         @keyframes slideUp {
-            from { 
+            from {
                 opacity: 0;
                 transform: translateY(30px);
             }
-            to { 
+            to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-
         .water-popup-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 28px;
         }
-
         .water-popup-title {
             font-size: 22px;
             font-weight: 700;
             color: #1c1c1e;
         }
-
         .water-popup-close {
             font-size: 24px;
             color: #94a3b8;
             cursor: pointer;
             padding: 6px;
         }
-
         .water-current {
             text-align: center;
             margin-bottom: 22px;
         }
-
         .water-current-label {
             font-size: 14px;
             color: #64748b;
             display: block;
             margin-bottom: 6px;
         }
-
         .water-current-value {
             font-size: 36px;
             font-weight: 700;
             color: #0ea5e9;
         }
-
         .water-target {
             margin-bottom: 28px;
         }
-
         .water-target-label {
             font-size: 13px;
             color: #64748b;
             display: block;
             margin-bottom: 10px;
         }
-
         .water-progress-bar {
             height: 10px;
             background: #e2e8f0;
             border-radius: 5px;
             overflow: hidden;
         }
-
         .water-progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%);
             border-radius: 5px;
             transition: width 0.3s ease;
         }
-
         .water-buttons {
             display: flex;
             justify-content: space-around;
             gap: 12px;
         }
-
         .water-btn {
             flex: 1;
             display: flex;
@@ -1090,39 +931,32 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .water-btn:hover {
             background: #e2e8f0;
         }
-
         .water-btn-icon {
             font-size: 32px;
         }
-
         .water-btn-text {
             font-size: 13px;
             font-weight: 600;
             color: #1c1c1e;
         }
-
         .water-popup-footer {
             margin-top: 20px;
             text-align: center;
         }
-
         .water-reset {
             font-size: 14px;
             color: #94a3b8;
             cursor: pointer;
             padding: 8px 20px;
         }
-
         /* ==================== 结束节点 ==================== */
         .end-node {
             margin-top: 10px;
             margin-left: 50px;
         }
-
         .end-card {
             background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
             border-radius: 20px;
@@ -1133,17 +967,14 @@
             gap: 10px;
             box-shadow: 0 6px 24px rgba(245, 158, 11, 0.3);
         }
-
         .end-text {
             font-size: 16px;
             font-weight: 600;
             color: white;
         }
-
         .end-icon {
             font-size: 26px;
         }
-
         /* ==================== 底部操作栏 ==================== */
         .flow-footer {
             background: white;
@@ -1154,29 +985,24 @@
             box-shadow: 0 -3px 24px rgba(0, 0, 0, 0.08);
             z-index: 100;
         }
-
         .footer-info {
             flex: 1;
         }
-
         .selected-name {
             font-size: 16px;
             font-weight: 600;
             color: #1c1c1e;
             display: block;
         }
-
         .selected-status {
             font-size: 12px;
             color: #64748b;
             margin-top: 2px;
         }
-
         .footer-actions {
             display: flex;
             gap: 10px;
         }
-
         .action-btn {
             min-width: 90px;
             height: 42px;
@@ -1187,27 +1013,22 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
-
         .action-btn:active {
             opacity: 0.9;
             transform: scale(0.95);
         }
-
         .start-btn {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             color: white;
         }
-
         .continue-btn {
             background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
             color: white;
         }
-
         .done-btn {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
         }
-
         /* ==================== 底部导航栏 ==================== */
         .tab-bar {
             display: flex;
@@ -1219,7 +1040,6 @@
             border-top: 1px solid rgba(0, 0, 0, 0.05);
             padding-bottom: 20px;
         }
-
         .tab-item {
             display: flex;
             flex-direction: column;
@@ -1229,29 +1049,24 @@
             transition: all 0.2s ease;
             padding: 8px 24px;
         }
-
         .tab-item.active .tab-icon {
             color: #3b82f6;
         }
-
         .tab-item.active .tab-label {
             color: #3b82f6;
         }
-
         .tab-icon {
             width: 24px;
             height: 24px;
             color: #94a3b8;
             transition: color 0.2s ease;
         }
-
         .tab-label {
             font-size: 11px;
             color: #94a3b8;
             font-weight: 500;
             transition: color 0.2s ease;
         }
-
         /* Home条 */
         .home-indicator {
             position: absolute;
@@ -1264,18 +1079,15 @@
             border-radius: 3px;
             z-index: 1000;
         }
-
         /* 底部留白 */
         .bottom-spacer {
             height: 20px;
         }
-
         /* 选中高亮动画 */
         @keyframes pulse {
             0%, 100% { box-shadow: 0 6px 24px rgba(59, 130, 246, 0.2); }
             50% { box-shadow: 0 6px 32px rgba(59, 130, 246, 0.35); }
         }
-
         .task-node-wrapper.selected .task-node {
             animation: pulse 2s infinite;
         }
@@ -1287,7 +1099,6 @@
         <div class="iphone-screen">
             <!-- 灵动岛 -->
             <div class="dynamic-island"></div>
-
             <!-- 状态栏 -->
             <div class="status-bar">
                 <div class="status-time">9:41</div>
@@ -1303,7 +1114,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- 主内容区域 -->
             <div class="main-content">
                 <!-- 自定义导航栏 -->
@@ -1321,19 +1131,17 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- 训练计划切换 -->
                 <div class="plan-switcher">
                     <div class="plan-tab" onclick="switchPlan('strength')">
-                        <span class="plan-icon">💪</span>
+                        <span class="plan-icon">strength</span>
                         <span class="plan-name">力量训练</span>
                     </div>
                     <div class="plan-tab active" onclick="switchPlan('running')">
-                        <span class="plan-icon">🏃</span>
+                        <span class="plan-icon">run</span>
                         <span class="plan-name">5km跑步</span>
                     </div>
                 </div>
-
                 <!-- 日历式日期选择器（默认只显示本周） -->
                 <div class="calendar-header">
                     <div class="calendar-title">
@@ -1342,7 +1150,6 @@
                             <span class="expand-icon" id="expandIcon">▼</span>
                         </div>
                     </div>
-                    
                     <!-- 星期标题 -->
                     <div class="week-header">
                         <span class="week-day-title weekend">日</span>
@@ -1353,7 +1160,6 @@
                         <span class="week-day-title">五</span>
                         <span class="week-day-title weekend">六</span>
                     </div>
-                    
                     <!-- 本周7天（默认显示） -->
                     <div class="week-grid" id="weekGrid">
                         <div class="week-day">
@@ -1382,7 +1188,6 @@
                             <div class="day-dot"></div>
                         </div>
                     </div>
-                    
                     <!-- 完整月历（展开后显示） -->
                     <div class="calendar-grid" id="calendarGrid" style="display: none;">
                         <!-- 上月日期 -->
@@ -1502,7 +1307,6 @@
                             <span class="day-number">2</span>
                         </div>
                     </div>
-                    
                     <!-- 展开的月份选择器（展开后显示） -->
                     <div class="month-picker" id="monthPicker" style="display: none;">
                         <div class="month-picker-header">
@@ -1550,13 +1354,12 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- 流程图内容 -->
                 <div class="flow-content">
                     <!-- 目标节点 -->
                     <div class="goal-node">
                         <div class="goal-card">
-                            <div class="goal-icon">🎯</div>
+                            <div class="goal-icon">target</div>
                             <div class="goal-info">
                                 <span class="goal-title">增肌塑形计划</span>
                                 <span class="goal-desc">12周增肌训练，提升力量与体型</span>
@@ -1569,7 +1372,6 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- 任务链 -->
                     <div class="task-chain">
                         <!-- 任务1: 热身慢跑 -->
@@ -1578,7 +1380,6 @@
                                 <div class="connector-line"></div>
                                 <div class="connector-dot"></div>
                             </div>
-
                             <div class="task-node">
                                 <div class="priority-tag priority-high">高</div>
                                 <div class="drag-handle">
@@ -1588,18 +1389,16 @@
                                         <div class="drag-line"></div>
                                     </div>
                                 </div>
-
                                 <div class="task-content">
                                     <div class="task-main">
                                         <div class="task-icon-wrapper icon-bg-warmup">
-                                            <span class="task-icon">🔥</span>
+                                            <span class="task-icon">intensity</span>
                                         </div>
                                         <div class="task-info">
                                             <span class="task-name">热身慢跑</span>
                                             <span class="task-duration">8分钟</span>
                                         </div>
                                     </div>
-
                                     <div class="task-detail">
                                         <div class="detail-item">
                                             <span class="detail-label">距离</span>
@@ -1610,24 +1409,20 @@
                                             <span class="detail-value">60卡</span>
                                         </div>
                                     </div>
-
                                     <div class="task-status status-0">
                                         <span class="status-icon">○</span>
                                         <span class="status-text">未开始</span>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="order-badge">1</div>
                         </div>
-
                         <!-- 任务2: 动态拉伸 -->
                         <div class="task-node-wrapper">
                             <div class="connector">
                                 <div class="connector-line"></div>
                                 <div class="connector-dot"></div>
                             </div>
-
                             <div class="task-node">
                                 <div class="priority-tag priority-high">高</div>
                                 <div class="drag-handle">
@@ -1637,42 +1432,36 @@
                                         <div class="drag-line"></div>
                                     </div>
                                 </div>
-
                                 <div class="task-content">
                                     <div class="task-main">
                                         <div class="task-icon-wrapper icon-bg-warmup">
-                                            <span class="task-icon">🦵</span>
+                                            <span class="task-icon">strength</span>
                                         </div>
                                         <div class="task-info">
                                             <span class="task-name">动态拉伸</span>
                                             <span class="task-duration">5分钟</span>
                                         </div>
                                     </div>
-
                                     <div class="task-detail">
                                         <div class="detail-item">
                                             <span class="detail-label">消耗</span>
                                             <span class="detail-value">20卡</span>
                                         </div>
                                     </div>
-
                                     <div class="task-status status-0">
                                         <span class="status-icon">○</span>
                                         <span class="status-text">未开始</span>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="order-badge">2</div>
                         </div>
-
                         <!-- 任务3: 800米间歇跑 -->
                         <div class="task-node-wrapper selected">
                             <div class="connector">
                                 <div class="connector-line"></div>
                                 <div class="connector-dot"></div>
                             </div>
-
                             <div class="task-node">
                                 <div class="priority-tag priority-high">高</div>
                                 <div class="drag-handle">
@@ -1682,18 +1471,16 @@
                                         <div class="drag-line"></div>
                                     </div>
                                 </div>
-
                                 <div class="task-content">
                                     <div class="task-main">
                                         <div class="task-icon-wrapper icon-bg-cardio">
-                                            <span class="task-icon">⚡</span>
+                                            <span class="task-icon">hiit</span>
                                         </div>
                                         <div class="task-info">
                                             <span class="task-name">800米间歇跑</span>
                                             <span class="task-duration">25分钟</span>
                                         </div>
                                     </div>
-
                                     <div class="task-detail">
                                         <div class="detail-item">
                                             <span class="detail-label">距离</span>
@@ -1708,24 +1495,20 @@
                                             <span class="detail-value">280卡</span>
                                         </div>
                                     </div>
-
                                     <div class="task-status status-1">
                                         <span class="status-icon">▶</span>
                                         <span class="status-text">进行中</span>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="order-badge">3</div>
                         </div>
-
                         <!-- 任务4: 冷身慢跑 -->
                         <div class="task-node-wrapper">
                             <div class="connector">
                                 <div class="connector-line"></div>
                                 <div class="connector-dot"></div>
                             </div>
-
                             <div class="task-node">
                                 <div class="priority-tag priority-medium">中</div>
                                 <div class="drag-handle">
@@ -1735,18 +1518,16 @@
                                         <div class="drag-line"></div>
                                     </div>
                                 </div>
-
                                 <div class="task-content">
                                     <div class="task-main">
                                         <div class="task-icon-wrapper icon-bg-stretch">
-                                            <span class="task-icon">🍃</span>
+                                            <span class="task-icon">stretch</span>
                                         </div>
                                         <div class="task-info">
                                             <span class="task-name">冷身慢跑</span>
                                             <span class="task-duration">6分钟</span>
                                         </div>
                                     </div>
-
                                     <div class="task-detail">
                                         <div class="detail-item">
                                             <span class="detail-label">距离</span>
@@ -1757,24 +1538,20 @@
                                             <span class="detail-value">40卡</span>
                                         </div>
                                     </div>
-
                                     <div class="task-status status-0">
                                         <span class="status-icon">○</span>
                                         <span class="status-text">未开始</span>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="order-badge">4</div>
                         </div>
-
                         <!-- 任务5: 结束拉伸 -->
                         <div class="task-node-wrapper">
                             <div class="connector">
                                 <div class="connector-line"></div>
                                 <div class="connector-dot"></div>
                             </div>
-
                             <div class="task-node">
                                 <div class="priority-tag priority-medium">中</div>
                                 <div class="drag-handle">
@@ -1784,39 +1561,34 @@
                                         <div class="drag-line"></div>
                                     </div>
                                 </div>
-
                                 <div class="task-content">
                                     <div class="task-main">
                                         <div class="task-icon-wrapper icon-bg-stretch">
-                                            <span class="task-icon">🧘</span>
+                                            <span class="task-icon">stretch</span>
                                         </div>
                                         <div class="task-info">
                                             <span class="task-name">结束拉伸</span>
                                             <span class="task-duration">6分钟</span>
                                         </div>
                                     </div>
-
                                     <div class="task-detail">
                                         <div class="detail-item">
                                             <span class="detail-label">消耗</span>
                                             <span class="detail-value">15卡</span>
                                         </div>
                                     </div>
-
                                     <div class="task-status status-0">
                                         <span class="status-icon">○</span>
                                         <span class="status-text">未开始</span>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="order-badge">5</div>
                         </div>
                     </div>
-
                     <!-- 补水卡片 -->
                     <div class="water-card" onclick="showWaterPopup()">
-                        <div class="water-icon">💧</div>
+                        <div class="water-icon">hydration</div>
                         <div class="water-info">
                             <span class="water-title">补水提醒</span>
                             <span class="water-subtitle">保持水分，提升运动表现</span>
@@ -1828,13 +1600,12 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- 补水弹窗 -->
                     <div class="water-popup" id="waterPopup" onclick="hideWaterPopup()">
                         <div class="water-popup-content" onclick="event.stopPropagation()">
                             <div class="water-popup-header">
-                                <span class="water-popup-title">💧 补水记录</span>
-                                <span class="water-popup-close" onclick="hideWaterPopup()">✕</span>
+                                <span class="water-popup-title">hydration 补水记录</span>
+                                <span class="water-popup-close" onclick="hideWaterPopup()">close</span>
                             </div>
                             <div class="water-popup-body">
                                 <div class="water-current">
@@ -1849,15 +1620,15 @@
                                 </div>
                                 <div class="water-buttons">
                                     <div class="water-btn" onclick="addWater(150)">
-                                        <span class="water-btn-icon">🥤</span>
+                                        <span class="water-btn-icon">drink</span>
                                         <span class="water-btn-text">+150ml</span>
                                     </div>
                                     <div class="water-btn" onclick="addWater(250)">
-                                        <span class="water-btn-icon">🥛</span>
+                                        <span class="water-btn-icon">drink</span>
                                         <span class="water-btn-text">+250ml</span>
                                     </div>
                                     <div class="water-btn" onclick="addWater(500)">
-                                        <span class="water-btn-icon">🧴</span>
+                                        <span class="water-btn-icon">bottle</span>
                                         <span class="water-btn-text">+500ml</span>
                                     </div>
                                 </div>
@@ -1867,18 +1638,15 @@
                             </div>
                         </div>
                     </div>
-
                     <!-- 结束节点 -->
                     <div class="end-node">
                         <div class="end-card">
                             <span class="end-text">今日训练完成</span>
-                            <span class="end-icon">🏆</span>
+                            <span class="end-icon">achievement</span>
                         </div>
                     </div>
-
                     <div class="bottom-spacer"></div>
                 </div>
-
                 <!-- 底部操作栏 -->
                 <div class="flow-footer">
                     <div class="footer-info">
@@ -1889,7 +1657,6 @@
                         <button class="action-btn continue-btn">继续</button>
                     </div>
                 </div>
-
                 <!-- 底部导航栏 -->
                 <div class="tab-bar">
                     <div class="tab-item">
@@ -1932,12 +1699,10 @@
                     </div>
                 </div>
             </div>
-
             <!-- Home条 -->
             <div class="home-indicator"></div>
         </div>
     </div>
-
     <script>
         // Tab切换
         const tabItems = document.querySelectorAll('.tab-item');
@@ -1947,20 +1712,16 @@
                 item.classList.add('active');
             });
         });
-
         // 日历交互
         let pickerYear = 2026;
         let isExpanded = false;
-        
         function toggleCalendar() {
             const monthPicker = document.getElementById('monthPicker');
             const calendarGrid = document.getElementById('calendarGrid');
             const weekGrid = document.getElementById('weekGrid');
             const expandIcon = document.getElementById('expandIcon');
             const weekRange = document.getElementById('weekRange');
-            
             isExpanded = !isExpanded;
-            
             if (isExpanded) {
                 // 展开：显示完整月历和月份选择器
                 weekGrid.style.display = 'none';
@@ -1977,12 +1738,10 @@
                 weekRange.textContent = '4月6日-4月12日';
             }
         }
-        
         function changeYear(delta) {
             pickerYear += delta;
             document.getElementById('pickerYear').textContent = pickerYear + '年';
         }
-        
         // 本周日期选择
         const weekDays = document.querySelectorAll('.week-day');
         weekDays.forEach(day => {
@@ -1991,14 +1750,12 @@
                 day.classList.add('active');
             });
         });
-        
         // 日历日期选择
         const calendarDays = document.querySelectorAll('.calendar-day');
         calendarDays.forEach(day => {
             day.addEventListener('click', () => {
                 calendarDays.forEach(d => d.classList.remove('active'));
                 day.classList.add('active');
-                
                 // 同步更新本周视图中的选中状态
                 const dayNum = day.querySelector('.day-number').textContent;
                 weekDays.forEach(wd => {
@@ -2009,39 +1766,32 @@
                 });
             });
         });
-        
         // 月份选择
         const monthItems = document.querySelectorAll('.month-item');
         monthItems.forEach(item => {
             item.addEventListener('click', () => {
                 monthItems.forEach(m => m.classList.remove('active'));
                 item.classList.add('active');
-                
                 // 更新标题
                 const monthName = item.querySelector('.month-name').textContent;
                 document.getElementById('weekRange').textContent = pickerYear + '年' + monthName;
             });
         });
-
         // 任务卡片选中
         const taskNodes = document.querySelectorAll('.task-node-wrapper');
         const selectedName = document.querySelector('.selected-name');
         const selectedStatus = document.querySelector('.selected-status');
         const actionBtn = document.querySelector('.action-btn');
-
         taskNodes.forEach(node => {
             node.addEventListener('click', () => {
                 taskNodes.forEach(n => n.classList.remove('selected'));
                 node.classList.add('selected');
-
                 // 更新底部信息
                 const taskName = node.querySelector('.task-name').textContent;
                 const statusText = node.querySelector('.status-text').textContent;
                 const statusClass = node.querySelector('.task-status').classList;
-
                 selectedName.textContent = taskName;
                 selectedStatus.textContent = statusText;
-
                 // 更新按钮
                 actionBtn.className = 'action-btn';
                 if (statusClass.contains('status-0')) {
@@ -2056,7 +1806,6 @@
                 }
             });
         });
-
         // 训练计划切换
         let currentPlan = 'running';
         function switchPlan(plan) {
@@ -2065,30 +1814,24 @@
             tabs.forEach(tab => tab.classList.remove('active'));
             event.currentTarget.classList.add('active');
         }
-
         // 补水功能
         let waterIntake = 0;
         const WATER_TARGET = 800;
-
         function showWaterPopup() {
             document.getElementById('waterPopup').classList.add('show');
             updateWaterDisplay();
         }
-
         function hideWaterPopup() {
             document.getElementById('waterPopup').classList.remove('show');
         }
-
         function addWater(amount) {
             waterIntake += amount;
             updateWaterDisplay();
         }
-
         function resetWater() {
             waterIntake = 0;
             updateWaterDisplay();
         }
-
         function updateWaterDisplay() {
             // 更新卡片显示
             document.getElementById('waterAmount').textContent = waterIntake;
@@ -2098,7 +1841,6 @@
             const progress = Math.min(waterIntake / WATER_TARGET * 100, 100);
             document.getElementById('waterProgressFill').style.width = progress + '%';
         }
-
         // 按钮点击效果
         actionBtn.addEventListener('click', () => {
             const btnText = actionBtn.textContent;

@@ -1,13 +1,13 @@
 <template>
-  <view 
-    class="type-selector-popup" 
-    :class="{ show: visible, hide: isHiding }" 
+  <view
+    class="type-selector-popup"
+    :class="{ show: visible, hide: isHiding }"
     v-show="realVisible"
     @click="onMaskClick"
     @touchmove.stop.prevent="noop"
   >
-    <view 
-      class="selector-content" 
+    <view
+      class="selector-content"
       @click.stop
       @touchmove.stop
       @touchstart="onTouchStart"
@@ -18,12 +18,10 @@
       <view class="drag-handle-bar">
         <view class="drag-indicator"></view>
       </view>
-
       <view class="selector-header">
         <text class="selector-title">{{ editingDay ? weekLabels[editingDay.dayOfWeek - 1] + ' · 选择训练类型' : '选择训练类型' }}</text>
-        <text class="close-btn" @click="close">✕</text>
+        <AppIcon class="close-btn" name="close" size="28" @click="close" />
       </view>
-
       <!-- 两列主体：左类型 + 右详情 -->
       <view class="selector-body">
         <!-- 左侧类型栏 -->
@@ -39,7 +37,6 @@
             <text class="sidebar-name">{{ type.label }}</text>
           </view>
         </scroll-view>
-
         <!-- 右侧详情面板 -->
         <scroll-view class="detail-panel" scroll-y :show-scrollbar="false" :enhanced="true">
           <view class="detail-inner" v-if="selectedType">
@@ -80,7 +77,6 @@
                 </view>
               </view>
             </template>
-
             <!-- 力量详情 -->
             <template v-if="selectedType === 'strength'">
               <view class="detail-section">
@@ -111,7 +107,7 @@
                       <input class="ex-num-input" type="number" v-model="ex.sets" placeholder="组" />
                       <text class="ex-x">×</text>
                       <input class="ex-num-input" v-model="ex.reps" placeholder="次" />
-                      <text class="ex-delete" @click="removeExercise(idx)">✕</text>
+                      <AppIcon class="ex-delete" name="close" size="22" @click="removeExercise(idx)" />
                     </view>
                     <view class="add-exercise" @click="addExercise">
                       <text class="add-icon">+</text>
@@ -121,7 +117,6 @@
                 </view>
               </view>
             </template>
-
             <!-- 瑜伽详情 -->
             <template v-if="selectedType === 'yoga'">
               <view class="detail-section">
@@ -146,7 +141,6 @@
                 </view>
               </view>
             </template>
-
             <!-- 休息详情 -->
             <template v-if="selectedType === 'rest'">
               <view class="detail-section">
@@ -171,7 +165,6 @@
                 </view>
               </view>
             </template>
-
             <!-- 自定义详情 -->
             <template v-if="selectedType === 'custom'">
               <view class="detail-section">
@@ -182,7 +175,6 @@
                 </view>
               </view>
             </template>
-
             <!-- 通用字段 -->
             <view class="detail-section">
               <view class="form-group">
@@ -195,15 +187,13 @@
               </view>
             </view>
           </view>
-
           <!-- 未选择类型时的占位 -->
           <view class="detail-empty" v-else>
-            <text class="empty-icon">👈</text>
+            <AppIcon class="empty-icon" name="arrow-left" size="64" />
             <text class="empty-text">请选择左侧训练类型</text>
           </view>
         </scroll-view>
       </view>
-
       <view class="selector-footer">
         <button class="footer-btn cancel" @click="close">取消</button>
         <button class="footer-btn confirm" @click="confirm">确定</button>
@@ -211,10 +201,8 @@
     </view>
   </view>
 </template>
-
 <script setup>
 import { ref, watch, nextTick } from 'vue'
-
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -229,11 +217,8 @@ const props = defineProps({
     default: null
   }
 })
-
 const emit = defineEmits(['close', 'confirm'])
-
 const weekLabels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-
 const types = [
   { value: 'run', label: '跑步', icon: '/static/images/plan/run.png' },
   { value: 'strength', label: '力量', icon: '/static/images/plan/strength.png' },
@@ -241,7 +226,6 @@ const types = [
   { value: 'rest', label: '休息', icon: '/static/images/plan/rest.png' },
   { value: 'custom', label: '自定义', icon: '/static/images/plan/custom.png' }
 ]
-
 const runSubTypes = [
   { value: 'interval', label: '间歇', desc: '400m/800m' },
   { value: 'long', label: '长距离', desc: 'LSD慢跑' },
@@ -249,9 +233,7 @@ const runSubTypes = [
   { value: 'easy', label: '轻松跑', desc: '有氧恢复' },
   { value: 'recovery', label: '恢复跑', desc: '超慢放松' }
 ]
-
 const bodyParts = ['胸', '背', '腿', '肩', '臂', '核心']
-
 const yogaStyles = [
   { value: 'hatha', label: '哈他瑜伽' },
   { value: 'vinyasa', label: '流瑜伽' },
@@ -259,14 +241,12 @@ const yogaStyles = [
   { value: 'power', label: '力量瑜伽' },
   { value: 'restorative', label: '修复瑜伽' }
 ]
-
 const restTypes = [
   { value: 'full', label: '完全休息' },
   { value: 'active', label: '主动恢复' },
   { value: 'stretch', label: '拉伸放松' },
   { value: 'massage', label: '按摩放松' }
 ]
-
 const realVisible = ref(false)
 const isHiding = ref(false)
 const selectedType = ref('')
@@ -280,13 +260,11 @@ const form = ref({
   yogaStyle: '',
   restType: ''
 })
-
 // 拖拽关闭相关
 const touchStartY = ref(0)
 const touchCurrentY = ref(0)
 const isDragging = ref(false)
 const DRAG_THRESHOLD = 120
-
 watch(() => props.visible, (val) => {
   if (val) {
     isHiding.value = false
@@ -310,7 +288,6 @@ watch(() => props.visible, (val) => {
     startHide()
   }
 })
-
 function startHide() {
   isHiding.value = true
   setTimeout(() => {
@@ -318,7 +295,6 @@ function startHide() {
     isHiding.value = false
   }, 300)
 }
-
 function resetForm() {
   selectedType.value = ''
   form.value = {
@@ -332,7 +308,6 @@ function resetForm() {
     restType: ''
   }
 }
-
 function selectType(type) {
   selectedType.value = type
   if (!form.value.title) {
@@ -340,7 +315,6 @@ function selectType(type) {
     if (t) form.value.title = t.label
   }
 }
-
 function setRunSubType(val) {
   form.value.runParams.subType = val
   const sub = runSubTypes.find(s => s.value === val)
@@ -348,30 +322,23 @@ function setRunSubType(val) {
     form.value.title = sub.label
   }
 }
-
 function addExercise() {
   form.value.exercises.push({ name: '', sets: '', reps: '' })
 }
-
 function removeExercise(idx) {
   form.value.exercises.splice(idx, 1)
 }
-
 function noop() {}
-
 function onMaskClick() {
   close()
 }
-
 function close() {
   emit('close')
 }
-
 function onTouchStart(e) {
   touchStartY.value = e.touches[0].clientY
   isDragging.value = true
 }
-
 function onTouchMove(e) {
   if (!isDragging.value) return
   touchCurrentY.value = e.touches[0].clientY
@@ -384,23 +351,19 @@ function onTouchMove(e) {
     }
   }
 }
-
 function onTouchEnd(e) {
   if (!isDragging.value) return
   const diff = touchCurrentY.value - touchStartY.value
   isDragging.value = false
-  
   // 重置 transform
   const content = e.currentTarget
   if (content && content.style) {
     content.style.transform = ''
   }
-  
   if (diff > DRAG_THRESHOLD) {
     close()
   }
 }
-
 function confirm() {
   if (!selectedType.value) {
     uni.showToast({ title: '请选择训练类型', icon: 'none' })
@@ -410,7 +373,6 @@ function confirm() {
     uni.showToast({ title: '请输入训练名称', icon: 'none' })
     return
   }
-
   const result = {
     type: selectedType.value,
     title: form.value.title.trim(),
@@ -419,7 +381,6 @@ function confirm() {
       duration: parseInt(form.value.duration) || 0
     }
   }
-
   if (selectedType.value === 'run') {
     result.details.runParams = { ...form.value.runParams }
   }
@@ -433,12 +394,10 @@ function confirm() {
   if (selectedType.value === 'rest') {
     result.details.restType = form.value.restType
   }
-
   emit('confirm', result)
   resetForm()
 }
 </script>
-
 <style lang="scss" scoped>
 .type-selector-popup {
   position: fixed;
@@ -452,27 +411,22 @@ function confirm() {
   z-index: 1000;
   pointer-events: none;
   transition: background 0.3s ease;
-
   &.show {
     pointer-events: auto;
     background: rgba(0, 0, 0, 0.5);
-
     .selector-content {
       transform: translateY(0);
       opacity: 1;
     }
   }
-
   &.hide {
     background: rgba(0, 0, 0, 0);
-
     .selector-content {
       transform: translateY(100%);
       opacity: 0.8;
     }
   }
 }
-
 .selector-content {
   width: 100%;
   max-height: 88vh;
@@ -485,7 +439,6 @@ function confirm() {
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
   box-shadow: 0 -8rpx 40rpx rgba(0, 0, 0, 0.12);
 }
-
 /* 拖拽指示条 */
 .drag-handle-bar {
   display: flex;
@@ -493,14 +446,12 @@ function confirm() {
   padding: 16rpx 0 8rpx;
   flex-shrink: 0;
 }
-
 .drag-indicator {
   width: 72rpx;
   height: 6rpx;
   background: #cbd5e1;
   border-radius: 6rpx;
 }
-
 .selector-header {
   display: flex;
   justify-content: space-between;
@@ -508,13 +459,11 @@ function confirm() {
   padding: 16rpx 30rpx 20rpx;
   flex-shrink: 0;
 }
-
 .selector-title {
   font-size: 32rpx;
   font-weight: 700;
   color: #1c1c1e;
 }
-
 .close-btn {
   font-size: 32rpx;
   color: #94a3b8;
@@ -527,7 +476,6 @@ function confirm() {
   border-radius: 50%;
   background: #f1f5f9;
 }
-
 /* 两列主体布局 */
 .selector-body {
   display: flex;
@@ -537,7 +485,6 @@ function confirm() {
   height: calc(88vh - 220rpx - env(safe-area-inset-bottom));
   max-height: 720rpx;
 }
-
 /* 左侧类型栏 */
 .type-sidebar {
   width: 22%;
@@ -545,7 +492,6 @@ function confirm() {
   border-right: 1rpx solid #f1f5f9;
   height: 100%;
 }
-
 .sidebar-item {
   display: flex;
   flex-direction: column;
@@ -555,48 +501,39 @@ function confirm() {
   margin: 0 12rpx 12rpx;
   border-radius: 16rpx;
   transition: all 0.2s ease;
-
   &:first-child {
     margin-top: 12rpx;
   }
-
   &:active {
     transform: scale(0.95);
   }
-
   &.active {
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-
     .sidebar-icon,
     .sidebar-name {
       color: #fff;
     }
   }
 }
-
 .sidebar-icon-img {
   width: 40rpx;
   height: 40rpx;
   margin-bottom: 8rpx;
 }
-
 .sidebar-name {
   font-size: 22rpx;
   color: #64748b;
   text-align: center;
 }
-
 /* 右侧详情面板 */
 .detail-panel {
   width: 78%;
   background: #fff;
   height: 100%;
 }
-
 .detail-inner {
   padding: 24rpx;
 }
-
 .detail-empty {
   display: flex;
   flex-direction: column;
@@ -604,25 +541,20 @@ function confirm() {
   justify-content: center;
   padding: 160rpx 40rpx;
 }
-
 .empty-icon {
   font-size: 64rpx;
   margin-bottom: 16rpx;
 }
-
 .empty-text {
   font-size: 28rpx;
   color: #94a3b8;
 }
-
 .detail-section {
   margin-bottom: 32rpx;
-
   &:last-child {
     margin-bottom: 0;
   }
 }
-
 .section-title {
   font-size: 26rpx;
   font-weight: 700;
@@ -630,14 +562,12 @@ function confirm() {
   margin-bottom: 16rpx;
   display: block;
 }
-
 /* 选项卡片网格 */
 .option-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16rpx;
 }
-
 .option-card {
   display: flex;
   flex-direction: column;
@@ -648,48 +578,39 @@ function confirm() {
   border-radius: 16rpx;
   border: 2rpx solid transparent;
   transition: all 0.2s ease;
-
   &:active {
     transform: scale(0.96);
   }
-
   &.active {
     background: #eff6ff;
     border-color: #3b82f6;
-
     .option-label {
       color: #3b82f6;
       font-weight: 700;
     }
-
     .option-desc {
       color: #60a5fa;
     }
   }
 }
-
 .option-label {
   font-size: 26rpx;
   color: #334155;
   text-align: center;
 }
-
 .option-desc {
   font-size: 20rpx;
   color: #94a3b8;
   margin-top: 4rpx;
   text-align: center;
 }
-
 /* 表单样式 */
 .form-group {
   margin-bottom: 24rpx;
-
   &:last-child {
     margin-bottom: 0;
   }
 }
-
 .form-label {
   font-size: 26rpx;
   font-weight: 600;
@@ -697,7 +618,6 @@ function confirm() {
   margin-bottom: 12rpx;
   display: block;
 }
-
 .form-input {
   width: 100%;
   height: 80rpx;
@@ -708,7 +628,6 @@ function confirm() {
   color: #334155;
   box-sizing: border-box;
 }
-
 .form-textarea {
   width: 100%;
   height: 160rpx;
@@ -719,20 +638,17 @@ function confirm() {
   color: #334155;
   box-sizing: border-box;
 }
-
 /* 力量动作列表 */
 .exercise-list-editor {
   display: flex;
   flex-direction: column;
   gap: 12rpx;
 }
-
 .exercise-row {
   display: flex;
   align-items: center;
   gap: 12rpx;
 }
-
 .ex-name-input {
   flex: 1;
   height: 72rpx;
@@ -741,7 +657,6 @@ function confirm() {
   border-radius: 10rpx;
   font-size: 26rpx;
 }
-
 .ex-num-input {
   width: 80rpx;
   height: 72rpx;
@@ -751,18 +666,15 @@ function confirm() {
   font-size: 26rpx;
   text-align: center;
 }
-
 .ex-x {
   font-size: 24rpx;
   color: #94a3b8;
 }
-
 .ex-delete {
   font-size: 24rpx;
   color: #ef4444;
   padding: 10rpx;
 }
-
 .add-exercise {
   display: flex;
   align-items: center;
@@ -772,18 +684,15 @@ function confirm() {
   background: #f8fafc;
   border-radius: 12rpx;
   border: 2rpx dashed #cbd5e1;
-
   .add-icon {
     font-size: 32rpx;
     color: #3b82f6;
   }
-
   .add-text {
     font-size: 26rpx;
     color: #3b82f6;
   }
 }
-
 /* 底部按钮 */
 .selector-footer {
   display: flex;
@@ -793,7 +702,6 @@ function confirm() {
   flex-shrink: 0;
   background: #fff;
 }
-
 .footer-btn {
   flex: 1;
   height: 84rpx;
@@ -804,16 +712,13 @@ function confirm() {
   align-items: center;
   justify-content: center;
   border: none;
-
   &:active {
     opacity: 0.9;
   }
-
   &.cancel {
     background: #f1f5f9;
     color: #64748b;
   }
-
   &.confirm {
     background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
     color: #fff;

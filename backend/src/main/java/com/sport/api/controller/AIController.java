@@ -58,9 +58,12 @@ public class AIController {
     @Operation(summary = "生成训练方案")
     @PostMapping("/generate-plan")
     public Result<Map<String, Object>> generatePlan(@RequestBody KimiChatRequest request) {
-        AIProviderConfig.Provider provider = providerConfig.getActiveProvider();
+        AIProviderConfig.Provider provider = providerConfig.getProvider(request.getModelId());
+        String apiKey = (request.getApiKey() != null && !request.getApiKey().isBlank())
+                ? request.getApiKey()
+                : provider.getApiKey();
 
-        if (provider.getApiKey() == null || provider.getApiKey().isBlank()) {
+        if (apiKey == null || apiKey.isBlank()) {
             log.warn("AI API Key 未配置: {}", provider.getName());
             return Result.fail("AI 服务未配置，请联系管理员");
         }
@@ -71,13 +74,13 @@ public class AIController {
         body.put("messages", request.getMessages());
         body.put("temperature", 1.0);  // 保持 1.0 以确保 AI 输出的多样性和创造性
 
-        String keyMask = maskKey(provider.getApiKey());
+        String keyMask = maskKey(apiKey);
         try {
             log.info(">>> 请求 AI: provider={}, model={}, keyMask={}", provider.getName(), provider.getModel(), keyMask);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(provider.getApiKey());
+            headers.setBearerAuth(apiKey);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.exchange(

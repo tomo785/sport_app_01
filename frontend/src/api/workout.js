@@ -1,18 +1,16 @@
 import { post, get, put } from '../utils/request'
-
 /**
  * 运动记录相关API
  */
-
 /**
  * 开始运动
  * @param {Object} data 运动数据
  * @param {Number} data.type 运动类型 1跑步 2健走 3骑行
  */
 export function startWorkout(data) {
-  return post('/workout/start', data)
+  const type = data && data.type ? data.type : 1
+  return post(`/workout/start?type=${encodeURIComponent(type)}`, data)
 }
-
 /**
  * 上传轨迹点
  * @param {Object} data 轨迹数据
@@ -22,31 +20,27 @@ export function startWorkout(data) {
 export function uploadTrajectory(data) {
   return post('/workout/trajectory', data)
 }
-
 /**
  * 暂停运动
  * @param {Number} recordId 运动记录ID
  */
 export function pauseWorkout(recordId) {
-  return put('/workout/pause', { recordId })
+  return put(`/workout/pause?recordId=${encodeURIComponent(recordId)}`)
 }
-
 /**
  * 继续运动
  * @param {Number} recordId 运动记录ID
  */
 export function resumeWorkout(recordId) {
-  return put('/workout/resume', { recordId })
+  return put(`/workout/resume?recordId=${encodeURIComponent(recordId)}`)
 }
-
 /**
  * 结束运动
  * @param {Number} recordId 运动记录ID
  */
-export function finishWorkout(recordId) {
-  return put('/workout/finish', { recordId })
+export function finishWorkout(recordId, data = {}) {
+  return put(`/workout/finish?recordId=${encodeURIComponent(recordId)}`, data)
 }
-
 /**
  * 获取运动详情
  * @param {Number} id 运动记录ID
@@ -54,7 +48,6 @@ export function finishWorkout(recordId) {
 export function getWorkoutDetail(id) {
   return get(`/workout/${id}`)
 }
-
 /**
  * 获取运动列表
  * @param {Object} params 查询参数
@@ -67,7 +60,6 @@ export function getWorkoutDetail(id) {
 export function getWorkoutList(params) {
   return get('/workout/list', params)
 }
-
 /**
  * 获取运动轨迹
  * @param {Number} id 运动记录ID
